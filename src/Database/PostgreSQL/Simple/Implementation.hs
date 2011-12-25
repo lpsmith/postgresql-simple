@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Database.PostgreSQL.Simple.Implementation where
 
 import Prelude hiding (catch)
@@ -16,21 +16,6 @@ import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
 import           System.IO.Unsafe (unsafePerformIO)
-
-
-data Status err a = Fail err | Success a deriving(Eq, Ord, Show, Functor)
-
-instance Applicative (Status err) where
-   pure = Success
-   (Success f) <*> (Success a) = Success (f a)
-   (Success _) <*> (Fail  err) = Fail err
-   (Fail  err) <*> _           = Fail err
-
-instance Monad (Status err) where
-   return = pure
-   (Success a) >>= f = f a
-   (Fail  err) >>= _ = Fail err
-
 
 -- | A Field represents metadata about a particular field
 --

@@ -21,11 +21,12 @@ module Database.PostgreSQL.Simple.QueryResults
     , convertError
     ) where
 
-import Control.Exception (throw)
+import Control.Exception (SomeException(..), throw)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Either()
 import Database.PostgreSQL.Simple.Implementation
-import Database.PostgreSQL.Simple.Result (ResultError(..), Result(..),Status(..))
+import Database.PostgreSQL.Simple.Result (ResultError(..), Result(..))
 import Database.PostgreSQL.Simple.Types (Only(..))
 
 -- | A collection type that can be converted from a list of strings.
@@ -70,7 +71,7 @@ import Database.PostgreSQL.Simple.Types (Only(..))
 -- @
 
 class QueryResults a where
-    convertResults :: [Field] -> [Maybe ByteString] -> Status ResultError a
+    convertResults :: [Field] -> [Maybe ByteString] -> Either SomeException a
     -- ^ Convert values from a row into a Haskell collection.
     --
     -- This function will throw a 'ResultError' if conversion of the
@@ -206,8 +207,8 @@ convertError :: [Field]
              -- ^ Number of columns expected for conversion.  For
              -- instance, if converting to a 3-tuple, the number to
              -- provide here would be 3.
-             -> Status ResultError a
-convertError fs vs n = Fail $ ConversionFailed
+             -> Either SomeException a
+convertError fs vs n = Left . SomeException $ ConversionFailed
     (show (length fs) ++ " values: " ++ show (zip (map typename fs)
                                                   (map (fmap ellipsis) vs)))
     (show n ++ " slots in target type")

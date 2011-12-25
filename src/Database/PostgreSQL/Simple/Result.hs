@@ -26,13 +26,12 @@ module Database.PostgreSQL.Simple.Result
     (
       Result(..)
     , ResultError(..)
-    , Status(..)
     ) where
 
 #include "MachDeps.h"
 
 import Control.Applicative (Applicative, (<$>), (<*>), (<*), pure)
-import Control.Exception (Exception, throw)
+import Control.Exception (SomeException(..), Exception, throw)
 import Data.Attoparsec.Char8 hiding (Result)
 import Data.Bits ((.&.), (.|.), shiftL)
 import Data.ByteString (ByteString)
@@ -81,12 +80,17 @@ data ResultError = Incompatible { errSQLType :: String
 
 instance Exception ResultError
 
+left :: Exception a => a -> Either SomeException b
+left = Left . SomeException
+
 -- | A type that may be converted from a SQL type.
 class Result a where
-    convert :: Field -> Maybe ByteString -> Status ResultError a
+    convert :: Field -> Maybe ByteString -> Either SomeException a
     -- ^ Convert a SQL value to a Haskell value.
     --
-    -- Throws a 'ResultError' if conversion fails.
+    -- Returns an exception if the conversion fails.  In the case of 
+    -- library instances,  this will usually be a 'ResultError',  but may
+    -- be a 'UnicodeError'.
 {--
 instance (Result a) => Result (Maybe a) where
     convert _ Nothing = pure Nothing
@@ -155,7 +159,7 @@ instance Result LB.ByteString where
 
 
 instance Result ST.Text where
-    convert f {- | isText f -} = doConvert f okText $ (Success . ST.decodeUtf8)
+    convert f {- | isText f -} = doConvert f okText $ (Right . ST.decodeUtf8)
 {-              | otherwise = incompatible f (typeOf ST.empty)
                             "attempt to mix binary and text" -}
     -- FIXME:  return a "Fail someUnicodeError" instead of throwing it
@@ -170,7 +174,7 @@ instance Result [Char] where
 instance Result UTCTime where
     convert f = doConvert f ok $ \bs ->
         case parseTime defaultTimeLocale "%F %T%Q%z" (B8.unpack bs ++ "00") of
-          Just t -> Success t
+          Just t -> Right t
           Nothing -> conversionFailed f "UTCTime" "could not parse"
       where ok = mkCompats [TimestampWithTimeZone]
 {--
@@ -224,29 +228,29 @@ okInt = ok64
 #endif
 --}
 doConvert :: forall a . (Typeable a)
-          => Field -> Compat -> (ByteString -> Status ResultError a)
-          -> Maybe ByteString -> Status ResultError a
+          => Field -> Compat -> (ByteString -> Either SomeException a)
+          -> Maybe ByteString -> Either SomeException a
 doConvert f types cvt (Just bs)
     | Just typ <- oid2builtin (typeOid f)
     , mkCompat typ `compat` types = cvt bs
     | otherwise = incompatible f (typeOf (undefined::a)) "types incompatible"
-doConvert f _ cvt _ = Fail $ UnexpectedNull (B.unpack (typename f))
+doConvert f _ cvt _ = left $ UnexpectedNull (B.unpack (typename f))
                               (show (typeOf (undefined::a))) ""
 
-incompatible :: Field -> TypeRep -> String -> Status ResultError a
-incompatible f r = Fail . Incompatible (B.unpack (typename f)) (show r)
+incompatible :: Field -> TypeRep -> String -> Either SomeException a
+incompatible f r = left . Incompatible (B.unpack (typename f)) (show r)
 
-conversionFailed :: Field -> String -> String -> Status ResultError a
-conversionFailed f s = Fail . ConversionFailed (B.unpack (typename f)) s
+conversionFailed :: Field -> String -> String -> Either SomeException a
+conversionFailed f s = left . ConversionFailed (B.unpack (typename f)) s
 
-atto :: (Typeable a) => Compat -> Parser a -> Field -> Maybe ByteString -> Status ResultError a
+atto :: (Typeable a) => Compat -> Parser a -> Field -> Maybe ByteString -> Either SomeException a
 atto types p0 f dat = doConvert f types (go undefined p0) dat
   where
-    go :: (Typeable a) => a -> Parser a -> ByteString -> Status ResultError a
+    go :: (Typeable a) => a -> Parser a -> ByteString -> Either SomeException a
     go dummy p s =
         case parseOnly p s of
           Left err -> conversionFailed f (show (typeOf dummy)) err
-          Right v  -> Success v
+          Right v  -> Right v
 
 instance Result RawResult where
-   convert field rawData = Success (RawResult field rawData)
+   convert field rawData = Right (RawResult field rawData)

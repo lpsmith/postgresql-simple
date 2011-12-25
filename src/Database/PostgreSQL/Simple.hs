@@ -387,8 +387,8 @@ finishQuery conn q result = do
         forM' 0 (nrows-1) $ \row -> do
            values <- forM' 0 (ncols-1) (\col -> PQ.getvalue' result row col)
            case convertResults fields values of
-             Fail err -> throwIO err
-             Success a -> return a
+             Left  err -> throwIO err
+             Right a   -> return a
     PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
     PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
     _ -> do
