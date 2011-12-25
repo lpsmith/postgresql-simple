@@ -56,6 +56,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
+import qualified Data.Text.Encoding.Error (UnicodeException)
 import qualified Data.Text.Lazy as LT
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
@@ -90,7 +91,7 @@ class Result a where
     --
     -- Returns an exception if the conversion fails.  In the case of 
     -- library instances,  this will usually be a 'ResultError',  but may
-    -- be a 'UnicodeError'.
+    -- be a 'UnicodeException'.
 {--
 instance (Result a) => Result (Maybe a) where
     convert _ Nothing = pure Nothing
@@ -159,11 +160,11 @@ instance Result LB.ByteString where
 
 
 instance Result ST.Text where
-    convert f {- | isText f -} = doConvert f okText $ (Right . ST.decodeUtf8)
-{-              | otherwise = incompatible f (typeOf ST.empty)
+    convert f = doConvert f okText $ (either left Right . ST.decodeUtf8')
+{-              | isText f  = doConvert f okText $ (Right . ST.decodeUtf8)
+                | otherwise = incompatible f (typeOf ST.empty)
                             "attempt to mix binary and text" -}
-    -- FIXME:  return a "Fail someUnicodeError" instead of throwing it
-    --         check character encoding
+    -- FIXME:  check character encoding
 
 instance Result LT.Text where
     convert f dat = LT.fromStrict <$> convert f dat
