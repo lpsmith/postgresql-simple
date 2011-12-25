@@ -24,6 +24,7 @@ Library
      Database.PostgreSQL.Simple
      Database.PostgreSQL.Simple.BuiltinTypes
      Database.PostgreSQL.Simple.Field
+     Database.PostgreSQL.Simple.LargeObjects
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Param
      Database.PostgreSQL.Simple.Result
