@@ -22,12 +22,13 @@ Library
   -- Modules exported by the library.
   Exposed-modules:
      Database.PostgreSQL.Simple
-     Database.PostgreSQL.Simple.Param
-     Database.PostgreSQL.Simple.QueryParams
-     Database.PostgreSQL.Simple.Result
-     Database.PostgreSQL.Simple.Field
-     Database.PostgreSQL.Simple.QueryResults
      Database.PostgreSQL.Simple.BuiltinTypes
+     Database.PostgreSQL.Simple.Field
+     Database.PostgreSQL.Simple.Notification
+     Database.PostgreSQL.Simple.Param
+     Database.PostgreSQL.Simple.Result
+     Database.PostgreSQL.Simple.QueryParams
+     Database.PostgreSQL.Simple.QueryResults
      Database.PostgreSQL.Simple.Types
   Other-modules:
      Database.PostgreSQL.Simple.Implementation
@@ -45,7 +46,7 @@ Library
     old-locale,
     text >= 0.11.0.2,
     time,
-    transformers >= 0.2.0.0
+    transformers
   -- Modules not exported by this package.
   -- Other-modules:
 
