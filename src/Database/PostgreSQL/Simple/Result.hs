@@ -89,7 +89,7 @@ class Result a where
     convert :: Field -> Maybe ByteString -> Either SomeException a
     -- ^ Convert a SQL value to a Haskell value.
     --
-    -- Returns an exception if the conversion fails.  In the case of 
+    -- Returns an exception if the conversion fails.  In the case of
     -- library instances,  this will usually be a 'ResultError',  but may
     -- be a 'UnicodeException'.
 {--

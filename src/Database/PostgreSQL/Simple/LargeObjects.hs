@@ -20,7 +20,7 @@ import           Database.PostgreSQL.Simple.Implementation
 import           Foreign.C.Types(CInt)
 
 loImport :: Connection -> FilePath -> IO (Maybe Oid)
-loImport conn path = withConnection conn $ \c -> PQ.loImport c path 
+loImport conn path = withConnection conn $ \c -> PQ.loImport c path
 
 loExport :: Connection -> Oid -> FilePath -> IO CInt
 loExport conn oid path = withConnection conn $ \c -> PQ.loExport c oid path
