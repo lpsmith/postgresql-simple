@@ -1,0 +1,10 @@
+.hg/
+_darcs/
+*~
+dist/
+*.prof
+*.hi
+*.o
+\#*\#
+.#*
+postgresql-simple-*.tar.gz

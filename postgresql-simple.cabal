@@ -1,0 +1,62 @@
+Name:                postgresql-simple
+Version:             0.0
+Synopsis:            Mid-Level PostgreSQL client library
+License:             BSD3
+License-file:        LICENSE
+Author:              Bryan O'Sullivan, Leon P Smith
+Maintainer:          Leon P Smith <leon@melding-monads.com>
+Copyright:           (c) 2011 MailRank, Inc.
+                     (c) 2011 Leon P Smith
+Category:            Database
+Build-type:          Simple
+
+-- Extra files to be distributed with the package, such as examples or
+-- a README.
+-- Extra-source-files:
+
+-- Constraint on the version of Cabal needed to build this package.
+Cabal-version:       >=1.2
+
+Library
+  hs-source-dirs: src
+  -- Modules exported by the library.
+  Exposed-modules:
+     Database.PostgreSQL.Simple
+     Database.PostgreSQL.Simple.Param
+     Database.PostgreSQL.Simple.QueryParams
+     Database.PostgreSQL.Simple.Result
+     Database.PostgreSQL.Simple.Field
+     Database.PostgreSQL.Simple.QueryResults
+     Database.PostgreSQL.Simple.BuiltinTypes
+     Database.PostgreSQL.Simple.Types
+  Other-modules:
+     Database.PostgreSQL.Simple.Implementation
+
+  Build-depends:
+    attoparsec >= 0.8.5.3,
+    base < 5,
+    base16-bytestring,
+    blaze-builder,
+    blaze-textual,
+    bytestring >= 0.9,
+    containers,
+    postgresql-libpq,
+    pcre-light,
+    old-locale,
+    text >= 0.11.0.2,
+    time,
+    transformers >= 0.2.0.0
+  -- Modules not exported by this package.
+  -- Other-modules:
+
+  -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
+  -- Build-tools:
+
+source-repository head
+  type:     git
+  location: http://github.com/lpsmith/postgresql-simple
+
+source-repository this
+  type:     git
+  location: http://github.com/lpsmith/postgresql-simple
+  tag:      v0.0
