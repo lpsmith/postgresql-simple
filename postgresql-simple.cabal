@@ -45,8 +45,7 @@ Library
     pcre-light,
     old-locale,
     text >= 0.11.0.2,
-    time,
-    transformers
+    time
   -- Modules not exported by this package.
   -- Other-modules:
 

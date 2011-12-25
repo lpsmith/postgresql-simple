@@ -6,7 +6,6 @@ import Prelude hiding (catch)
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad.IO.Class (MonadIO(liftIO))
 import           Control.Concurrent.MVar
 import           Data.ByteString(ByteString)
 import qualified Data.IntMap as IntMap
@@ -100,11 +99,11 @@ defaultConnectInfo = ConnectInfo {
 
 -- | Connect with the given username to the given database. Will throw
 --   an exception if it cannot connect.
-connect :: MonadIO m => ConnectInfo -> m Connection
+connect :: ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
 
-connectPostgreSQL :: MonadIO m => ByteString -> m Connection
-connectPostgreSQL connstr = liftIO $ do
+connectPostgreSQL :: ByteString -> IO Connection
+connectPostgreSQL connstr = do
     conn <- PQ.connectdb connstr
     connectionHandle <- newMVar (Just conn)
     connectionObjects <- newMVar (IntMap.empty)
