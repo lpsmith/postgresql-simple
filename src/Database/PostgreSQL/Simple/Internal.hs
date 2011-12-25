@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-module Database.PostgreSQL.Simple.Implementation where
+module Database.PostgreSQL.Simple.Internal where
 
 import Prelude hiding (catch)
 

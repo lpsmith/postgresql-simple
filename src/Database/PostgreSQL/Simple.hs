@@ -111,7 +111,7 @@ import Database.PostgreSQL.Simple.Result (ResultError(..))
 import Database.PostgreSQL.Simple.QueryResults (QueryResults(..))
 -- import Database.PostgreSQL.Simple.Result (ResultError(..))
 import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Only(..), Query(..))
-import Database.PostgreSQL.Simple.Implementation as Base
+import Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
 import Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B

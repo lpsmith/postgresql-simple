@@ -16,7 +16,7 @@ module Database.PostgreSQL.Simple.LargeObjects
 
 import           Database.PostgreSQL.LibPQ (Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           Database.PostgreSQL.Simple.Implementation
+import           Database.PostgreSQL.Simple.Internal
 import           Foreign.C.Types(CInt)
 
 loImport :: Connection -> FilePath -> IO (Maybe Oid)

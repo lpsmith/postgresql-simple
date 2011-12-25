@@ -46,7 +46,7 @@ import Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
 import Data.Typeable (TypeRep, Typeable, typeOf)
 import Data.Word ({- Word, Word8, Word16, Word32, -} Word64)
 -- import Database.MySQL.Base.Types (Field(..), Type(..))
-import Database.PostgreSQL.Simple.Implementation
+import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Field (Field(..), RawResult(..))
 import Database.PostgreSQL.Simple.BuiltinTypes
 import qualified Database.PostgreSQL.LibPQ as PQ

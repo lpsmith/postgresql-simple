@@ -11,5 +11,5 @@ module Database.PostgreSQL.Simple.Field
      , RawResult(..)
      ) where
 
-import           Database.PostgreSQL.Simple.Implementation
+import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.LibPQ (Format(..), Oid)

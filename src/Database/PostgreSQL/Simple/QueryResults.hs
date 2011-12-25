@@ -25,7 +25,7 @@ import Control.Exception (SomeException(..), throw)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either()
-import Database.PostgreSQL.Simple.Implementation
+import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Result (ResultError(..), Result(..))
 import Database.PostgreSQL.Simple.Types (Only(..))
 

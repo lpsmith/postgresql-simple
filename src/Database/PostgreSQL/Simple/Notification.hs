@@ -19,7 +19,7 @@ module Database.PostgreSQL.Simple.Notification
 import           Control.Concurrent ( threadWaitRead )
 import           Control.Concurrent.MVar ( takeMVar, putMVar )
 import qualified Data.ByteString as B
-import           Database.PostgreSQL.Simple.Implementation
+import           Database.PostgreSQL.Simple.Internal
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.Posix.Types ( CPid )
 

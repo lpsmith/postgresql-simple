@@ -15,7 +15,7 @@ Build-type:          Simple
 -- Extra-source-files:
 
 -- Constraint on the version of Cabal needed to build this package.
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 
 Library
   hs-source-dirs: src
@@ -31,8 +31,8 @@ Library
      Database.PostgreSQL.Simple.QueryParams
      Database.PostgreSQL.Simple.QueryResults
      Database.PostgreSQL.Simple.Types
-  Other-modules:
-     Database.PostgreSQL.Simple.Implementation
+-- Other-modules:
+     Database.PostgreSQL.Simple.Internal
 
   Build-depends:
     attoparsec >= 0.8.5.3,
