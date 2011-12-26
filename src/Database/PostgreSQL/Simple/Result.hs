@@ -92,11 +92,11 @@ class Result a where
     -- Returns an exception if the conversion fails.  In the case of
     -- library instances,  this will usually be a 'ResultError',  but may
     -- be a 'UnicodeException'.
-{--
+
 instance (Result a) => Result (Maybe a) where
     convert _ Nothing = pure Nothing
     convert f bs      = Just <$> convert f bs
-
+{--
 instance Result Bool where
     convert = atto ok8 ((/=(0::Int)) <$> decimal)
 
