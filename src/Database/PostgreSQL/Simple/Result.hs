@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor, FlexibleInstances #-}
-{-# LANGUAGE PatternGuards, ScopedTypeVariables #-}
+{-# LANGUAGE PatternGuards, ScopedTypeVariables, OverloadedStrings #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.QueryResults
@@ -96,13 +96,15 @@ class Result a where
 instance (Result a) => Result (Maybe a) where
     convert _ Nothing = pure Nothing
     convert f bs      = Just <$> convert f bs
-{--
-instance Result Bool where
-    convert = atto ok8 ((/=(0::Int)) <$> decimal)
 
-instance Result Int8 where
-    convert = atto ok8 $ signed decimal
---}
+instance Result Bool where
+    convert f bs
+      | typeOid f /= builtin2oid Bool = returnError Incompatible f ""
+      | bs == Nothing                 = returnError UnexpectedNull f ""
+      | bs == Just "t"                = pure True
+      | bs == Just "f"                = pure False
+      | otherwise                     = returnError ConversionFailed f ""
+
 instance Result Int16 where
     convert = atto ok16 $ signed decimal
 
@@ -117,22 +119,7 @@ instance Result Int64 where
 
 instance Result Integer where
     convert = atto ok64 $ signed decimal
-{--
-instance Result Word8 where
-    convert = atto ok8 decimal
 
-instance Result Word16 where
-    convert = atto ok16 decimal
-
-instance Result Word32 where
-    convert = atto ok32 decimal
-
-instance Result Word where
-    convert = atto okWord decimal
-
-instance Result Word64 where
-    convert = atto ok64 decimal
---}
 {--
 instance Result Float where
     convert = atto ok (realToFrac <$> double)
@@ -176,7 +163,7 @@ instance Result UTCTime where
     convert f = doConvert f ok $ \bs ->
         case parseTime defaultTimeLocale "%F %T%Q%z" (B8.unpack bs ++ "00") of
           Just t -> Right t
-          Nothing -> conversionFailed f "UTCTime" "could not parse"
+          Nothing -> returnError ConversionFailed f "could not parse"
       where ok = mkCompats [TimestampWithTimeZone]
 {--
 instance Result Day where
@@ -234,24 +221,26 @@ doConvert :: forall a . (Typeable a)
 doConvert f types cvt (Just bs)
     | Just typ <- oid2builtin (typeOid f)
     , mkCompat typ `compat` types = cvt bs
-    | otherwise = incompatible f (typeOf (undefined::a)) "types incompatible"
-doConvert f _ cvt _ = left $ UnexpectedNull (B.unpack (typename f))
-                              (show (typeOf (undefined::a))) ""
+    | otherwise = returnError Incompatible f "types incompatible"
+doConvert f _ _ _ = returnError UnexpectedNull f ""
 
-incompatible :: Field -> TypeRep -> String -> Either SomeException a
-incompatible f r = left . Incompatible (B.unpack (typename f)) (show r)
 
-conversionFailed :: Field -> String -> String -> Either SomeException a
-conversionFailed f s = left . ConversionFailed (B.unpack (typename f)) s
+returnError :: forall a err . (Typeable a, Exception err)
+            => (String -> String -> String -> err)
+            -> Field -> String -> Either SomeException a
+returnError mkErr f = left . mkErr (B.unpack (typename f))
+                                   (show (typeOf (undefined :: a)))
 
-atto :: (Typeable a) => Compat -> Parser a -> Field -> Maybe ByteString -> Either SomeException a
-atto types p0 f dat = doConvert f types (go undefined p0) dat
+atto :: forall a. (Typeable a)
+     => Compat -> Parser a -> Field -> Maybe ByteString
+     -> Either SomeException a
+atto types p0 f dat = doConvert f types (go p0) dat
   where
-    go :: (Typeable a) => a -> Parser a -> ByteString -> Either SomeException a
-    go dummy p s =
+    go :: Parser a -> ByteString -> Either SomeException a
+    go p s =
         case parseOnly p s of
-          Left err -> conversionFailed f (show (typeOf dummy)) err
-          Right v  -> Right v
+          Left err -> returnError ConversionFailed f err
+          Right  v -> Right v
 
 instance Result RawResult where
    convert field rawData = Right (RawResult field rawData)
