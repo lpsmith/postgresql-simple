@@ -44,8 +44,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Time.Format (parseTime)
 import Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
 import Data.Typeable (TypeRep, Typeable, typeOf)
-import Data.Word ({- Word, Word8, Word16, Word32, -} Word64)
--- import Database.MySQL.Base.Types (Field(..), Type(..))
+import Data.Word (Word64)
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Field (Field(..), RawResult(..))
 import Database.PostgreSQL.Simple.BuiltinTypes
@@ -200,12 +199,9 @@ mkCompat = Compat . shiftL 1 . fromEnum
 
 compat :: Compat -> Compat -> Bool
 compat (Compat a) (Compat b) = a .&. b /= 0
-{--
-okText, ok8, ok16, ok32, ok64, okWord :: Compat
---}
+
+okText, ok16, ok32, ok64 :: Compat
 okText = mkCompats [Name,Text,Char,Bpchar,Varchar]
-{--}
---ok8  = mkCompats [Tiny]
 ok16 = mkCompats [Int2]
 ok32 = mkCompats [Int2,Int4]
 ok64 = mkCompats [Int2,Int4,Int8]
@@ -214,7 +210,7 @@ okInt = ok32
 #else
 okInt = ok64
 #endif
---}
+
 doConvert :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Either SomeException a)
           -> Maybe ByteString -> Either SomeException a

@@ -104,7 +104,8 @@ instance Param Null where
     {-# INLINE render #-}
 
 instance Param Bool where
-    render = Plain . integral . fromEnum
+    render True  = Plain (fromByteString "true")
+    render False = Plain (fromByteString "false")
     {-# INLINE render #-}
 
 instance Param Int8 where
