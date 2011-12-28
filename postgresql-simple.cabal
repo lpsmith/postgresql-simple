@@ -27,9 +27,10 @@ Library
      Database.PostgreSQL.Simple.LargeObjects
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Param
-     Database.PostgreSQL.Simple.Result
      Database.PostgreSQL.Simple.QueryParams
      Database.PostgreSQL.Simple.QueryResults
+     Database.PostgreSQL.Simple.Result
+     Database.PostgreSQL.Simple.SqlQQ
      Database.PostgreSQL.Simple.Types
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
@@ -45,6 +46,7 @@ Library
     postgresql-libpq >= 0.6,
     pcre-light,
     old-locale,
+    template-haskell,
     text >= 0.11.0.2,
     time
   -- Modules not exported by this package.
