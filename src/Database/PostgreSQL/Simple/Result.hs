@@ -48,7 +48,9 @@ import Data.Word (Word64)
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Field (Field(..), RawResult(..))
 import Database.PostgreSQL.Simple.BuiltinTypes
+import Database.PostgreSQL.Simple.Types (Binary(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
+import System.IO.Unsafe (unsafePerformIO)
 import System.Locale (defaultTimeLocale)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
@@ -135,8 +137,13 @@ instance Result (Ratio Integer) where
         where ok = mkCompats [Float,Double,Decimal,NewDecimal,Tiny,Short,Int24,
                               Long,LongLong]
 --}
+
+unBinary (Binary x) = x
+
 instance Result SB.ByteString where
-    convert f = doConvert f okText $ pure
+    convert f dat = if typeOid f == builtin2oid Bytea
+                      then unBinary <$> convert f dat
+                      else doConvert f okText' pure dat
 
 instance Result PQ.Oid where
     convert f dat = PQ.Oid <$> atto (mkCompat Oid) decimal f dat
@@ -144,6 +151,19 @@ instance Result PQ.Oid where
 instance Result LB.ByteString where
     convert f dat = LB.fromChunks . (:[]) <$> convert f dat
 
+unescapeBytea :: Field -> SB.ByteString
+              -> Either SomeException (Binary SB.ByteString)
+unescapeBytea f str = case unsafePerformIO (PQ.unescapeBytea str) of
+       Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
+       Just str -> pure (Binary str)
+
+instance Result (Binary SB.ByteString) where
+    convert f dat = case format f of
+      PQ.Text   -> doConvert f okBinary (unescapeBytea f) dat
+      PQ.Binary -> doConvert f okBinary (pure . Binary) dat
+
+instance Result (Binary LB.ByteString) where
+    convert f dat = Binary . LB.fromChunks . (:[]) . unBinary <$> convert f dat
 
 instance Result ST.Text where
     convert f = doConvert f okText $ (either left Right . ST.decodeUtf8')
@@ -200,8 +220,10 @@ mkCompat = Compat . shiftL 1 . fromEnum
 compat :: Compat -> Compat -> Bool
 compat (Compat a) (Compat b) = a .&. b /= 0
 
-okText, ok16, ok32, ok64 :: Compat
-okText = mkCompats [Name,Text,Char,Bpchar,Varchar]
+okText, okText', ok16, ok32, ok64 :: Compat
+okText   = mkCompats [Name,Text,Char,Bpchar,Varchar]
+okText'  = mkCompats [Name,Text,Char,Bpchar,Varchar,Unknown]
+okBinary = mkCompats [Bytea]
 ok16 = mkCompats [Int2]
 ok32 = mkCompats [Int2,Int4]
 ok64 = mkCompats [Int2,Int4,Int8]
