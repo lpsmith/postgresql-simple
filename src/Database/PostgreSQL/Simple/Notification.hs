@@ -2,7 +2,7 @@
 
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Database.HDBC.PostgreSQL.Notification
+-- Module      :  Database.PostgreSQL.Simple.Notification
 -- Copyright   :  (c) 2011 Leon P Smith
 -- License     :  BSD3
 --
@@ -57,6 +57,9 @@ getNotification conn = do
     --    3.  and if we raise it ourself
     -- If 1 happens, then it doesn't matter if the MVar is locked or not,
     -- and if 2 or 3 happens then the connection should be unlocked.
+    --
+    -- Note, however, that this function is not safe from asynchronous
+    -- exceptions,  which probably ought to be fixed.
     loop conn c = do
         mmsg <- PQ.notifies c
         case mmsg of
