@@ -730,10 +730,9 @@ getTypename :: Connection -> PQ.Oid -> IO ByteString
 getTypename conn@Connection{..} oid =
   case oid2builtin oid of
     Just builtin -> return $! builtin2typname builtin
-    Nothing -> do
-      oidmap <- takeMVar connectionObjects
+    Nothing -> modifyMVar connectionObjects $ \oidmap -> do
       case IntMap.lookup (oid2int oid) oidmap of
-        Just name -> putMVar connectionObjects oidmap >> return name
+        Just name -> return (oidmap, name)
         Nothing -> do
             names <- query conn "SELECT typname FROM pg_type WHERE oid=?"
                             (Only oid)
@@ -747,7 +746,4 @@ getTypename conn@Connection{..} oid =
                       _   -> fail "typename query returned more than one result"
                                -- oid is a primary key,  so the query should
                                -- never return more than one result
-            putMVar connectionObjects (IntMap.insert (oid2int oid) name oidmap)
-            return name
-          `onException` do
-            putMVar connectionObjects oidmap
+            return (IntMap.insert (oid2int oid) name oidmap, name)
