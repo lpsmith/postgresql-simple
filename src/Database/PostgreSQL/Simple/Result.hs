@@ -166,9 +166,6 @@ instance Result (Binary LB.ByteString) where
 
 instance Result ST.Text where
     convert f = doConvert f okText $ (either left Right . ST.decodeUtf8')
-{-              | isText f  = doConvert f okText $ (Right . ST.decodeUtf8)
-                | otherwise = incompatible f (typeOf ST.empty)
-                            "attempt to mix binary and text" -}
     -- FIXME:  check character encoding
 
 instance Result LT.Text where
@@ -183,30 +180,24 @@ instance Result UTCTime where
           Just t -> Right t
           Nothing -> returnError ConversionFailed f "could not parse"
       where ok = mkCompats [TimestampWithTimeZone]
-{--
+
 instance Result Day where
-    convert f = flip (atto ok) f $ case fieldType f of
-                                     Year -> year
-                                     _    -> date
-        where ok = mkCompats [Year,Date,NewDate]
-              year = fromGregorian <$> decimal <*> pure 1 <*> pure 1
+    convert f = atto ok date f
+        where ok = mkCompats [Date]
               date = fromGregorian <$> (decimal <* char '-')
                                    <*> (decimal <* char '-')
                                    <*> decimal
 
 instance Result TimeOfDay where
-    convert f = flip (atto ok) f $ do
+    convert f = atto' ok time f
+        where ok = mkCompats [Time]
+              time = do
                 hours <- decimal <* char ':'
                 mins <- decimal <* char ':'
                 secs <- decimal :: Parser Int
                 case makeTimeOfDayValid hours mins (fromIntegral secs) of
-                  Just t -> return t
-                  _      -> conversionFailed f "TimeOfDay" "could not parse"
-        where ok = mkCompats [Time]
-
-isText :: Field -> Bool
-isText f = fieldCharSet f /= 63
---}
+                  Just t -> return (pure t)
+                  _      -> return (returnError ConversionFailed f "could not parse")
 newtype Compat = Compat Word64
 
 mkCompats :: [BuiltinType] -> Compat
@@ -258,6 +249,17 @@ atto types p0 f dat = doConvert f types (go p0) dat
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
           Right  v -> Right v
+
+atto' :: forall a. (Typeable a)
+     => Compat -> Parser (Either SomeException a) -> Field -> Maybe ByteString
+     -> Either SomeException a
+atto' types p0 f dat = doConvert f types (go p0) dat
+  where
+    go :: Parser (Either SomeException a) -> ByteString -> Either SomeException a
+    go p s =
+        case parseOnly p s of
+          Left err -> returnError ConversionFailed f err
+          Right  v -> v
 
 instance Result RawResult where
    convert field rawData = Right (RawResult field rawData)
