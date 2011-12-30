@@ -55,6 +55,7 @@ module Database.PostgreSQL.Simple
     , Binary(..)
     , Only(..)
     -- ** Exceptions
+    , SqlError(..)
     , FormatError(fmtMessage, fmtQuery, fmtParams)
     , QueryError(qeMessage, qeQuery)
     , ResultError(errSQLType, errHaskellType, errMessage)
