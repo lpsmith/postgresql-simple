@@ -142,7 +142,7 @@ unBinary (Binary x) = x
 instance Result SB.ByteString where
     convert f dat = if typeOid f == builtin2oid Bytea
                       then unBinary <$> convert f dat
-                      else doConvert f okText' pure dat
+                      else doConvert f okText' (pure . B.copy) dat
 
 instance Result PQ.Oid where
     convert f dat = PQ.Oid <$> atto (mkCompat Oid) decimal f dat
@@ -159,7 +159,7 @@ unescapeBytea f str = case unsafePerformIO (PQ.unescapeBytea str) of
 instance Result (Binary SB.ByteString) where
     convert f dat = case format f of
       PQ.Text   -> doConvert f okBinary (unescapeBytea f) dat
-      PQ.Binary -> doConvert f okBinary (pure . Binary) dat
+      PQ.Binary -> doConvert f okBinary (pure . Binary . B.copy) dat
 
 instance Result (Binary LB.ByteString) where
     convert f dat = Binary . LB.fromChunks . (:[]) . unBinary <$> convert f dat

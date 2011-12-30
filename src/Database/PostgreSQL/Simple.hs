@@ -387,7 +387,7 @@ finishQuery conn q result = do
                       return Field{..}
         nrows <- PQ.ntuples result
         forM' 0 (nrows-1) $ \row -> do
-           values <- forM' 0 (ncols-1) (\col -> PQ.getvalue' result row col)
+           values <- forM' 0 (ncols-1) (\col -> PQ.getvalue result row col)
            case convertResults fields values of
              Left  err -> throwIO err
              Right a   -> return a
