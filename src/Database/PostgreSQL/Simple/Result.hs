@@ -121,22 +121,17 @@ instance Result Int64 where
 instance Result Integer where
     convert = atto ok64 $ signed decimal
 
-{--
 instance Result Float where
     convert = atto ok (realToFrac <$> double)
-        where ok = mkCompats [Float,Double,Decimal,NewDecimal,Tiny,Short,Int24]
+        where ok = mkCompats [Float4,Int2]
 
 instance Result Double where
     convert = atto ok double
-        where ok = mkCompats [Float,Double,Decimal,NewDecimal,Tiny,Short,Int24,
-                              Long]
---}
-{--
+        where ok = mkCompats [Float4,Float8,Int2,Int4]
+
 instance Result (Ratio Integer) where
     convert = atto ok rational
-        where ok = mkCompats [Float,Double,Decimal,NewDecimal,Tiny,Short,Int24,
-                              Long,LongLong]
---}
+        where ok = mkCompats [Float4,Float8,Int2,Int4,Numeric]
 
 unBinary (Binary x) = x
 
