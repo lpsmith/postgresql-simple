@@ -82,7 +82,9 @@ data ResultError = Incompatible { errSQLType :: String
 
 instance Exception ResultError
 
-left :: Exception a => a -> Either SomeException b
+type Status = Either SomeException
+
+left :: Exception a => a -> Status b
 left = Left . SomeException
 
 -- | A type that may be converted from a SQL type.
@@ -151,7 +153,7 @@ instance Result LB.ByteString where
     convert f dat = LB.fromChunks . (:[]) <$> convert f dat
 
 unescapeBytea :: Field -> SB.ByteString
-              -> Either SomeException (Binary SB.ByteString)
+              -> Status (Binary SB.ByteString)
 unescapeBytea f str = case unsafePerformIO (PQ.unescapeBytea str) of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
        Just str -> pure (Binary str)
@@ -224,8 +226,8 @@ okInt = ok64
 #endif
 
 doConvert :: forall a . (Typeable a)
-          => Field -> Compat -> (ByteString -> Either SomeException a)
-          -> Maybe ByteString -> Either SomeException a
+          => Field -> Compat -> (ByteString -> Status a)
+          -> Maybe ByteString -> Status a
 doConvert f types cvt (Just bs)
     | Just typ <- oid2builtin (typeOid f)
     , mkCompat typ `compat` types = cvt bs
@@ -235,27 +237,27 @@ doConvert f _ _ _ = returnError UnexpectedNull f ""
 
 returnError :: forall a err . (Typeable a, Exception err)
             => (String -> String -> String -> err)
-            -> Field -> String -> Either SomeException a
+            -> Field -> String -> Status a
 returnError mkErr f = left . mkErr (B.unpack (typename f))
                                    (show (typeOf (undefined :: a)))
 
 atto :: forall a. (Typeable a)
      => Compat -> Parser a -> Field -> Maybe ByteString
-     -> Either SomeException a
+     -> Status a
 atto types p0 f dat = doConvert f types (go p0) dat
   where
-    go :: Parser a -> ByteString -> Either SomeException a
+    go :: Parser a -> ByteString -> Status a
     go p s =
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
           Right  v -> Right v
 
 atto' :: forall a. (Typeable a)
-     => Compat -> Parser (Either SomeException a) -> Field -> Maybe ByteString
-     -> Either SomeException a
+     => Compat -> Parser (Status a) -> Field -> Maybe ByteString
+     -> Status a
 atto' types p0 f dat = doConvert f types (go p0) dat
   where
-    go :: Parser (Either SomeException a) -> ByteString -> Either SomeException a
+    go :: Parser (Status a) -> ByteString -> Status a
     go p s =
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
