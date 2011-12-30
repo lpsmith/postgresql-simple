@@ -1,5 +1,6 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, OverloadedStrings, DoAndIfThenElse, RecordWildCards, NamedFieldPuns #-}
-
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE DoAndIfThenElse, RecordWildCards, NamedFieldPuns    #-}
+------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -9,8 +10,10 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- A mid-level client library for the MySQL database, aimed at ease of
+-- A mid-level client library for the PostgreSQL database, aimed at ease of
 -- use and high performance.
+--
+------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple
     (
@@ -436,8 +439,8 @@ withResult fetchResult q act = bracket fetchResult Base.freeResult $ \r -> do
 -- 'Base.commit' before this function returns.
 --
 -- If the action throws /any/ kind of exception (not just a
--- MySQL-related exception), the transaction will be rolled back using
--- 'Base.rollback', then the exception will be rethrown.
+-- PostgreSQL-related exception), the transaction will be rolled back using
+-- 'rollback', then the exception will be rethrown.
 withTransaction :: Connection -> IO a -> IO a
 withTransaction conn act = do
   _ <- begin conn
@@ -449,21 +452,21 @@ withTransaction conn act = do
 -- rollback :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 rollback :: Connection -> IO ()
 rollback conn = do
-  _ <- execute_ conn "ABORT;"
+  _ <- execute_ conn "ABORT"
   return ()
 
 -- | Commit a transaction.
 -- commit :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 commit :: Connection -> IO ()
 commit conn = do
-  _ <- execute_ conn "COMMIT;"
+  _ <- execute_ conn "COMMIT"
   return ()
 
 -- | Begin a transaction.
 -- begin :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 begin :: Connection -> IO ()
 begin conn = do
-  _ <- execute_ conn "BEGIN;"
+  _ <- execute_ conn "BEGIN"
   return ()
 
 fmtError :: String -> Query -> [Action] -> a
@@ -500,7 +503,7 @@ fmtError msg q xs = throw FormatError {
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- >
--- > import Database.MySQL.Simple
+-- > import Database.PostgreSQL.Simple
 -- >
 -- > hello = do
 -- >   conn <- connect defaultConnectInfo
@@ -707,16 +710,15 @@ fmtError msg q xs = throw FormatError {
 -- permissive. Here are the rules.
 --
 -- * For numeric types, any Haskell type that can accurately represent
---   all values of the given MySQL type is considered \"compatible\".
---   For instance, you can always extract a MySQL @TINYINT@ column to
---   a Haskell 'Int'.  The Haskell 'Float' type can accurately
---   represent MySQL integer types of size up to @INT24@, so it is
---   considered compatble with those types.
+--   all values of the given PostgreSQL type is considered \"compatible\".
+--   For instance, you can always extract a PostgreSQL 16-bit @SMALLINT@ 
+--   column to a Haskell 'Int'.  The Haskell 'Float' type can accurately
+--   represent a @SMALLINT@, so it is considered compatble with those types.
 --
 -- * A numeric compatibility check is based only on the type of a
---   column, /not/ on its values. For instance, a MySQL @LONG_LONG@
---   column will be considered incompatible with a Haskell 'Int8',
---   even if it contains the value @1@.
+--   column, /not/ on its values. For instance, a PostgreSQL 64-bit
+--   @BIGINT@ column will be considered incompatible with a Haskell 
+--   'Int16', even if it contains the value @1@.
 --
 -- * If a numeric incompatibility is found, 'query' will throw a
 --   'ResultError'.

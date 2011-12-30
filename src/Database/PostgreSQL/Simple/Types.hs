@@ -50,7 +50,7 @@ instance Eq Null where
 --
 -- > {-# LANGUAGE OverloadedStrings #-}
 -- >
--- > import Database.MySQL.Simple
+-- > import Database.PostgreSQL.Simple
 -- >
 -- > q :: Query
 -- > q = "select ?"

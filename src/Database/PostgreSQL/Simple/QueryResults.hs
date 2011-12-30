@@ -1,7 +1,8 @@
 {-# LANGUAGE BangPatterns, OverloadedStrings #-}
 
+------------------------------------------------------------------------------
 -- |
--- Module:      Database.MySQL.Simpe.QueryResults
+-- Module:      Database.PostgreSQL.Simple.QueryResults
 -- Copyright:   (c) 2011 MailRank, Inc.
 --              (c) 2011 Leon P Smith
 -- License:     BSD3
@@ -14,6 +15,7 @@
 --
 -- Predefined instances are provided for tuples containing up to ten
 -- elements.
+------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.QueryResults
     (
