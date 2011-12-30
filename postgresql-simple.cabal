@@ -1,6 +1,8 @@
 Name:                postgresql-simple
 Version:             0.0
 Synopsis:            Mid-Level PostgreSQL client library
+Description:
+    Mid-Level PostgreSQL client library, forked from mysql-simple.
 License:             BSD3
 License-file:        LICENSE
 Author:              Bryan O'Sullivan, Leon P Smith
@@ -10,16 +12,10 @@ Copyright:           (c) 2011 MailRank, Inc.
 Category:            Database
 Build-type:          Simple
 
--- Extra files to be distributed with the package, such as examples or
--- a README.
--- Extra-source-files:
-
--- Constraint on the version of Cabal needed to build this package.
 Cabal-version:       >=1.6
 
 Library
   hs-source-dirs: src
-  -- Modules exported by the library.
   Exposed-modules:
      Database.PostgreSQL.Simple
      Database.PostgreSQL.Simple.BuiltinTypes
@@ -49,11 +45,6 @@ Library
     template-haskell,
     text >= 0.11.0.2,
     time
-  -- Modules not exported by this package.
-  -- Other-modules:
-
-  -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
-  -- Build-tools:
 
 source-repository head
   type:     git
