@@ -138,9 +138,10 @@ exec conn sql =
         mres <- PQ.exec h sql
         case mres of
           Nothing -> do
-            msg <- PQ.errorMessage h
-            -- FIXME better error message
-            fail ("Postgres Error:  " ++ show msg)
+            msg <- maybe "execute error" id <$> PQ.errorMessage h
+            throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
+                               , sqlErrorMsg    = msg
+                               , sqlState       = ""  }
           Just res -> do
             return res
 

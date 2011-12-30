@@ -16,8 +16,8 @@
 -- A Haskell numeric type is considered to be compatible with all
 -- PostgreSQL numeric types that are less accurate than it. For instance,
 -- the Haskell 'Double' type is compatible with the PostgreSQL's 32-bit
--- @Int@ type because it can represent a @Int@ exactly. On the other hand, 
--- since a 'Double' might lose precision if representing a 64-bit @BigInt@, 
+-- @Int@ type because it can represent a @Int@ exactly. On the other hand,
+-- since a 'Double' might lose precision if representing a 64-bit @BigInt@,
 -- the two are /not/ considered compatible.
 --
 ------------------------------------------------------------------------------

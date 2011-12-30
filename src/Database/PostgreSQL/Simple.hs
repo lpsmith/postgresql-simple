@@ -235,7 +235,6 @@ finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
 finishExecute conn q result = do
     status <- PQ.resultStatus result
     case status of
-      PQ.EmptyQuery -> fail "empty query" -- FIXME: error message
       PQ.CommandOk -> do
           ncols <- PQ.nfields result
           if ncols /= 0
@@ -256,10 +255,10 @@ finishExecute conn q result = do
         errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
         statusmsg <- PQ.resStatus status
         state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-        throw $ SqlError { sqlState = state
-                         , sqlNativeError = 0  -- FIXME
-                         , sqlErrorMsg = B.concat [ "execute: ", statusmsg
-                                                  , ": ", errormsg ]}
+        throwIO $ SqlError { sqlState = state
+                           , sqlNativeError = fromEnum status
+                           , sqlErrorMsg = B.concat [ "execute: ", statusmsg
+                                                    , ": ", errormsg ]}
     where
      toInteger str = B.foldl' delta 0 str
                 where
@@ -377,7 +376,6 @@ finishQuery :: (QueryResults r) => Connection -> Query -> PQ.Result -> IO [r]
 finishQuery conn q result = do
   status <- PQ.resultStatus result
   case status of
-    PQ.EmptyQuery -> fail "empty query" -- FIXME: error message
     PQ.CommandOk -> do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
@@ -398,10 +396,10 @@ finishQuery conn q result = do
       errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
       statusmsg <- PQ.resStatus status
       state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-      throw $ SqlError { sqlState = state
-                       , sqlNativeError = 0 -- FIXME
-                       , sqlErrorMsg = B.concat [ "execute: ", statusmsg
-                                                , ": ", errormsg ]}
+      throwIO $ SqlError { sqlState = state
+                         , sqlNativeError = fromEnum status
+                         , sqlErrorMsg = B.concat [ "query: ", statusmsg
+                                                  , ": ", errormsg ]}
 
 {--
 withResult (Base.storeResult conn) q $ \r fs -> do
@@ -711,13 +709,13 @@ fmtError msg q xs = throw FormatError {
 --
 -- * For numeric types, any Haskell type that can accurately represent
 --   all values of the given PostgreSQL type is considered \"compatible\".
---   For instance, you can always extract a PostgreSQL 16-bit @SMALLINT@ 
+--   For instance, you can always extract a PostgreSQL 16-bit @SMALLINT@
 --   column to a Haskell 'Int'.  The Haskell 'Float' type can accurately
 --   represent a @SMALLINT@, so it is considered compatble with those types.
 --
 -- * A numeric compatibility check is based only on the type of a
 --   column, /not/ on its values. For instance, a PostgreSQL 64-bit
---   @BIGINT@ column will be considered incompatible with a Haskell 
+--   @BIGINT@ column will be considered incompatible with a Haskell
 --   'Int16', even if it contains the value @1@.
 --
 -- * If a numeric incompatibility is found, 'query' will throw a
