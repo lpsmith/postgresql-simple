@@ -43,7 +43,7 @@ Library
     pcre-light,
     old-locale,
     template-haskell,
-    text >= 0.11.0.2,
+    text >= 0.11.1,
     time
 
 source-repository head
