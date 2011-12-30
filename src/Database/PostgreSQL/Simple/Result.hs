@@ -48,7 +48,7 @@ import Data.Word (Word64)
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Field (Field(..), RawResult(..))
 import Database.PostgreSQL.Simple.BuiltinTypes
-import Database.PostgreSQL.Simple.Types (Binary(..))
+import Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import System.IO.Unsafe (unsafePerformIO)
 import System.Locale (defaultTimeLocale)
@@ -97,6 +97,10 @@ class Result a where
 instance (Result a) => Result (Maybe a) where
     convert _ Nothing = pure Nothing
     convert f bs      = Just <$> convert f bs
+
+instance Result Null where
+    convert _ Nothing  = pure Null
+    convert f (Just _) = returnError ConversionFailed f "data is not null"
 
 instance Result Bool where
     convert f bs
