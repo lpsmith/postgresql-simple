@@ -90,9 +90,17 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
     conn <- PQ.connectdb connstr
-    connectionHandle <- newMVar (Just conn)
-    connectionObjects <- newMVar (IntMap.empty)
-    return Connection{..}
+    stat <- PQ.status conn
+    case stat of
+      PQ.ConnectionOk -> do
+          connectionHandle <- newMVar (Just conn)
+          connectionObjects <- newMVar (IntMap.empty)
+          return Connection{..}
+      _ -> do
+          msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
+          throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
+                             , sqlErrorMsg    = msg
+                             , sqlState       = ""  }
 
 postgreSQLConnectionString :: ConnectInfo -> ByteString
 postgreSQLConnectionString connectInfo = fromString connstr
