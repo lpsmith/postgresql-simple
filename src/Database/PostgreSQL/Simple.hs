@@ -443,26 +443,6 @@ finishFold conn c q a_ f = loop a_
         Nothing -> return ()
         Just  _ -> clear c
 
-
-
-{--
-finishFold :: (QueryResults r) =>
-                Connection -> Query -> a -> (a -> r -> IO a) -> IO a
-finishFold conn q z0 f = withResult (Base.useResult conn) q $ \r fs ->
-  flip fix z0 $ \loop z -> do
-    row <- Base.fetchRow r
-    case row of
-      [] -> return z
-      _  -> (f z $! convertResults fs row) >>= loop
---}
-{--
-withResult :: (IO Result) -> Query -> (Result -> [Field] -> IO a) -> IO a
-withResult fetchResult q act = bracket fetchResult Base.freeResult $ \r -> do
-  ncols <- Base.fieldCount (Right r)
-  if ncols == 0
-    then throwIO $ QueryError "query resulted in zero-column result" q
-    else act r =<< Base.fetchFields r
---}
 -- | Execute an action inside a SQL transaction.
 --
 -- This function initiates a transaction with a \"@begin
