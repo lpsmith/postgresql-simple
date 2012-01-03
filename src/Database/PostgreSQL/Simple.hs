@@ -68,13 +68,11 @@ module Database.PostgreSQL.Simple
     -- * Queries that return results
     , query
     , query_
-{--
     -- * Queries that stream results
     , fold
     , fold_
     , forEach
     , forEach_
---}
     -- * Statements that do not return results
     , execute
     , execute_
@@ -96,30 +94,25 @@ import Blaze.ByteString.Builder.Char8 (fromChar)
 import Control.Applicative ((<$>), pure)
 import Control.Concurrent.MVar
 import Control.Exception (Exception, bracket, onException, throw, throwIO)
-import Control.Monad (forM)
+import Control.Monad (foldM)
 import Control.Monad.Fix (fix)
 import Data.ByteString (ByteString)
--- import qualified Data.ByteString as B (unpack)
 import Data.Char(ord)
 import Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import Data.List (intersperse)
 import Data.Monoid (mappend, mconcat)
 import Data.Typeable (Typeable)
---import Database.MySQL.Base (Connection, Result)
---import Database.MySQL.Base.Types (Field)
 import Database.PostgreSQL.Simple.BuiltinTypes (oid2builtin, builtin2typname)
 import Database.PostgreSQL.Simple.Param (Action(..), inQuotes)
 import Database.PostgreSQL.Simple.QueryParams (QueryParams(..))
 import Database.PostgreSQL.Simple.Result (ResultError(..))
 import Database.PostgreSQL.Simple.QueryResults (QueryResults(..))
--- import Database.PostgreSQL.Simple.Result (ResultError(..))
 import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Only(..), Query(..))
 import Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
 import Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
---import qualified Database.MySQL.Base as Base
 
 -- | Exception thrown if a 'Query' could not be formatted correctly.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -296,7 +289,7 @@ query_ :: (QueryResults r) => Connection -> Query -> IO [r]
 query_ conn q@(Query que) = do
   result <- exec conn que
   finishQuery conn q result
-{--
+
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. Results are streamed incrementally from the server, and
 -- consumed via a left fold.
@@ -327,11 +320,16 @@ fold :: (QueryParams q, QueryResults r) =>
      -> a                       -- ^ Initial state for result consumer.
      -> (a -> r -> IO a)        -- ^ Result consumer.
      -> IO a
-fold conn template qs z f = do
-  Base.query conn =<< formatQuery conn template qs
-  finishFold conn template z f
---}
-{--
+fold conn template qs z f = withConnection conn $ \c -> do
+  success <- PQ.sendQuery c =<< formatQuery conn template qs
+  if success
+    then finishFold conn c template z f
+    else do
+        msg <- maybe "fold error" id <$> PQ.errorMessage c
+        throwIO $ SqlError { sqlNativeError = -1
+                           , sqlErrorMsg    = msg
+                           , sqlState       = ""  }
+
 -- | A version of 'fold' that does not perform query substitution.
 fold_ :: (QueryResults r) =>
          Connection
@@ -339,11 +337,16 @@ fold_ :: (QueryResults r) =>
       -> a                      -- ^ Initial state for result consumer.
       -> (a -> r -> IO a)       -- ^ Result consumer.
       -> IO a
-fold_ conn q@(Query que) z f = do
-  Base.query conn que
-  finishFold conn q z f
---}
-{--
+fold_ conn q@(Query que) z f = withConnection conn $ \c -> do
+  success <- PQ.sendQuery c que
+  if success
+    then finishFold conn c q z f
+    else do
+        msg <- maybe "fold_ error" id <$> PQ.errorMessage c
+        throwIO $ SqlError { sqlNativeError = -1
+                           , sqlErrorMsg    = msg
+                           , sqlState       = ""  }
+
 -- | A version of 'fold' that does not transform a state value.
 forEach :: (QueryParams q, QueryResults r) =>
            Connection
@@ -362,7 +365,6 @@ forEach_ :: (QueryResults r) =>
          -> IO ()
 forEach_ conn template = fold_ conn template () . const
 {-# INLINE forEach_ #-}
---}
 
 forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
 forM' lo hi m = loop hi []
@@ -402,16 +404,47 @@ finishQuery conn q result = do
                          , sqlErrorMsg = B.concat [ "query: ", statusmsg
                                                   , ": ", errormsg ]}
 
-{--
-withResult (Base.storeResult conn) q $ \r fs -> do
-  status <-
-/  flip fix [] $ \loop acc -> do
-    row <- Base.fetchRow r
-    case row of
-      [] -> return (reverse acc)
-      _  -> let !c = convertResults fs row
-            in loop (c:acc)
---}
+
+finishFold :: (QueryResults r) =>
+              Connection
+           -> PQ.Connection
+           -> Query                  -- ^ Query.
+           -> a                      -- ^ Initial state for result consumer.
+           -> (a -> r -> IO a)       -- ^ Result consumer.
+           -> IO a
+finishFold conn c q a_ f = loop a_
+  where
+    loop a = do
+      mres <- PQ.getResult c
+      case mres of
+        Nothing -> return a
+        Just result -> do
+            stat <- PQ.resultStatus result
+            case stat of
+              PQ.TuplesOk -> do
+                  ncols  <- PQ.nfields result
+                  fields <- forM' 0 (ncols-1) $ \column -> do
+                                type_oid <- PQ.ftype result column
+                                typename <- getTypename conn type_oid
+                                return Field{..}
+                  nrows <- PQ.ntuples result
+                  a' <- foldM (\a row -> do
+                    values <- forM' 0 (ncols-1) (PQ.getvalue result row)
+                    case convertResults fields values of
+                      Left  err -> clear c >> throwIO err
+                      Right r   -> f a r)
+                            a [0..nrows-1]
+                  loop a'
+              _ -> clear c >> fail "FIXME:  finishFold not PQ.TuplesOk"
+
+    clear c = do
+      mres <- PQ.getResult c
+      case mres of
+        Nothing -> return ()
+        Just  _ -> clear c
+
+
+
 {--
 finishFold :: (QueryResults r) =>
                 Connection -> Query -> a -> (a -> r -> IO a) -> IO a
