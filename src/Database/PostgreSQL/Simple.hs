@@ -435,8 +435,16 @@ finishFold conn c q a_ f = loop a_
                       Right r   -> f a r)
                             a [0..nrows-1]
                   loop a'
-              _ -> clear c >> fail "FIXME:  finishFold not PQ.TuplesOk"
-
+              _ -> do
+                  errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
+                  statusmsg <- PQ.resStatus stat
+                  state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+                  clear c
+                  throwIO $ SqlError {
+                      sqlState = state,
+                      sqlNativeError = fromEnum stat,
+                      sqlErrorMsg = B.concat [ "fold: ", statusmsg
+                                             , ": ", errormsg ]}
     clear c = do
       mres <- PQ.getResult c
       case mres of
