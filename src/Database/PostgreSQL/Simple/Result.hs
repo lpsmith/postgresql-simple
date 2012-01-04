@@ -200,6 +200,14 @@ instance Result TimeOfDay where
                 case makeTimeOfDayValid hours mins (fromIntegral secs) of
                   Just t -> return (pure t)
                   _      -> return (returnError ConversionFailed f "could not parse")
+
+instance (Result a, Result b) => Result (Either a b) where
+    convert f dat = case convert f dat of
+                      Right x -> Right (Right x)
+                      Left  _ -> case convert f dat of
+                                   Right x -> Right (Left x)
+                                   Left  e -> Left e
+
 newtype Compat = Compat Word64
 
 mkCompats :: [BuiltinType] -> Compat
