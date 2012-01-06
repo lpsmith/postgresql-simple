@@ -39,7 +39,7 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    postgresql-libpq >= 0.6,
+    postgresql-libpq >= 0.6.2,
     pcre-light,
     old-locale,
     template-haskell,

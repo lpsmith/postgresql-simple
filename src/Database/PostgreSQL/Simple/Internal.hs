@@ -15,6 +15,8 @@ import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
+import           Foreign.ForeignPtr (newForeignPtr_, unsafeForeignPtrToPtr)
+import           Foreign.Ptr (nullPtr)
 import           System.IO.Unsafe (unsafePerformIO)
 
 -- | A Field represents metadata about a particular field
@@ -49,7 +51,7 @@ typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
 
 
 data Connection = Connection {
-     connectionHandle  :: MVar (Maybe PQ.Connection)
+     connectionHandle  :: MVar PQ.Connection
    , connectionObjects :: MVar (IntMap.IntMap ByteString)
    }
 
@@ -93,7 +95,7 @@ connectPostgreSQL connstr = do
     stat <- PQ.status conn
     case stat of
       PQ.ConnectionOk -> do
-          connectionHandle <- newMVar (Just conn)
+          connectionHandle  <- newMVar conn
           connectionObjects <- newMVar (IntMap.empty)
           return Connection{..}
       _ -> do
@@ -159,22 +161,21 @@ disconnectedError = SqlError {
                       sqlState       = ""
                     }
 
-
 -- | Atomically perform an action with the database handle, if there is one.
 withConnection :: Connection -> (PQ.Connection -> IO a) -> IO a
 withConnection Connection{..} m = do
-  withMVar connectionHandle $ \h -> do
-    case h of
-      Just h -> m h
-      -- TODO: Use extensible exceptions.
-      Nothing -> throwIO disconnectedError
+    withMVar connectionHandle $ \conn -> do
+        if PQ.isNullConnection conn
+          then throwIO disconnectedError
+          else m conn
 
 close :: Connection -> IO ()
-close Connection{..} = do
-    mconn <- takeMVar connectionHandle
-    case mconn of
-         Just conn -> PQ.finish conn
-         Nothing   -> return ()
-      `finally` putMVar connectionHandle Nothing
+close Connection{..} =
+    mask $ \restore -> (do
+            conn <- takeMVar connectionHandle
+            restore (PQ.finish conn)
+        `finally` do
+            putMVar connectionHandle =<< PQ.newNullConnection
+        )
 
 data RawResult = RawResult { rawField :: Field, rawData :: Maybe ByteString }
