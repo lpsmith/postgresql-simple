@@ -15,8 +15,6 @@ import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
-import           Foreign.ForeignPtr (newForeignPtr_, unsafeForeignPtrToPtr)
-import           Foreign.Ptr (nullPtr)
 import           System.IO.Unsafe (unsafePerformIO)
 
 -- | A Field represents metadata about a particular field
