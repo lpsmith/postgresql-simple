@@ -51,8 +51,8 @@ typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
 
 
 data Connection = Connection {
-     connectionHandle  :: MVar PQ.Connection
-   , connectionObjects :: MVar (IntMap.IntMap ByteString)
+     connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
+   , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap ByteString))
    }
 
 data SqlType
