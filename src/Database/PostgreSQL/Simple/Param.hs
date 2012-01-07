@@ -17,6 +17,7 @@ module Database.PostgreSQL.Simple.Param
       Action(..)
     , Param(..)
     , inQuotes
+    , renderNull
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, fromLazyByteString,
