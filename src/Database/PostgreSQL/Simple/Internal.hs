@@ -1,5 +1,21 @@
 {-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+------------------------------------------------------------------------------
+-- |
+-- Module:      Database.PostgreSQL.Simple.Internal
+-- Copyright:   (c) 2011 Leon P Smith
+-- License:     BSD3
+-- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Stability:   experimental
+-- Portability: portable
+--
+-- Internal bits.  This interface is less stable and can change at any time.
+-- Also,  at the moment there are things in here that aren't particularly
+-- internal and are exported elsewhere;  these will eventually disappear
+-- from this module.
+--
+------------------------------------------------------------------------------
+
 module Database.PostgreSQL.Simple.Internal where
 
 import Prelude hiding (catch)
@@ -73,6 +89,24 @@ data ConnectInfo = ConnectInfo {
     , connectDatabase :: String
     } deriving (Eq,Read,Show,Typeable)
 
+-- | Default information for setting up a connection.
+--
+-- Defaults are as follows:
+--
+-- * Server on @localhost@
+--
+-- * Port on @5432@
+--
+-- * User @postgres@
+--
+-- * No password
+--
+-- * Database @postgres@
+--
+-- Use as in the following example:
+--
+-- > connect defaultConnectInfo { connectHost = "db.example.com" }
+
 defaultConnectInfo :: ConnectInfo
 defaultConnectInfo = ConnectInfo {
                        connectHost = "127.0.0.1"
@@ -86,6 +120,10 @@ defaultConnectInfo = ConnectInfo {
 --   an exception if it cannot connect.
 connect :: ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
+
+-- | Attempt to make a connection based on a libpq connection string.
+--   See <http://www.postgresql.org/docs/9.1/static/libpq-connect.html>
+--   for more information.
 
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
@@ -101,6 +139,8 @@ connectPostgreSQL connstr = do
           throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
                              , sqlErrorMsg    = msg
                              , sqlState       = ""  }
+
+-- | Turns a 'ConnectInfo' data structure into a libpq connection string.
 
 postgreSQLConnectionString :: ConnectInfo -> ByteString
 postgreSQLConnectionString connectInfo = fromString connstr
