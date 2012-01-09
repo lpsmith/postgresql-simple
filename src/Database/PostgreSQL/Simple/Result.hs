@@ -178,10 +178,10 @@ instance Result [Char] where
 
 instance Result UTCTime where
     convert f = doConvert f ok $ \bs ->
-        case parseTime defaultTimeLocale "%F %T%Q%z" (B8.unpack bs ++ "00") of
+        case parseTime defaultTimeLocale "%F %T%Q" (B8.unpack bs) of
           Just t -> Right t
           Nothing -> returnError ConversionFailed f "could not parse"
-      where ok = mkCompats [TimestampWithTimeZone]
+      where ok = mkCompats [Timestamp]
 
 instance Result Day where
     convert f = atto ok date f
