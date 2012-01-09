@@ -177,11 +177,18 @@ instance Result [Char] where
     convert f dat = ST.unpack <$> convert f dat
 
 instance Result UTCTime where
-    convert f = doConvert f ok $ \bs ->
-        case parseTime defaultTimeLocale "%F %T%Q%z" (B8.unpack bs ++ "00") of
-          Just t -> Right t
-          Nothing -> returnError ConversionFailed f "could not parse"
-      where ok = mkCompats [TimestampWithTimeZone]
+    convert f =
+        case oid2builtin (typeOid f) of
+          Just Timestamp             -> doIt "%F %T%Q"   id
+          Just TimestampWithTimeZone -> doIt "%F %T%Q%z" (++ "00")
+          _ -> const $ returnError Incompatible f "types incompatible"
+        where
+          doIt _   _          Nothing   = returnError UnexpectedNull f ""
+          doIt fmt preprocess (Just bs) =
+              case parseTime defaultTimeLocale fmt str of
+                Just t  -> Right t
+                Nothing -> returnError ConversionFailed f "could not parse"
+              where str = preprocess (B8.unpack bs)
 
 instance Result Day where
     convert f = atto ok date f
