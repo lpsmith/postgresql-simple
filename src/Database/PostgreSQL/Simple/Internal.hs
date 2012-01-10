@@ -82,11 +82,11 @@ data SqlError = SqlError {
 instance Exception SqlError
 
 data ConnectInfo = ConnectInfo {
-      connectHost :: String
-    , connectPort :: Word16
-    , connectUser :: String
-    , connectPassword :: String
-    , connectDatabase :: String
+      connectHost :: Maybe String
+    , connectPort :: Maybe Word16
+    , connectUser :: Maybe String
+    , connectPassword :: Maybe String
+    , connectDatabase :: Maybe String
     } deriving (Eq,Read,Show,Typeable)
 
 -- | Default information for setting up a connection.
@@ -109,11 +109,11 @@ data ConnectInfo = ConnectInfo {
 
 defaultConnectInfo :: ConnectInfo
 defaultConnectInfo = ConnectInfo {
-                       connectHost = "127.0.0.1"
-                     , connectPort = 5432
-                     , connectUser = "postgres"
-                     , connectPassword = ""
-                     , connectDatabase = ""
+                       connectHost = Just "127.0.0.1"
+                     , connectPort = Just 5432
+                     , connectUser = Just "postgres"
+                     , connectPassword = Nothing
+                     , connectDatabase = Nothing
                      }
 
 -- | Connect with the given username to the given database. Will throw
@@ -150,17 +150,15 @@ postgreSQLConnectionString connectInfo = fromString connstr
             $ str "user="     connectUser
             $ str "password=" connectPassword
             $ str "dbname="   connectDatabase
-            $ []
+            $ ""
 
-    str name field
-      | null value = id
-      | otherwise  = (name ++) . quote value . space
-        where value = field connectInfo
+    str name field = case field connectInfo of
+      Nothing    -> id
+      Just value -> showString name . quote value . space
 
-    num name field
-      | value <= 0 = id
-      | otherwise  = (name ++) . (show value ++) . space
-        where value = field connectInfo
+    num name field = case field connectInfo of
+      Nothing    -> id
+      Just value -> showString name . shows value . space
 
     quote str rest = '\'' : foldr delta ('\'' : rest) str
        where
