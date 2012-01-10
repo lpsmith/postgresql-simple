@@ -156,12 +156,12 @@ postgreSQLConnectionString connectInfo = fromString connstr
 
     str name field
       | null value = id
-      | otherwise  = (name ++) . quote value . space
+      | otherwise  = showString name . quote value . space
         where value = field connectInfo
 
     num name field
       | value <= 0 = id
-      | otherwise  = (name ++) . (show value ++) . space
+      | otherwise  = showString name . shows value . space
         where value = field connectInfo
 
     quote str rest = '\'' : foldr delta ('\'' : rest) str
