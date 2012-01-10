@@ -150,15 +150,15 @@ postgreSQLConnectionString connectInfo = fromString connstr
             $ str "user="     connectUser
             $ str "password=" connectPassword
             $ str "dbname="   connectDatabase
-            $ []
+            $ ""
 
     str name field = case field connectInfo of
       Nothing    -> id
-      Just value -> (name ++) . quote value . space
+      Just value -> showString name . quote value . space
 
     num name field = case field connectInfo of
       Nothing    -> id
-      Just value -> (name ++) . shows value . space
+      Just value -> showString name . shows value . space
 
     quote str rest = '\'' : foldr delta ('\'' : rest) str
        where
