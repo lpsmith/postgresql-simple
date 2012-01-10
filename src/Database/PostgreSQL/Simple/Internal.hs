@@ -216,4 +216,10 @@ close Connection{..} =
             putMVar connectionHandle =<< PQ.newNullConnection
         )
 
+newNullConnection :: IO Connection
+newNullConnection = do
+    connectionHandle  <- newMVar =<< PQ.newNullConnection
+    connectionObjects <- newMVar IntMap.empty
+    return Connection{..}
+
 data RawResult = RawResult { rawField :: Field, rawData :: Maybe ByteString }
