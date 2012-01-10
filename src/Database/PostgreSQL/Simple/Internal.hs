@@ -158,7 +158,7 @@ postgreSQLConnectionString connectInfo = fromString connstr
 
     num name field = case field connectInfo of
       Nothing    -> id
-      Just value -> (name ++) . (show value ++) . space
+      Just value -> (name ++) . shows value . space
 
     quote str rest = '\'' : foldr delta ('\'' : rest) str
        where
