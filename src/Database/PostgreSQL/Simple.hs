@@ -70,7 +70,7 @@ module Database.PostgreSQL.Simple
     , query_
     -- * Queries that stream results
     , FetchQuantity(..)
-    , FoldOptions
+    , FoldOptions(..)
     , defaultFoldOptions
     , fold
     , foldWithOptions
