@@ -85,8 +85,11 @@ module Database.PostgreSQL.Simple
 --    , Base.insertID
     -- * Transaction handling
     , withTransaction
+    , withTransactionLevel
+    , IsolationLevel(..)
 --    , Base.autocommit
     , begin
+    , beginLevel
     , commit
     , rollback
     -- * Helper functions
@@ -332,12 +335,14 @@ data FetchQuantity
    = Automatic
    | Fixed !Int
 
-newtype FoldOptions
+data FoldOptions
    = FoldOptions {
-       fetchQuantity :: FetchQuantity
+       fetchQuantity  :: !FetchQuantity,
+       isolationLevel :: !IsolationLevel
      }
 
-defaultFoldOptions = FoldOptions { fetchQuantity = Automatic }
+defaultFoldOptions = FoldOptions { fetchQuantity = Automatic
+                                 , isolationLevel = ReadCommitted }
 
 foldWithOptions :: ( QueryResults row, QueryParams params )
                 => FoldOptions
@@ -379,10 +384,10 @@ doFold :: ( QueryResults row )
        -> a
        -> (a -> row -> IO a)
        -> IO a
-doFold opts conn _template q a f = do
+doFold FoldOptions{..} conn _template q a f = do
     stat <- withConnection conn PQ.transactionStatus
     case stat of
-      PQ.TransIdle    -> withTransaction conn go
+      PQ.TransIdle    -> withTransactionLevel isolationLevel conn go
       PQ.TransInTrans -> go
       PQ.TransActive  -> fail "foldWithOpts FIXME:  PQ.TransActive"
          -- This _shouldn't_ occur in the current incarnation of
@@ -409,7 +414,7 @@ doFold opts conn _template q a f = do
 --   are of highly variable size.
 --   A refinement of this technique is to pick this number adaptively
 --   as results are read in from the database.
-    chunkSize = case fetchQuantity opts of
+    chunkSize = case fetchQuantity of
                  Automatic   -> 256
                  Fixed n     -> n
     loop a = do
@@ -473,6 +478,17 @@ finishQuery conn q result = do
                          , sqlErrorMsg = B.concat [ "query: ", statusmsg
                                                   , ": ", errormsg ]}
 
+-- | Of the four isolation levels defined by the SQL standard,
+-- these are the three levels distinguished by PostgreSQL as of version 9.0.
+-- See <http://www.postgresql.org/docs/9.1/static/transaction-iso.html>
+-- for more information.
+
+data IsolationLevel
+   = ReadCommitted
+   | RepeatableRead
+   | Serializable
+     deriving (Show, Eq, Ord, Enum, Bounded)
+
 -- | Execute an action inside a SQL transaction.
 --
 -- This function initiates a transaction with a \"@begin
@@ -484,8 +500,12 @@ finishQuery conn q result = do
 -- PostgreSQL-related exception), the transaction will be rolled back using
 -- 'rollback', then the exception will be rethrown.
 withTransaction :: Connection -> IO a -> IO a
-withTransaction conn act = do
-  _ <- begin conn
+withTransaction = withTransactionLevel ReadCommitted
+
+-- | Execute an action inside a SQL transaction with a given isolation level.
+withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
+withTransactionLevel isolationLevel conn act = do
+  beginLevel isolationLevel conn
   r <- act `onException` rollback conn
   commit conn
   return r
@@ -493,22 +513,23 @@ withTransaction conn act = do
 -- | Rollback a transaction.
 -- rollback :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 rollback :: Connection -> IO ()
-rollback conn = do
-  _ <- execute_ conn "ABORT"
-  return ()
+rollback conn = execute_ conn "ABORT" >> return ()
 
 -- | Commit a transaction.
--- commit :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 commit :: Connection -> IO ()
-commit conn = do
-  _ <- execute_ conn "COMMIT"
-  return ()
+commit conn = execute_ conn "COMMIT" >> return ()
 
 -- | Begin a transaction.
--- begin :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 begin :: Connection -> IO ()
-begin conn = do
-  _ <- execute_ conn "BEGIN"
+begin = beginLevel ReadCommitted
+
+-- | Begin a transaction with a given isolation level
+beginLevel :: IsolationLevel -> Connection -> IO ()
+beginLevel isolationLevel conn = do
+  execute_ conn $! case isolationLevel of
+                     ReadCommitted  -> "BEGIN"
+                     RepeatableRead -> "BEGIN ISOLATION LEVEL REPEATABLE READ"
+                     Serializable   -> "BEGIN ISOLATION LEVEL SERIALIZABLE"
   return ()
 
 fmtError :: String -> Query -> [Action] -> a
