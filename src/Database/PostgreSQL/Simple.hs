@@ -69,8 +69,8 @@ module Database.PostgreSQL.Simple
     , query
     , query_
     -- * Queries that stream results
-    , FetchQuantity(..)
     , FoldOptions(..)
+    , FetchQuantity(..)
     , defaultFoldOptions
     , fold
     , foldWithOptions
@@ -85,11 +85,13 @@ module Database.PostgreSQL.Simple
 --    , Base.insertID
     -- * Transaction handling
     , withTransaction
-    , withTransactionLevel
+    , TransactionMode(..)
     , IsolationLevel(..)
+    , ReadWriteMode(..)
+    , withTransactionMode
 --    , Base.autocommit
     , begin
-    , beginLevel
+    , beginMode
     , commit
     , rollback
     -- * Helper functions
@@ -332,12 +334,14 @@ data FetchQuantity
 
 data FoldOptions
    = FoldOptions {
-       fetchQuantity  :: !FetchQuantity,
-       isolationLevel :: !IsolationLevel
+       fetchQuantity   :: !FetchQuantity,
+       transactionMode :: !TransactionMode
      }
 
-defaultFoldOptions = FoldOptions { fetchQuantity = Automatic
-                                 , isolationLevel = ReadCommitted }
+defaultFoldOptions = FoldOptions { 
+      fetchQuantity   = Automatic,
+      transactionMode = TransactionMode ReadCommitted ReadOnly
+    }
 
 foldWithOptions :: ( QueryResults row, QueryParams params )
                 => FoldOptions
@@ -382,7 +386,7 @@ doFold :: ( QueryResults row )
 doFold FoldOptions{..} conn _template q a f = do
     stat <- withConnection conn PQ.transactionStatus
     case stat of
-      PQ.TransIdle    -> withTransactionLevel isolationLevel conn go
+      PQ.TransIdle    -> withTransactionMode transactionMode conn go
       PQ.TransInTrans -> go
       PQ.TransActive  -> fail "foldWithOpts FIXME:  PQ.TransActive"
          -- This _shouldn't_ occur in the current incarnation of
@@ -484,6 +488,19 @@ data IsolationLevel
    | Serializable
      deriving (Show, Eq, Ord, Enum, Bounded)
 
+data ReadWriteMode
+   = ReadWrite
+   | ReadOnly
+     deriving (Show, Eq, Ord, Enum, Bounded)
+
+data TransactionMode = TransactionMode { 
+       isolationLevel :: !IsolationLevel, 
+       readWriteMode  :: !ReadWriteMode
+     } deriving (Show, Eq, Ord)
+
+defaultTransactionMode :: TransactionMode
+defaultTransactionMode =  TransactionMode ReadCommitted ReadWrite
+
 -- | Execute an action inside a SQL transaction.
 --
 -- This function initiates a transaction with a \"@begin
@@ -495,18 +512,17 @@ data IsolationLevel
 -- PostgreSQL-related exception), the transaction will be rolled back using
 -- 'rollback', then the exception will be rethrown.
 withTransaction :: Connection -> IO a -> IO a
-withTransaction = withTransactionLevel ReadCommitted
+withTransaction = withTransactionMode defaultTransactionMode
 
 -- | Execute an action inside a SQL transaction with a given isolation level.
-withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
-withTransactionLevel isolationLevel conn act = do
-  beginLevel isolationLevel conn
+withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
+withTransactionMode mode conn act = do
+  beginMode mode conn
   r <- act `onException` rollback conn
   commit conn
   return r
 
 -- | Rollback a transaction.
--- rollback :: (MonadCatchIO m,MonadIO m) => Connection -> m ()
 rollback :: Connection -> IO ()
 rollback conn = execute_ conn "ABORT" >> return ()
 
@@ -516,15 +532,24 @@ commit conn = execute_ conn "COMMIT" >> return ()
 
 -- | Begin a transaction.
 begin :: Connection -> IO ()
-begin = beginLevel ReadCommitted
+begin = beginMode defaultTransactionMode
 
 -- | Begin a transaction with a given isolation level
-beginLevel :: IsolationLevel -> Connection -> IO ()
-beginLevel isolationLevel conn = do
-  execute_ conn $! case isolationLevel of
-                     ReadCommitted  -> "BEGIN"
-                     RepeatableRead -> "BEGIN ISOLATION LEVEL REPEATABLE READ"
-                     Serializable   -> "BEGIN ISOLATION LEVEL SERIALIZABLE"
+beginMode :: TransactionMode -> Connection -> IO ()
+beginMode mode conn = do
+  execute_ conn $! case mode of
+                     TransactionMode ReadCommitted  ReadWrite -> 
+                         "BEGIN"
+                     TransactionMode ReadCommitted  ReadOnly  -> 
+                         "BEGIN READ ONLY"
+                     TransactionMode RepeatableRead ReadWrite -> 
+                         "BEGIN ISOLATION LEVEL REPEATABLE READ"
+                     TransactionMode RepeatableRead ReadOnly  -> 
+                         "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" 
+                     TransactionMode Serializable   ReadWrite ->
+                         "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                     TransactionMode Serializable   ReadOnly  ->
+                         "BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY"
   return ()
 
 fmtError :: String -> Query -> [Action] -> a
