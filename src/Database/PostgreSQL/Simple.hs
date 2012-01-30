@@ -88,6 +88,9 @@ module Database.PostgreSQL.Simple
     , TransactionMode(..)
     , IsolationLevel(..)
     , ReadWriteMode(..)
+    , defaultTransactionMode
+    , defaultIsolationLevel
+    , defaultReadWriteMode
     , withTransactionMode
 --    , Base.autocommit
     , begin
@@ -338,7 +341,7 @@ data FoldOptions
        transactionMode :: !TransactionMode
      }
 
-defaultFoldOptions = FoldOptions { 
+defaultFoldOptions = FoldOptions {
       fetchQuantity   = Automatic,
       transactionMode = TransactionMode ReadCommitted ReadOnly
     }
@@ -493,13 +496,19 @@ data ReadWriteMode
    | ReadOnly
      deriving (Show, Eq, Ord, Enum, Bounded)
 
-data TransactionMode = TransactionMode { 
-       isolationLevel :: !IsolationLevel, 
+data TransactionMode = TransactionMode {
+       isolationLevel :: !IsolationLevel,
        readWriteMode  :: !ReadWriteMode
-     } deriving (Show, Eq, Ord)
+     } deriving (Show, Eq)
 
 defaultTransactionMode :: TransactionMode
 defaultTransactionMode =  TransactionMode ReadCommitted ReadWrite
+
+defaultIsolationLevel  :: IsolationLevel
+defaultIsolationLevel  =  ReadCommitted
+
+defaultReadWriteMode   :: ReadWriteMode
+defaultReadWriteMode   =  ReadWrite
 
 -- | Execute an action inside a SQL transaction.
 --
@@ -538,14 +547,14 @@ begin = beginMode defaultTransactionMode
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
   execute_ conn $! case mode of
-                     TransactionMode ReadCommitted  ReadWrite -> 
+                     TransactionMode ReadCommitted  ReadWrite ->
                          "BEGIN"
-                     TransactionMode ReadCommitted  ReadOnly  -> 
+                     TransactionMode ReadCommitted  ReadOnly  ->
                          "BEGIN READ ONLY"
-                     TransactionMode RepeatableRead ReadWrite -> 
+                     TransactionMode RepeatableRead ReadWrite ->
                          "BEGIN ISOLATION LEVEL REPEATABLE READ"
-                     TransactionMode RepeatableRead ReadOnly  -> 
-                         "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" 
+                     TransactionMode RepeatableRead ReadOnly  ->
+                         "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"
                      TransactionMode Serializable   ReadWrite ->
                          "BEGIN ISOLATION LEVEL SERIALIZABLE"
                      TransactionMode Serializable   ReadOnly  ->
