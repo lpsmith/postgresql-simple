@@ -91,9 +91,11 @@ module Database.PostgreSQL.Simple
     , defaultTransactionMode
     , defaultIsolationLevel
     , defaultReadWriteMode
+    , withTransactionLevel
     , withTransactionMode
 --    , Base.autocommit
     , begin
+    , beginLevel
     , beginMode
     , commit
     , rollback
@@ -524,6 +526,11 @@ withTransaction :: Connection -> IO a -> IO a
 withTransaction = withTransactionMode defaultTransactionMode
 
 -- | Execute an action inside a SQL transaction with a given isolation level.
+withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
+withTransactionLevel lvl
+    = withTransactionMode defaultTransactionMode { isolationLevel = lvl }
+
+-- | Execute an action inside a SQL transaction with a given transaction mode.
 withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
 withTransactionMode mode conn act = do
   beginMode mode conn
@@ -544,6 +551,10 @@ begin :: Connection -> IO ()
 begin = beginMode defaultTransactionMode
 
 -- | Begin a transaction with a given isolation level
+beginLevel :: IsolationLevel -> Connection -> IO ()
+beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
+
+-- | Begin a transaction with a given transaction mode
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
   execute_ conn $! case mode of
