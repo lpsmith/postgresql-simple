@@ -26,6 +26,7 @@ module Database.PostgreSQL.Simple.Result
     (
       Result(..)
     , ResultError(..)
+    , returnError
     ) where
 
 #include "MachDeps.h"
@@ -250,9 +251,13 @@ doConvert f types cvt (Just bs)
 doConvert f _ _ _ = returnError UnexpectedNull f ""
 
 
+-- | Given one of the constructors from 'ResultError',  the field,
+--   and an 'errMessage',  this fills in the other fields in the
+--   exception value and returns it in a 'Left . SomeException'
+--   constructor.
 returnError :: forall a err . (Typeable a, Exception err)
             => (String -> String -> String -> err)
-            -> Field -> String -> Status a
+            -> Field -> String -> Either SomeException a
 returnError mkErr f = left . mkErr (B.unpack (typename f))
                                    (show (typeOf (undefined :: a)))
 
