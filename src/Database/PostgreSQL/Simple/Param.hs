@@ -157,12 +157,12 @@ instance Param PQ.Oid where
     {-# INLINE render #-}
 
 instance Param Float where
-    render v | isNaN v || isInfinite v = renderNull
+    render v | isNaN v || isInfinite v = Plain (inQuotes (float v))
              | otherwise               = Plain (float v)
     {-# INLINE render #-}
 
 instance Param Double where
-    render v | isNaN v || isInfinite v = renderNull
+    render v | isNaN v || isInfinite v = Plain (inQuotes (double v))
              | otherwise               = Plain (double v)
     {-# INLINE render #-}
 
