@@ -30,6 +30,7 @@ import Data.Either()
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Result (ResultError(..), Result(..))
 import Database.PostgreSQL.Simple.Types (Only(..))
+import qualified Database.PostgreSQL.LibPQ as LibPQ (Result)
 
 -- | A collection type that can be converted from a list of strings.
 --
@@ -42,41 +43,53 @@ import Database.PostgreSQL.Simple.Types (Only(..))
 --
 -- @
 -- instance ('Result' a, 'Result' b) => 'QueryResults' (a,b) where
---     'convertResults' [fa,fb] [va,vb] = (a,b)
---         where !a = 'convert' fa va
---               !b = 'convert' fb vb
+--     'convertResults' [fa,fb] [va,vb] = do
+--               !a <- 'convert' fa va
+--               !b <- 'convert' fb vb
+--               'return' (a,b)
 --     'convertResults' fs vs  = 'convertError' fs vs 2
 -- @
 --
 -- Notice that this instance evaluates each element to WHNF before
--- constructing the pair. By doing this, we guarantee two important
--- properties:
+-- constructing the pair.  This property is important enough that its
+-- a rule all 'QueryResult' instances should follow:
 --
--- * Keep resource usage under control by preventing the construction
---   of potentially long-lived thunks.
+--   * Evaluate every 'Result' value to WHNF before constructing
+--     the result
 --
--- * Ensure that any 'ResultError' that might arise is thrown
---   immediately, rather than some place later in application code
---   that cannot handle it.
+-- Doing so keeps resource usage under local control by preventing the
+-- construction of potentially long-lived thunks that are forced
+-- (or not) by the consumer.
 --
--- You can also declare Haskell types of your own to be instances of
--- 'QueryResults'.
+-- This is important to postgresql-simple-0.0.4 because a wayward thunk
+-- causes the entire LibPQ.'LibPQ.Result' to be retained. This could lead
+-- to a memory leak, depending on how the thunk is consumed.
+--
+-- Note that instances can be defined outside of postgresql-simple,
+-- which is often useful.   For example,  here is an attempt at an
+-- instance for a user-defined pair:
 --
 -- @
---data User { firstName :: String, lastName :: String }
+-- data User = User { firstName :: String, lastName :: String }
 --
---instance 'QueryResults' User where
---    'convertResults' [fa,fb] [va,vb] = User a b
---        where !a = 'convert' fa va
---              !b = 'convert' fb vb
---    'convertResults' fs vs  = 'convertError' fs vs
+-- instance 'QueryResults' User where
+--     'convertResults' [fa,qfb] [va,vb] = User \<$\> a \<*\> b
+--        where  !a =  'convert' fa va
+--               !b =  'convert' fb vb
+--     'convertResults' fs vs  = 'convertError' fs vs 2
 -- @
+--
+-- In this example,  the bang patterns are not used correctly.  They force
+-- the data constructors of the 'Either' type,  and are not forcing the
+-- 'Result' values we need to force.  This gives the consumer of the
+-- 'QueryResult' the ability to cause the memory leak,  which is an
+-- undesirable state of affairs.
 
 class QueryResults a where
     convertResults :: [Field] -> [Maybe ByteString] -> Either SomeException a
     -- ^ Convert values from a row into a Haskell collection.
     --
-    -- This function will throw a 'ResultError' if conversion of the
+    -- This function will return a 'ResultError' if conversion of the
     -- collection fails.
 
 instance (Result a) => QueryResults (Only a) where
