@@ -23,6 +23,7 @@ module Database.PostgreSQL.Simple.QueryResults
     , convertError
     ) where
 
+import Control.Applicative (Applicative(..), (<$>))
 import Control.Exception (SomeException(..), throw)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -211,6 +212,14 @@ instance (Result a, Result b, Result c, Result d, Result e, Result f,
               return (a,b,c,d,e,f,g,h,i,j)
     convertResults fs vs  = convertError fs vs 10
 
+f <$!> (!x) = f <$> x
+infixl 4 <$!>
+
+instance Result a => QueryResults [a] where
+    convertResults fs vs = foldr convert' (pure []) (zip fs vs)
+      where convert' (f,v) as = (:) <$!> convert f v <*> as
+    {-# INLINE convertResults #-}
+
 -- | Throw a 'ConversionFailed' exception, indicating a mismatch
 -- between the number of columns in the 'Field' and row, and the
 -- number in the collection to be converted to.
@@ -233,3 +242,4 @@ ellipsis :: ByteString -> ByteString
 ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
+
