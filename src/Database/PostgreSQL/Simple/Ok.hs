@@ -5,6 +5,7 @@ module Database.PostgreSQL.Simple.Ok where
 
 import Control.Applicative
 import Control.Exception
+import Control.Monad(MonadPlus(..))
 import Data.Typeable
 
 -- FIXME:   [SomeException] should probably be a difference list
@@ -30,6 +31,11 @@ instance Alternative Ok where
     a@(Ok _)  <|> _         = a
     Errors _  <|> b@(Ok _)  = b
     Errors as <|> Errors bs = Errors (as ++ bs)
+
+
+instance MonadPlus Ok where
+    mzero = empty
+    mplus = (<|>)
 
 instance Monad Ok where
     return = Ok

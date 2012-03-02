@@ -21,6 +21,7 @@ Library
      Database.PostgreSQL.Simple.BuiltinTypes
      Database.PostgreSQL.Simple.Field
      Database.PostgreSQL.Simple.FromField
+     Database.PostgreSQL.Simple.FromRow
      Database.PostgreSQL.Simple.LargeObjects
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Ok
@@ -46,7 +47,9 @@ Library
     old-locale,
     template-haskell,
     text >= 0.11.1,
-    time
+    time,
+    transformers,
+    vector
 
 source-repository head
   type:     git

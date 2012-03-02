@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable,  GeneralizedNewtypeDeriving    #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Internal
@@ -10,10 +10,10 @@
 -- Portability: portable
 --
 -- Internal bits.  This interface is less stable and can change at any time.
--- In particular this means that while the rest of the postgresql-simple 
--- package endeavors to follow the package versioning policy,  this module 
--- does not.  Also, at the moment there are things in here that aren't 
--- particularly internal and are exported elsewhere;  these will eventually 
+-- In particular this means that while the rest of the postgresql-simple
+-- package endeavors to follow the package versioning policy,  this module
+-- does not.  Also, at the moment there are things in here that aren't
+-- particularly internal and are exported elsewhere;  these will eventually
 -- disappear from this module.
 --
 ------------------------------------------------------------------------------
@@ -33,6 +33,10 @@ import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
+import           Database.PostgreSQL.Simple.Ok
+import           Control.Monad.Trans.State.Strict
+import           Control.Monad.Trans.Reader
+import qualified Data.Vector as V
 import           System.IO.Unsafe (unsafePerformIO)
 
 -- | A Field represents metadata about a particular field
@@ -42,9 +46,9 @@ import           System.IO.Unsafe (unsafePerformIO)
 -- just the field metadata
 
 data Field = Field {
-     result   :: PQ.Result
-   , column   :: PQ.Column
-   , typename :: ByteString
+     result   :: !PQ.Result
+   , column   :: {-# UNPACK #-} !PQ.Column
+   , typename :: !ByteString
    }
 
 name :: Field -> Maybe ByteString
@@ -225,3 +229,18 @@ newNullConnection = do
     return Connection{..}
 
 data RawResult = RawResult { rawField :: Field, rawData :: Maybe ByteString }
+
+data Row = Row {
+     row        :: {-# UNPACK #-} !PQ.Row
+   , typenames  :: !(V.Vector ByteString)
+   , rowresult  :: !PQ.Result
+   }
+
+newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Ok) a }
+   deriving ( Functor, Applicative, Alternative, Monad )
+
+getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
+getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
+
+nfields :: PQ.Result -> PQ.Column
+nfields result = unsafePerformIO (PQ.nfields result)
