@@ -1,5 +1,5 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, OverloadedStrings #-}
-{-# LANGUAGE DoAndIfThenElse, RecordWildCards, NamedFieldPuns    #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards, NamedFieldPuns #-}
+
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple
@@ -104,30 +104,39 @@ module Database.PostgreSQL.Simple
     , formatQuery
     ) where
 
-import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char8 (fromChar)
-import Control.Applicative ((<$>), pure)
-import Control.Concurrent.MVar
-import Control.Exception (Exception, bracket, onException, throw, throwIO, finally)
-import Control.Monad (foldM)
-import Control.Monad.Fix (fix)
-import Data.ByteString (ByteString)
-import Data.Char(ord)
-import Data.Int (Int64)
+import           Blaze.ByteString.Builder
+                   ( Builder, fromByteString, toByteString )
+import           Blaze.ByteString.Builder.Char8 (fromChar)
+import           Control.Applicative ((<$>), pure)
+import           Control.Concurrent.MVar
+import           Control.Exception
+                   ( Exception, bracket, onException, throw, throwIO, finally )
+import           Control.Monad (foldM)
+import           Control.Monad.Fix (fix)
+import           Data.ByteString (ByteString)
+import           Data.Char(ord)
+import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
-import Data.List (intersperse)
-import Data.Monoid (mappend, mconcat)
-import Data.Typeable (Typeable)
-import Database.PostgreSQL.Simple.BuiltinTypes (oid2builtin, builtin2typname)
-import Database.PostgreSQL.Simple.Param (Action(..), inQuotes)
-import Database.PostgreSQL.Simple.QueryParams (QueryParams(..))
-import Database.PostgreSQL.Simple.Result (ResultError(..))
-import Database.PostgreSQL.Simple.QueryResults (QueryResults(..))
-import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Only(..), Query(..))
-import Database.PostgreSQL.Simple.Internal as Base
+import           Data.List (intersperse)
+import           Data.Monoid (mappend, mconcat)
+import           Data.Typeable (Typeable)
+import           Database.PostgreSQL.Simple.BuiltinTypes
+                   ( oid2builtin, builtin2typname )
+import           Database.PostgreSQL.Simple.FromField (ResultError(..))
+import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
+import           Database.PostgreSQL.Simple.Ok
+import           Database.PostgreSQL.Simple.Param (Action(..), inQuotes)
+import           Database.PostgreSQL.Simple.QueryParams (QueryParams(..))
+import           Database.PostgreSQL.Simple.Types
+                   ( Binary(..), In(..), Only(..), Query(..) )
+import           Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
-import Text.Regex.PCRE.Light (compile, caseless, match)
+import           Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Vector as V
+import           Control.Exception
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.State.Strict
 
 -- | Exception thrown if a 'Query' could not be formatted correctly.
 -- This may occur if the number of \'@?@\' characters in the query
@@ -293,14 +302,14 @@ finishExecute conn q result = do
 --   using 'execute' instead of 'query').
 --
 -- * 'ResultError': result conversion failed.
-query :: (QueryParams q, QueryResults r)
+query :: (QueryParams q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishQuery conn template result
 
 -- | A version of 'query' that does not perform query substitution.
-query_ :: (QueryResults r) => Connection -> Query -> IO [r]
+query_ :: (FromRow r) => Connection -> Query -> IO [r]
 query_ conn q@(Query que) = do
   result <- exec conn que
   finishQuery conn q result
@@ -324,7 +333,7 @@ query_ conn q@(Query que) = do
 --
 -- * 'ResultError': result conversion failed.
 
-fold            :: ( QueryResults row, QueryParams params )
+fold            :: ( FromRow row, QueryParams params )
                 => Connection
                 -> Query
                 -> params
@@ -348,7 +357,7 @@ defaultFoldOptions = FoldOptions {
       transactionMode = TransactionMode ReadCommitted ReadOnly
     }
 
-foldWithOptions :: ( QueryResults row, QueryParams params )
+foldWithOptions :: ( FromRow row, QueryParams params )
                 => FoldOptions
                 -> Connection
                 -> Query
@@ -361,7 +370,7 @@ foldWithOptions opts conn template qs a f = do
     doFold opts conn template (Query q) a f
 
 -- | A version of 'fold' that does not perform query substitution.
-fold_ :: (QueryResults r) =>
+fold_ :: (FromRow r) =>
          Connection
       -> Query                  -- ^ Query.
       -> a                      -- ^ Initial state for result consumer.
@@ -370,7 +379,7 @@ fold_ :: (QueryResults r) =>
 fold_ = foldWithOptions_ defaultFoldOptions
 
 
-foldWithOptions_ :: (QueryResults r) =>
+foldWithOptions_ :: (FromRow r) =>
                     FoldOptions
                  -> Connection
                  -> Query             -- ^ Query.
@@ -380,7 +389,7 @@ foldWithOptions_ :: (QueryResults r) =>
 foldWithOptions_ opts conn query a f = doFold opts conn query query a f
 
 
-doFold :: ( QueryResults row )
+doFold :: ( FromRow row )
        => FoldOptions
        -> Connection
        -> Query
@@ -426,7 +435,7 @@ doFold FoldOptions{..} conn _template q a f = do
       if null rs then return a else foldM f a rs >>= loop
 
 -- | A version of 'fold' that does not transform a state value.
-forEach :: (QueryParams q, QueryResults r) =>
+forEach :: (QueryParams q, FromRow r) =>
            Connection
         -> Query                -- ^ Query template.
         -> q                    -- ^ Query parameters.
@@ -436,7 +445,7 @@ forEach conn template qs = fold conn template qs () . const
 {-# INLINE forEach #-}
 
 -- | A version of 'forEach' that does not perform query substitution.
-forEach_ :: (QueryResults r) =>
+forEach_ :: (FromRow r) =>
             Connection
          -> Query                -- ^ Query template.
          -> (r -> IO ())         -- ^ Result consumer.
@@ -453,7 +462,7 @@ forM' lo hi m = loop hi []
            a <- m n
            loop (n-1) (a:as)
 
-finishQuery :: (QueryResults r) => Connection -> Query -> PQ.Result -> IO [r]
+finishQuery :: (FromRow r) => Connection -> Query -> PQ.Result -> IO [r]
 finishQuery conn q result = do
   status <- PQ.resultStatus result
   case status of
@@ -461,26 +470,53 @@ finishQuery conn q result = do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
         ncols <- PQ.nfields result
-        fields <- forM' 0 (ncols-1) $ \column -> do
-                      type_oid <- PQ.ftype result column
-                      typename <- getTypename conn type_oid
-                      return Field{..}
+        let unCol (PQ.Col x) = fromIntegral x
+        typenames <- V.generateM (unCol ncols)
+                                 (\(PQ.Col . fromIntegral -> col) -> do
+                                    getTypename conn =<< PQ.ftype result col)
         nrows <- PQ.ntuples result
+        ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row -> do
-           values <- forM' 0 (ncols-1) (\col -> PQ.getvalue result row col)
-           case convertResults fields values of
-             Left  err -> throwIO err
-             Right a   -> return a
-    PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
-    PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
-    _ -> do
-      errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
-      statusmsg <- PQ.resStatus status
-      state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-      throwIO $ SqlError { sqlState = state
-                         , sqlNativeError = fromEnum status
-                         , sqlErrorMsg = B.concat [ "query: ", statusmsg
-                                                  , ": ", errormsg ]}
+           let rw = Row row typenames result
+           case runStateT (runReaderT (unRP fromRow) rw) 0 of
+             Ok (val,col) | col == ncols -> return val
+                          | otherwise -> do
+                              vals <- forM' 0 (ncols-1) $ \c -> do
+                                  v <- PQ.getvalue result row c
+                                  return ( typenames V.! unCol c
+                                         , fmap ellipsis v       )
+                              throw (ConversionFailed
+                               (show (unCol ncols) ++ " values: " ++ show vals)
+                               (show (unCol col) ++ " slots in target type")
+                               "mismatch between number of columns to \
+                               \convert and number in target type")
+             Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
+             Errors [x] -> throwIO x
+             Errors xs  -> throwIO $ ManyErrors xs
+
+ellipsis :: ByteString -> ByteString
+ellipsis bs
+    | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
+    | otherwise        = bs
+
+-- | Throw a 'ConversionFailed' exception, indicating a mismatch
+-- between the number of columns in the 'Field' and row, and the
+-- number in the collection to be converted to.
+convertError :: [Field]
+             -- ^ Descriptors of fields to be converted.
+             -> [Maybe ByteString]
+             -- ^ Contents of the row to be converted.
+             -> Int
+             -- ^ Number of columns expected for conversion.  For
+             -- instance, if converting to a 3-tuple, the number to
+             -- provide here would be 3.
+             -> Either SomeException a
+convertError fs vs n = Left . SomeException $ ConversionFailed
+    (show (length fs) ++ " values: " ++ show (zip (map typename fs)
+                                                  (map (fmap ellipsis) vs)))
+    (show n ++ " slots in target type")
+    "mismatch between number of columns to convert and number in target type"
+
 
 -- | Of the four isolation levels defined by the SQL standard,
 -- these are the three levels distinguished by PostgreSQL as of version 9.0.
@@ -759,7 +795,7 @@ fmtError msg q xs = throw FormatError {
 -- $result
 --
 -- The 'query' and 'query_' functions return a list of values in the
--- 'QueryResults' typeclass. This class performs automatic extraction
+-- 'FromRow' typeclass. This class performs automatic extraction
 -- and type conversion of rows from a query result.
 --
 -- Here is a simple example of how to extract results:

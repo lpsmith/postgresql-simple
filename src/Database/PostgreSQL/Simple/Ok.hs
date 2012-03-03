@@ -8,6 +8,11 @@ import Control.Exception
 import Control.Monad(MonadPlus(..))
 import Data.Typeable
 
+newtype ManyErrors = ManyErrors [SomeException] 
+   deriving (Show, Typeable)
+
+instance Exception ManyErrors
+
 -- FIXME:   [SomeException] should probably be a difference list
 
 data Ok a = Errors [SomeException] | Ok !a

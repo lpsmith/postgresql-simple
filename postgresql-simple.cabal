@@ -27,8 +27,6 @@ Library
      Database.PostgreSQL.Simple.Ok
      Database.PostgreSQL.Simple.Param
      Database.PostgreSQL.Simple.QueryParams
-     Database.PostgreSQL.Simple.QueryResults
-     Database.PostgreSQL.Simple.Result
      Database.PostgreSQL.Simple.SqlQQ
      Database.PostgreSQL.Simple.Types
 -- Other-modules:
@@ -50,6 +48,8 @@ Library
     time,
     transformers,
     vector
+
+  extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
 
 source-repository head
   type:     git
