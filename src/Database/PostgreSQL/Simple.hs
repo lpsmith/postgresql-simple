@@ -524,7 +524,8 @@ convertError fs vs n = Left . SomeException $ ConversionFailed
 -- for more information.
 
 data IsolationLevel
-   = ReadCommitted
+   = DefaultIsolationLevel
+   | ReadCommitted
    | RepeatableRead
    | Serializable
      deriving (Show, Eq, Ord, Enum, Bounded)
@@ -540,7 +541,7 @@ data TransactionMode = TransactionMode {
      } deriving (Show, Eq)
 
 defaultTransactionMode :: TransactionMode
-defaultTransactionMode =  TransactionMode ReadCommitted ReadWrite
+defaultTransactionMode =  TransactionMode DefaultIsolationLevel ReadWrite
 
 defaultIsolationLevel  :: IsolationLevel
 defaultIsolationLevel  =  ReadCommitted
@@ -594,10 +595,14 @@ beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
   execute_ conn $! case mode of
-                     TransactionMode ReadCommitted  ReadWrite ->
+                     TransactionMode DefaultIsolationLevel ReadWrite ->
                          "BEGIN"
-                     TransactionMode ReadCommitted  ReadOnly  ->
+                     TransactionMode DefaultIsolationLevel ReadOnly  ->
                          "BEGIN READ ONLY"
+                     TransactionMode ReadCommitted  ReadWrite ->
+                         "BEGIN ISOLATION LEVEL READ COMMITTED"
+                     TransactionMode ReadCommitted  ReadOnly  ->
+                         "BEGIN ISOLATION LEVEL READ COMMITTED READ ONLY"
                      TransactionMode RepeatableRead ReadWrite ->
                          "BEGIN ISOLATION LEVEL REPEATABLE READ"
                      TransactionMode RepeatableRead ReadOnly  ->
