@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Database.PostgreSQL.Simple.LargeObjects

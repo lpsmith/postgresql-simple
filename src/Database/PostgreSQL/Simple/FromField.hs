@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor, FlexibleInstances #-}
-{-# LANGUAGE PatternGuards, ScopedTypeVariables, OverloadedStrings #-}
+{-# LANGUAGE PatternGuards, ScopedTypeVariables #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.FromField

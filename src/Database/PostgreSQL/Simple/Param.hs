@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, FlexibleInstances,
-    OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, FlexibleInstances #-}
 
 -- |
 -- Module:      Database.PostgreSQL.Simple.Param

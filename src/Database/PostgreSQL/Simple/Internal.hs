@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings, NamedFieldPuns, RecordWildCards #-}
-{-# LANGUAGE DeriveDataTypeable,  GeneralizedNewtypeDeriving    #-}
+{-# LANGUAGE RecordWildCards, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Internal
