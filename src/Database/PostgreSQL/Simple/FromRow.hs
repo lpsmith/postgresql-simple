@@ -83,111 +83,51 @@ numFieldsRemaining = RP $ do
     return $! (\(PQ.Col x) -> fromIntegral x) (nfields rowresult - column)
 
 instance (FromField a) => FromRow (Only a) where
-    fromRow = do
-        !a <- field
-        return (Only a)
+    fromRow = Only <$> field
 
 instance (FromField a, FromField b) => FromRow (a,b) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        return (a,b)
+    fromRow = (,) <$> field <*> field
 
 instance (FromField a, FromField b, FromField c) => FromRow (a,b,c) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        return (a,b,c)
+    fromRow = (,,) <$> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d) =>
     FromRow (a,b,c,d) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        return (a,b,c,d)
+    fromRow = (,,,) <$> field <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
     FromRow (a,b,c,d,e) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        return (a,b,c,d,e)
+    fromRow = (,,,,) <$> field <*> field <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f) =>
     FromRow (a,b,c,d,e,f) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        !f <- field
-        return (a,b,c,d,e,f)
+    fromRow = (,,,,,) <$> field <*> field <*> field <*> field <*> field
+                      <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g) =>
     FromRow (a,b,c,d,e,f,g) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        !f <- field
-        !g <- field
-        return (a,b,c,d,e,f,g)
+    fromRow = (,,,,,,) <$> field <*> field <*> field <*> field <*> field
+                       <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h) =>
     FromRow (a,b,c,d,e,f,g,h) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        !f <- field
-        !g <- field
-        !h <- field
-        return (a,b,c,d,e,f,g,h)
+    fromRow = (,,,,,,,) <$> field <*> field <*> field <*> field <*> field
+                        <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i) =>
     FromRow (a,b,c,d,e,f,g,h,i) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        !f <- field
-        !g <- field
-        !h <- field
-        !i <- field
-        return (a,b,c,d,e,f,g,h,i)
+    fromRow = (,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
+                         <*> field <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i, FromField j) =>
     FromRow (a,b,c,d,e,f,g,h,i,j) where
-    fromRow = do
-        !a <- field
-        !b <- field
-        !c <- field
-        !d <- field
-        !e <- field
-        !f <- field
-        !g <- field
-        !h <- field
-        !i <- field
-        !j <- field
-        return (a,b,c,d,e,f,g,h,i,j)
+    fromRow = (,,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
+                          <*> field <*> field <*> field <*> field <*> field
 
 instance FromField a => FromRow [a] where
     fromRow = do
