@@ -29,6 +29,7 @@ data Notification  = Notification
                       , notificationData    :: B.ByteString
                       }
 
+errfd :: String
 errfd   = "Database.PostgreSQL.Simple.Notification.getNotification: \
           \failed to fetch file descriptor"
 

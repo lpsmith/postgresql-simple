@@ -24,14 +24,13 @@ module Database.PostgreSQL.Simple.QueryResults
     ) where
 
 import Control.Applicative (Applicative(..), (<$>))
-import Control.Exception (SomeException(..), throw)
+import Control.Exception (SomeException(..))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either()
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Result (ResultError(..), Result(..))
 import Database.PostgreSQL.Simple.Types (Only(..))
-import qualified Database.PostgreSQL.LibPQ as LibPQ (Result)
 
 -- | A collection type that can be converted from a list of strings.
 --
@@ -212,6 +211,7 @@ instance (Result a, Result b, Result c, Result d, Result e, Result f,
               return (a,b,c,d,e,f,g,h,i,j)
     convertResults fs vs  = convertError fs vs 10
 
+(<$!>) :: Functor f => (a -> b) -> f a -> f b
 f <$!> (!x) = f <$> x
 infixl 4 <$!>
 
