@@ -34,7 +34,6 @@ import qualified Data.ByteString as B
 import           Database.PostgreSQL.LibPQ (Oid(..),LoFd(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
-import           Foreign.C.Types (CInt)
 import           System.IO (IOMode(..),SeekMode(..))
 
 liftPQ :: B.ByteString -> Connection -> (PQ.Connection -> IO (Maybe a)) -> IO a

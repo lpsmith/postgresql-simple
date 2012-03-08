@@ -198,6 +198,7 @@ exec conn sql =
           Just res -> do
             return res
 
+disconnectedError :: SqlError
 disconnectedError = SqlError {
                       sqlNativeError = -1,
                       sqlErrorMsg    = "connection disconnected",

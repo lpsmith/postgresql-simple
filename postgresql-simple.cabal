@@ -32,6 +32,9 @@ Library
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
 
+  Other-modules:
+     Database.PostgreSQL.Simple.Compat
+
   Build-depends:
     attoparsec >= 0.8.5.3,
     base < 5,
@@ -50,6 +53,8 @@ Library
     vector
 
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
+
+  ghc-options: -Wall -fno-warn-name-shadowing
 
 source-repository head
   type:     git
