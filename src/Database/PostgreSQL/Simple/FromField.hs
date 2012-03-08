@@ -32,7 +32,7 @@ module Database.PostgreSQL.Simple.FromField
 #include "MachDeps.h"
 
 import Control.Applicative (Applicative, (<|>), (<$>), (<*>), (<*), pure)
-import Control.Exception (SomeException(..), Exception, throw)
+import Control.Exception (SomeException(..), Exception)
 import Data.Attoparsec.Char8 hiding (Result)
 import Data.Bits ((.&.), (.|.), shiftL)
 import Data.ByteString (ByteString)

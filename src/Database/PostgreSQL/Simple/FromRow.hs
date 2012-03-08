@@ -24,11 +24,10 @@ module Database.PostgreSQL.Simple.FromRow
      ) where
 
 import Control.Applicative (Applicative(..), (<$>))
-import Control.Exception (SomeException(..), throw)
+import Control.Exception (SomeException(..))
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types (Only(..))
 import Database.PostgreSQL.Simple.Ok
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -41,14 +40,12 @@ import Control.Monad.Trans.Class
 
 import Data.Vector ((!))
 
-import System.IO.Unsafe ( unsafePerformIO )
-
 class FromRow a where
     fromRow :: RowParser a
 
 field :: FromField a => RowParser a
 field = RP $ do
-    let unCol (PQ.Col x) = fromIntegral x
+    let unCol (PQ.Col x) = fromIntegral x :: Int
     Row{..} <- ask
     column <- lift get
     lift (put (column + 1))

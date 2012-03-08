@@ -110,7 +110,7 @@ import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Control.Applicative ((<$>), pure)
 import           Control.Concurrent.MVar
 import           Control.Exception
-                   ( Exception, bracket, onException, throw, throwIO, finally )
+                   ( Exception, onException, throw, throwIO, finally )
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
 import           Data.Char(ord)
@@ -121,6 +121,7 @@ import           Data.Monoid (mappend, mconcat)
 import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.BuiltinTypes
                    ( oid2builtin, builtin2typname )
+import           Database.PostgreSQL.Simple.Compat ( mask )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
@@ -133,7 +134,6 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import           Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Vector as V
-import           Control.Exception
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
@@ -471,7 +471,7 @@ finishQuery conn q result = do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
         ncols <- PQ.nfields result
-        let unCol (PQ.Col x) = fromIntegral x
+        let unCol (PQ.Col x) = fromIntegral x :: Int
         typenames <- V.generateM (unCol ncols)
                                  (\(PQ.Col . fromIntegral -> col) -> do
                                     getTypename conn =<< PQ.ftype result col)
@@ -499,24 +499,6 @@ ellipsis :: ByteString -> ByteString
 ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
-
--- | Throw a 'ConversionFailed' exception, indicating a mismatch
--- between the number of columns in the 'Field' and row, and the
--- number in the collection to be converted to.
-convertError :: [Field]
-             -- ^ Descriptors of fields to be converted.
-             -> [Maybe ByteString]
-             -- ^ Contents of the row to be converted.
-             -> Int
-             -- ^ Number of columns expected for conversion.  For
-             -- instance, if converting to a 3-tuple, the number to
-             -- provide here would be 3.
-             -> Either SomeException a
-convertError fs vs n = Left . SomeException $ ConversionFailed
-    (show (length fs) ++ " values: " ++ show (zip (map typename fs)
-                                                  (map (fmap ellipsis) vs)))
-    (show n ++ " slots in target type")
-    "mismatch between number of columns to convert and number in target type"
 
 
 -- | Of the four isolation levels defined by the SQL standard,
