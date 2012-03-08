@@ -110,7 +110,6 @@ import Control.Applicative ((<$>), pure)
 import Control.Concurrent.MVar
 import Control.Exception (Exception, onException, throw, throwIO, finally)
 import Control.Monad (foldM)
-import Control.Monad.Fix (fix)
 import Data.ByteString (ByteString)
 import Data.Char(ord)
 import Data.Int (Int64)
@@ -195,6 +194,7 @@ formatMany conn q@(Query template) qs = do
                  \([^?]*)$"
         [caseless]
 
+escapeStringConn :: Connection -> ByteString -> IO (Maybe ByteString)
 escapeStringConn conn s = withConnection conn $ \c -> do
    PQ.escapeStringConn c s
 
@@ -242,7 +242,7 @@ executeMany conn q qs = do
   finishExecute conn q result
 
 finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
-finishExecute conn q result = do
+finishExecute _conn q result = do
     status <- PQ.resultStatus result
     case status of
       PQ.CommandOk -> do
@@ -344,6 +344,7 @@ data FoldOptions
        transactionMode :: !TransactionMode
      }
 
+defaultFoldOptions :: FoldOptions
 defaultFoldOptions = FoldOptions {
       fetchQuantity   = Automatic,
       transactionMode = TransactionMode ReadCommitted ReadOnly
@@ -559,7 +560,8 @@ beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 -- | Begin a transaction with a given transaction mode
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
-  execute_ conn $! case mode of
+  _ <- execute_ conn $!
+                case mode of
                      TransactionMode ReadCommitted  ReadWrite ->
                          "BEGIN"
                      TransactionMode ReadCommitted  ReadOnly  ->

@@ -32,7 +32,7 @@ module Database.PostgreSQL.Simple.Result
 #include "MachDeps.h"
 
 import Control.Applicative (Applicative, (<$>), (<*>), (<*), pure)
-import Control.Exception (SomeException(..), Exception, throw)
+import Control.Exception (SomeException(..), Exception)
 import Data.Attoparsec.Char8 hiding (Result)
 import Data.Bits ((.&.), (.|.), shiftL)
 import Data.ByteString (ByteString)
@@ -44,10 +44,9 @@ import Data.Time.Calendar (Day, fromGregorian)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (parseTime)
 import Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
-import Data.Typeable (TypeRep, Typeable, typeOf)
+import Data.Typeable (Typeable, typeOf)
 import Data.Word (Word64)
 import Database.PostgreSQL.Simple.Internal
-import Database.PostgreSQL.Simple.Field (Field(..), RawResult(..))
 import Database.PostgreSQL.Simple.BuiltinTypes
 import Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -58,7 +57,6 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
-import qualified Data.Text.Encoding.Error (UnicodeException)
 import qualified Data.Text.Lazy as LT
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
@@ -140,6 +138,7 @@ instance Result (Ratio Integer) where
     convert = atto ok rational
         where ok = mkCompats [Float4,Float8,Int2,Int4,Numeric]
 
+unBinary :: Binary t -> t
 unBinary (Binary x) = x
 
 instance Result SB.ByteString where
@@ -228,7 +227,7 @@ mkCompat = Compat . shiftL 1 . fromEnum
 compat :: Compat -> Compat -> Bool
 compat (Compat a) (Compat b) = a .&. b /= 0
 
-okText, okText', ok16, ok32, ok64 :: Compat
+okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
 okText   = mkCompats [Name,Text,Char,Bpchar,Varchar]
 okText'  = mkCompats [Name,Text,Char,Bpchar,Varchar,Unknown]
 okBinary = mkCompats [Bytea]
