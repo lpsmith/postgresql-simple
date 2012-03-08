@@ -108,7 +108,7 @@ import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromChar)
 import Control.Applicative ((<$>), pure)
 import Control.Concurrent.MVar
-import Control.Exception (Exception, bracket, onException, throw, throwIO, finally)
+import Control.Exception (Exception, onException, throw, throwIO, finally)
 import Control.Monad (foldM)
 import Control.Monad.Fix (fix)
 import Data.ByteString (ByteString)
@@ -119,6 +119,7 @@ import Data.List (intersperse)
 import Data.Monoid (mappend, mconcat)
 import Data.Typeable (Typeable)
 import Database.PostgreSQL.Simple.BuiltinTypes (oid2builtin, builtin2typname)
+import Database.PostgreSQL.Simple.Compat (mask)
 import Database.PostgreSQL.Simple.Param (Action(..), inQuotes)
 import Database.PostgreSQL.Simple.QueryParams (QueryParams(..))
 import Database.PostgreSQL.Simple.Result (ResultError(..))
@@ -532,11 +533,12 @@ withTransactionLevel lvl
 
 -- | Execute an action inside a SQL transaction with a given transaction mode.
 withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
-withTransactionMode mode conn act = do
-  beginMode mode conn
-  r <- act `onException` rollback conn
-  commit conn
-  return r
+withTransactionMode mode conn act =
+  mask $ \restore -> do
+    beginMode mode conn
+    r <- restore act `onException` rollback conn
+    commit conn
+    return r
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
