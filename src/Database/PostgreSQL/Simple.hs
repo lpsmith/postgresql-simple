@@ -527,7 +527,7 @@ defaultTransactionMode :: TransactionMode
 defaultTransactionMode =  TransactionMode DefaultIsolationLevel ReadWrite
 
 defaultIsolationLevel  :: IsolationLevel
-defaultIsolationLevel  =  ReadCommitted
+defaultIsolationLevel  =  DefaultIsolationLevel
 
 defaultReadWriteMode   :: ReadWriteMode
 defaultReadWriteMode   =  ReadWrite
