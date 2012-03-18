@@ -90,9 +90,16 @@ class FromField a where
     fromField :: Field -> Maybe ByteString -> Ok a
     -- ^ Convert a SQL value to a Haskell value.
     --
-    -- Returns an exception if the conversion fails.  In the case of
-    -- library instances,  this will usually be a 'ResultError',  but may
-    -- be a 'UnicodeException'.
+    -- Returns a list of exceptions if the conversion fails.  In the case of
+    -- library instances,  this will usually be a single 'ResultError',  but
+    -- may be a 'UnicodeException'.
+    --
+    -- Implementations of the 'fromField' method should not retain any
+    -- references to the ByteString it is passed, as this will cause the
+    -- entire @LibPQ.'PQ.Result'@ to be retained.  For example,  the
+    -- instance for 'ByteString' uses 'B.copy' to avoid this issue.  Note that
+    -- using bytestring functions such as 'B.drop' and 'B.takeWhile' alone
+    -- will also trigger this memory leak.
 
 instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
