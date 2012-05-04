@@ -504,23 +504,28 @@ ellipsis bs
 -- | Of the four isolation levels defined by the SQL standard,
 -- these are the three levels distinguished by PostgreSQL as of version 9.0.
 -- See <http://www.postgresql.org/docs/9.1/static/transaction-iso.html>
--- for more information.
+-- for more information.   Note that prior to PostgreSQL 9.0, 'RepeatableRead'
+-- was equivalent to 'Serializable'.
 
 data IsolationLevel
    = DefaultIsolationLevel  -- ^ the isolation level will be taken from
                             --   PostgreSQL's per-connection
-                            --   @default_transaction_isolation@ variable.
+                            --   @default_transaction_isolation@ variable,
+                            --   which is initialized according to the
+                            --   server's config.  The default configuration
+                            --   is 'ReadCommitted'.
    | ReadCommitted
    | RepeatableRead
-   | Serializable           -- ^ Note that prior to PostgreSQL 9.0,
-                            --   @Serializable@ was equivalent to
-                            --   @RepeatableRead@.
+   | Serializable
      deriving (Show, Eq, Ord, Enum, Bounded)
 
 data ReadWriteMode
-   = DefaultReadWriteMode   -- ^ the isolation level will be taken from the
+   = DefaultReadWriteMode   -- ^ the read-write mode will be taken from
                             --   PostgreSQL's per-connection
-                            --   @default_transaction_read_only@ variable.
+                            --   @default_transaction_read_only@ variable,
+                            --   which is initialized according to the
+                            --   server's config.  The default configuration
+                            --   is 'ReadWrite'.
    | ReadWrite
    | ReadOnly
      deriving (Show, Eq, Ord, Enum, Bounded)
