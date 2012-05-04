@@ -41,7 +41,7 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative 
+import           Control.Applicative
                    ( Applicative, (<|>), (<$>), (<*>), (<*), pure )
 import           Control.Exception (SomeException(..), Exception)
 import           Data.Attoparsec.Char8 hiding (Result)
@@ -58,7 +58,7 @@ import           Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
-import           Database.PostgreSQL.Simple.BuiltinTypes 
+import           Database.PostgreSQL.Simple.BuiltinTypes
 -- import qualified Database.PostgreSQ
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
@@ -297,6 +297,3 @@ atto' types p0 f dat = doFromField f types (go p0) dat
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
           Right  v -> v
-
-instance FromField RawResult where
-   fromField field rawData = pure (RawResult field rawData)

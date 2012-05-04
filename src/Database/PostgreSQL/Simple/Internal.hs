@@ -228,8 +228,6 @@ newNullConnection = do
     connectionObjects <- newMVar IntMap.empty
     return Connection{..}
 
-data RawResult = RawResult { rawField :: Field, rawData :: Maybe ByteString }
-
 data Row = Row {
      row        :: {-# UNPACK #-} !PQ.Row
    , typenames  :: !(V.Vector ByteString)
