@@ -125,8 +125,8 @@ import           Database.PostgreSQL.Simple.Compat ( mask )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Param (Action(..), inQuotes)
-import           Database.PostgreSQL.Simple.QueryParams (QueryParams(..))
+import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
+import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
@@ -167,11 +167,11 @@ instance Exception QueryError
 --
 -- Throws 'FormatError' if the query string could not be formatted
 -- correctly.
-formatQuery :: QueryParams q => Connection -> Query -> q -> IO ByteString
+formatQuery :: ToRow q => Connection -> Query -> q -> IO ByteString
 formatQuery conn q@(Query template) qs
     | null xs && '?' `B.notElem` template = return template
     | otherwise = toByteString <$> buildQuery conn q template xs
-  where xs = renderParams qs
+  where xs = toRow qs
 
 -- | Format a query string with a variable number of rows.
 --
@@ -186,12 +186,12 @@ formatQuery conn q@(Query template) qs
 --
 -- Throws 'FormatError' if the query string could not be formatted
 -- correctly.
-formatMany :: (QueryParams q) => Connection -> Query -> [q] -> IO ByteString
+formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
 formatMany conn q@(Query template) qs = do
   case match re template [] of
     Just [_,before,qbits,after] -> do
-      bs <- mapM (buildQuery conn q qbits . renderParams) qs
+      bs <- mapM (buildQuery conn q qbits . toRow) qs
       return . toByteString . mconcat $ fromByteString before :
                                         intersperse (fromChar ',') bs ++
                                         [fromByteString after]
@@ -226,7 +226,7 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
 -- Returns the number of rows affected.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
-execute :: (QueryParams q) => Connection -> Query -> q -> IO Int64
+execute :: (ToRow q) => Connection -> Query -> q -> IO Int64
 execute conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishExecute conn template result
@@ -243,7 +243,7 @@ execute_ conn q@(Query stmt) = do
 -- Returns the number of rows affected.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
-executeMany :: (QueryParams q) => Connection -> Query -> [q] -> IO Int64
+executeMany :: (ToRow q) => Connection -> Query -> [q] -> IO Int64
 executeMany _ _ [] = return 0
 executeMany conn q qs = do
   result <- exec conn =<< formatMany conn q qs
@@ -302,7 +302,7 @@ finishExecute _conn q result = do
 --   using 'execute' instead of 'query').
 --
 -- * 'ResultError': result conversion failed.
-query :: (QueryParams q, FromRow r)
+query :: (ToRow q, FromRow r)
          => Connection -> Query -> q -> IO [r]
 query conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
@@ -333,7 +333,7 @@ query_ conn q@(Query que) = do
 --
 -- * 'ResultError': result conversion failed.
 
-fold            :: ( FromRow row, QueryParams params )
+fold            :: ( FromRow row, ToRow params )
                 => Connection
                 -> Query
                 -> params
@@ -358,7 +358,7 @@ defaultFoldOptions = FoldOptions {
       transactionMode = TransactionMode ReadCommitted ReadOnly
     }
 
-foldWithOptions :: ( FromRow row, QueryParams params )
+foldWithOptions :: ( FromRow row, ToRow params )
                 => FoldOptions
                 -> Connection
                 -> Query
@@ -436,7 +436,7 @@ doFold FoldOptions{..} conn _template q a f = do
       if null rs then return a else foldM f a rs >>= loop
 
 -- | A version of 'fold' that does not transform a state value.
-forEach :: (QueryParams q, FromRow r) =>
+forEach :: (ToRow q, FromRow r) =>
            Connection
         -> Query                -- ^ Query template.
         -> q                    -- ^ Query parameters.

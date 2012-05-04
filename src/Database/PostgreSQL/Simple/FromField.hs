@@ -27,32 +27,45 @@ module Database.PostgreSQL.Simple.FromField
       FromField(..)
     , ResultError(..)
     , returnError
+
+    , Field
+    , typename
+    , name
+    , tableOid
+    , tableColumn
+    , format
+    , typeOid
+    , PQ.Oid(..)
+    , PQ.Format(..)
     ) where
 
 #include "MachDeps.h"
 
-import Control.Applicative (Applicative, (<|>), (<$>), (<*>), (<*), pure)
-import Control.Exception (SomeException(..), Exception)
-import Data.Attoparsec.Char8 hiding (Result)
-import Data.Bits ((.&.), (.|.), shiftL)
-import Data.ByteString (ByteString)
+import           Control.Applicative 
+                   ( Applicative, (<|>), (<$>), (<*>), (<*), pure )
+import           Control.Exception (SomeException(..), Exception)
+import           Data.Attoparsec.Char8 hiding (Result)
+import           Data.Bits ((.&.), (.|.), shiftL)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Int (Int16, Int32, Int64)
-import Data.List (foldl')
-import Data.Ratio (Ratio)
-import Data.Time.Calendar (Day, fromGregorian)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Format (parseTime)
-import Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
-import Data.Typeable (Typeable, typeOf)
-import Data.Word (Word64)
-import Database.PostgreSQL.Simple.Internal
-import Database.PostgreSQL.Simple.BuiltinTypes
-import Database.PostgreSQL.Simple.Ok
-import Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Data.Int (Int16, Int32, Int64)
+import           Data.List (foldl')
+import           Data.Ratio (Ratio)
+import           Data.Time.Calendar (Day, fromGregorian)
+import           Data.Time.Clock (UTCTime)
+import           Data.Time.Format (parseTime)
+import           Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
+import           Data.Typeable (Typeable, typeOf)
+import           Data.Word (Word64)
+import           Database.PostgreSQL.Simple.Internal
+import           Database.PostgreSQL.Simple.BuiltinTypes 
+-- import qualified Database.PostgreSQ
+import           Database.PostgreSQL.Simple.Ok
+import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
-import System.IO.Unsafe (unsafePerformIO)
-import System.Locale (defaultTimeLocale)
+-- import           Database.PostgreSQL.LibPQ (Format(..), Oid(..))
+import           System.IO.Unsafe (unsafePerformIO)
+import           System.Locale (defaultTimeLocale)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
