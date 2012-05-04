@@ -1,0 +1,41 @@
+Version 0.1:
+  * Renamed several modules, typeclasses, and functions:
+
+        QueryParams  (renderParams)   -> ToRow   (toRow)
+        QueryResults (convertResults) -> FromRow (fromRow)
+        Param  (render)  -> ToField   (toField)
+        Result (convert) -> FromField (fromField)
+
+  * Added the Database.PostgreSQL.Simple.Ok module
+ 
+  * Changed the return type of `fromField` and `fromRow` from
+    `Either SomeException` to `Ok`.  Either doesn't have an instance for
+    Alternative,  and an orphaned instance inside of postgresql-simple is a 
+    very bad idea.   Also,  Ok returns a list of Exceptions so that you can 
+    see all the ways it has failed.
+
+  * Thanks to Ozgun Ataman, the "FromRow" typeclass has been massively 
+    improved.  The result is simpler definitions and better compositionality.
+    Also, user-defined instances need not be to be concerned about forcing
+    the converted results,  as 
+     
+        instance (Result a, Result b) => QueryResults (a,b) where
+            convertResults [fa,fb] [va,vb] = do
+                !a <- convert fa va
+                !b <- convert fb vb
+                return (a,b)
+            convertResults fs vs  = convertError fs vs 2
+
+        instance (FromField a, FromField b) => FromRow (a,b) where
+            fromRow = (,) <$> field <*> field
+
+  * Added :.,  a pair that allows one to compose "FromRow" instances:
+ 
+        instance (FromRow a, FromRow b) => FromRow (a :. b) where
+            fromRow = (:.) <$> fromRow <*> fromRow
+
+  * Moved the contents Field module into the "FromField" module.
+
+  * Removed the `RawResult` type.
+
+  * Added `DefaultIsolationLevel` as a distinct `IsolationLevel` option
