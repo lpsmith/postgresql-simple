@@ -107,12 +107,14 @@ class FromField a where
     -- library instances,  this will usually be a single 'ResultError',  but
     -- may be a 'UnicodeException'.
     --
-    -- Implementations of the 'fromField' method should not retain any
-    -- references to the ByteString it is passed, as this will cause the
-    -- entire @LibPQ.'PQ.Result'@ to be retained.  For example,  the
-    -- instance for 'ByteString' uses 'B.copy' to avoid this issue.  Note that
-    -- using bytestring functions such as 'B.drop' and 'B.takeWhile' alone
-    -- will also trigger this memory leak.
+    -- Implementations of 'fromField' should not retain any references to
+    -- the 'Field' nor the 'ByteString' arguments after the result has
+    -- been evaluated to WHNF.  Such a reference causes the entire
+    -- @LibPQ.'PQ.Result'@ to be retained.
+    --
+    -- For example,  the instance for 'ByteString' uses 'B.copy' to avoid
+    -- such a reference,  and that using bytestring functions such as 'B.drop'
+    -- and 'B.takeWhile' alone will also trigger this memory leak.
 
 instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
