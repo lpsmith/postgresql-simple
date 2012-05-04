@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving #-}
 
+------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Types
 -- Copyright:   (c) 2011 MailRank, Inc.
@@ -10,6 +11,8 @@
 -- Portability: portable
 --
 -- Basic types.
+--
+------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.Types
     (
@@ -19,6 +22,7 @@ module Database.PostgreSQL.Simple.Types
     , Binary(..)
     , Query(..)
     , Oid(..)
+    , (:.)(..)
     ) where
 
 import Blaze.ByteString.Builder (toByteString)
@@ -106,3 +110,23 @@ newtype In a = In a
 -- | Wrap a mostly-binary string to be escaped in hexadecimal.
 newtype Binary a = Binary a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
+
+-- | A composite type to parse your custom data structures without
+-- having to define dummy newtype wrappers every time.
+--
+--
+-- > instance FromRow MyData where ...
+--
+-- > instance FromRow MyData2 where ...
+--
+--
+-- then I can do the following for free:
+--
+-- @
+-- res <- query' c "..."
+-- forM res $ \\(MyData{..} :. MyData2{..}) -> do
+--   ....
+-- @
+data h :. t = h :. t deriving (Eq,Ord,Show,Read,Typeable)
+
+infixr 3 :.

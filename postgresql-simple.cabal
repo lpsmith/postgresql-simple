@@ -52,6 +52,7 @@ Library
     vector
 
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
+              TypeOperators
 
   ghc-options: -Wall -fno-warn-name-shadowing
 

@@ -33,6 +33,7 @@ import Database.PostgreSQL.Simple.Ok
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.FromField
+import           Database.PostgreSQL.Simple.Types
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
@@ -150,3 +151,6 @@ instance FromField a => FromRow [a] where
     fromRow = do
       n <- numFieldsRemaining
       replicateM n field
+
+instance (FromRow a, FromRow b) => FromRow (a :. b) where
+    fromRow = (:.) <$> fromRow <*> fromRow
