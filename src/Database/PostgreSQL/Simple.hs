@@ -507,14 +507,21 @@ ellipsis bs
 -- for more information.
 
 data IsolationLevel
-   = DefaultIsolationLevel
+   = DefaultIsolationLevel  -- ^ the isolation level will be taken from
+                            --   PostgreSQL's per-connection
+                            --   @default_transaction_isolation@ variable.
    | ReadCommitted
    | RepeatableRead
-   | Serializable
+   | Serializable           -- ^ Note that prior to PostgreSQL 9.0,
+                            --   @Serializable@ was equivalent to
+                            --   @RepeatableRead@.
      deriving (Show, Eq, Ord, Enum, Bounded)
 
 data ReadWriteMode
-   = ReadWrite
+   = DefaultReadWriteMode   -- ^ the isolation level will be taken from the
+                            --   PostgreSQL's per-connection
+                            --   @default_transaction_read_only@ variable.
+   | ReadWrite
    | ReadOnly
      deriving (Show, Eq, Ord, Enum, Bounded)
 
@@ -524,13 +531,15 @@ data TransactionMode = TransactionMode {
      } deriving (Show, Eq)
 
 defaultTransactionMode :: TransactionMode
-defaultTransactionMode =  TransactionMode DefaultIsolationLevel ReadWrite
+defaultTransactionMode =  TransactionMode
+                            defaultIsolationLevel
+                            defaultReadWriteMode
 
 defaultIsolationLevel  :: IsolationLevel
 defaultIsolationLevel  =  DefaultIsolationLevel
 
 defaultReadWriteMode   :: ReadWriteMode
-defaultReadWriteMode   =  ReadWrite
+defaultReadWriteMode   =  DefaultReadWriteMode
 
 -- | Execute an action inside a SQL transaction.
 --
@@ -578,25 +587,18 @@ beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 -- | Begin a transaction with a given transaction mode
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
-  _ <- execute_ conn $!
-                case mode of
-                     TransactionMode DefaultIsolationLevel ReadWrite ->
-                         "BEGIN"
-                     TransactionMode DefaultIsolationLevel ReadOnly  ->
-                         "BEGIN READ ONLY"
-                     TransactionMode ReadCommitted  ReadWrite ->
-                         "BEGIN ISOLATION LEVEL READ COMMITTED"
-                     TransactionMode ReadCommitted  ReadOnly  ->
-                         "BEGIN ISOLATION LEVEL READ COMMITTED READ ONLY"
-                     TransactionMode RepeatableRead ReadWrite ->
-                         "BEGIN ISOLATION LEVEL REPEATABLE READ"
-                     TransactionMode RepeatableRead ReadOnly  ->
-                         "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY"
-                     TransactionMode Serializable   ReadWrite ->
-                         "BEGIN ISOLATION LEVEL SERIALIZABLE"
-                     TransactionMode Serializable   ReadOnly  ->
-                         "BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY"
-  return ()
+    _ <- execute_ conn $! Query (B.concat ["BEGIN", isolevel, readmode])
+    return ()
+  where
+    isolevel = case isolationLevel mode of
+                 DefaultIsolationLevel -> ""
+                 ReadCommitted  -> " READ COMMITTED"
+                 RepeatableRead -> " REPEATABLE READ"
+                 Serializable   -> " SERIALIZABLE"
+    readmode = case readWriteMode mode of
+                 DefaultReadWriteMode -> ""
+                 ReadWrite -> " READ WRITE"
+                 ReadOnly  -> " READ ONLY"
 
 fmtError :: String -> Query -> [Action] -> a
 fmtError msg q xs = throw FormatError {

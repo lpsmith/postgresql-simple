@@ -38,4 +38,5 @@ Version 0.1:
 
   * Removed the `RawResult` type.
 
-  * Added `DefaultIsolationLevel` as a distinct `IsolationLevel` option
+  * Added `DefaultIsolationLevel` as a distinct `IsolationLevel` option and
+     `DefaultReadWriteMode as a distinct `ReadWriteMode` option.
