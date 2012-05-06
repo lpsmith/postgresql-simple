@@ -73,12 +73,8 @@ instance Monad Ok where
 
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
-    -- TODO:  add a definition for "fail",  akin to
 
-    -- fail str = Errors [SomeException (error str)]
-
-    -- but *correct*,  as this will throw an exception if you try to
-    -- examine the exception.
+    fail str = Errors [SomeException (ErrorCall str)]
 
 -- | a way to reify a list of exceptions into a single exception
 
