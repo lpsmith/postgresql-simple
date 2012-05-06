@@ -59,11 +59,9 @@ import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
--- import qualified Database.PostgreSQ
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
--- import           Database.PostgreSQL.LibPQ (Format(..), Oid(..))
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Locale (defaultTimeLocale)
 import qualified Data.ByteString as SB
