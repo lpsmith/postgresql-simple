@@ -3,11 +3,16 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Database.PostgreSQL.Simple.Notification
--- Copyright   :  (c) 2011 Leon P Smith
+-- Copyright   :  (c) 2011-2012 Leon P Smith
 -- License     :  BSD3
 --
 -- Maintainer  :  leon@melding-monads.com
 -- Stability   :  experimental
+--
+-- Support for receiving asynchronous notifications via PostgreSQL's
+-- Listen/Notify mechanism.  See
+-- <http://www.postgresql.org/docs/9.1/static/sql-notify.html> for more
+-- information.
 --
 -----------------------------------------------------------------------------
 
@@ -23,15 +28,19 @@ import           Database.PostgreSQL.Simple.Internal
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.Posix.Types ( CPid )
 
-data Notification  = Notification
-                      { notificationPid     :: CPid
-                      , notificationChannel :: B.ByteString
-                      , notificationData    :: B.ByteString
-                      }
+data Notification = Notification
+   { notificationPid     :: !CPid
+   , notificationChannel :: !B.ByteString
+   , notificationData    :: !B.ByteString
+   }
 
 errfd :: String
 errfd   = "Database.PostgreSQL.Simple.Notification.getNotification: \
           \failed to fetch file descriptor"
+
+
+-- | Returns a single notification.   If no notifications are available,
+--   'getNotification' blocks until one arrives.
 
 getNotification :: Connection -> IO Notification
 getNotification = loop False

@@ -1,10 +1,19 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Database.PostgreSQL.Simple.LargeObjects
--- Copyright   :  (c) 2011 Leon P Smith
+-- Copyright   :  (c) 2011-2012 Leon P Smith
 -- License     :  BSD3
 --
 -- Maintainer  :  leon@melding-monads.com
+--
+-- Support for PostgreSQL's Large Objects;  see
+-- <http://www.postgresql.org/docs/9.1/static/largeobjects.html> for more
+-- information.
+--
+-- Note that Large Object File Descriptors are only valid within a single
+-- database transaction,  so if you are interested in using anything beyond
+-- 'loCreat', 'loImport', 'loExport', and 'loUnlink',  you will need to run
+-- the entire sequence of functions in a transaction.
 --
 -----------------------------------------------------------------------------
 
