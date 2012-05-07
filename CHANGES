@@ -1,4 +1,13 @@
-Version 0.1:  (2012-05-04)
+Version 0.1.1: (2012-05-06)
+  * Added some preliminary documentation for the Ok, Notification, and 
+    LargeObjects modules
+
+  * Implemented the `fail` method for the monad instance for `Ok`.
+
+  * Fixed a bug relating to handling the transaction level
+
+
+Version 0.1:   (2012-05-04)
   * Renamed several modules, typeclasses, and functions:
 
         QueryParams  (renderParams)   -> ToRow   (toRow)
