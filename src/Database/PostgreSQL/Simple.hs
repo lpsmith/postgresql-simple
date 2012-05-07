@@ -597,9 +597,9 @@ beginMode mode conn = do
   where
     isolevel = case isolationLevel mode of
                  DefaultIsolationLevel -> ""
-                 ReadCommitted  -> " READ COMMITTED"
-                 RepeatableRead -> " REPEATABLE READ"
-                 Serializable   -> " SERIALIZABLE"
+                 ReadCommitted  -> " ISOLATION LEVEL READ COMMITTED"
+                 RepeatableRead -> " ISOLATION LEVEL REPEATABLE READ"
+                 Serializable   -> " ISOLATION LEVEL SERIALIZABLE"
     readmode = case readWriteMode mode of
                  DefaultReadWriteMode -> ""
                  ReadWrite -> " READ WRITE"
