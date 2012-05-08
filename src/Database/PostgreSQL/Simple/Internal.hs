@@ -25,6 +25,10 @@ import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
 import           Data.ByteString(ByteString)
+import qualified Data.ByteString       as B
+import qualified Data.ByteString.Char8 as B8
+import           Data.Char (ord)
+import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import           Data.String
 import           Data.Typeable
@@ -33,6 +37,7 @@ import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
 import           Database.PostgreSQL.Simple.Ok
+import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import qualified Data.Vector as V
@@ -86,6 +91,15 @@ data SqlError = SqlError {
 
 instance Exception SqlError
 
+-- | Exception thrown if 'query' is used to perform an @INSERT@-like
+-- operation, or 'execute' is used to perform a @SELECT@-like operation.
+data QueryError = QueryError {
+      qeMessage :: String
+    , qeQuery :: Query
+    } deriving (Eq, Show, Typeable)
+
+instance Exception QueryError
+
 data ConnectInfo = ConnectInfo {
       connectHost :: String
     , connectPort :: Word16
@@ -138,6 +152,8 @@ connectPostgreSQL connstr = do
       PQ.ConnectionOk -> do
           connectionHandle  <- newMVar conn
           connectionObjects <- newMVar (IntMap.empty)
+          let wconn = Connection{..}
+          _ <- execute_ wconn "SET standard_conforming_strings TO on"
           return Connection{..}
       _ -> do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
@@ -197,6 +213,49 @@ exec conn sql =
                                , sqlState       = ""  }
           Just res -> do
             return res
+
+-- | A version of 'execute' that does not perform query substitution.
+execute_ :: Connection -> Query -> IO Int64
+execute_ conn q@(Query stmt) = do
+  result <- exec conn stmt
+  finishExecute conn q result
+
+finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
+finishExecute _conn q result = do
+    status <- PQ.resultStatus result
+    case status of
+      PQ.CommandOk -> do
+          ncols <- PQ.nfields result
+          if ncols /= 0
+          then throwIO $ QueryError ("execute resulted in " ++ show ncols ++
+                                     "-column result") q
+          else do
+            nstr <- PQ.cmdTuples result
+            return $ case nstr of
+                       Nothing  -> 0   -- is this appropriate?
+                       Just str -> toInteger str
+      PQ.TuplesOk -> do
+          ncols <- PQ.nfields result
+          throwIO $ QueryError ("execute resulted in " ++ show ncols ++
+                                 "-column result") q
+      PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
+      PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
+      _ -> do
+        errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
+        statusmsg <- PQ.resStatus status
+        state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+        throwIO $ SqlError { sqlState = state
+                           , sqlNativeError = fromEnum status
+                           , sqlErrorMsg = B.concat [ "execute: ", statusmsg
+                                                    , ": ", errormsg ]}
+    where
+     toInteger str = B8.foldl' delta 0 str
+                where
+                  delta acc c =
+                    if '0' <= c && c <= '9'
+                    then 10 * acc + fromIntegral (ord c - ord '0')
+                    else error ("finishExecute:  not an int: " ++ B8.unpack str)
+
 
 disconnectedError :: SqlError
 disconnectedError = SqlError {

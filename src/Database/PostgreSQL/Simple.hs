@@ -113,7 +113,6 @@ import           Control.Exception
                    ( Exception, onException, throw, throwIO, finally )
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
-import           Data.Char(ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import           Data.List (intersperse)
@@ -149,15 +148,6 @@ data FormatError = FormatError {
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError
-
--- | Exception thrown if 'query' is used to perform an @INSERT@-like
--- operation, or 'execute' is used to perform a @SELECT@-like operation.
-data QueryError = QueryError {
-      qeMessage :: String
-    , qeQuery :: Query
-    } deriving (Eq, Show, Typeable)
-
-instance Exception QueryError
 
 -- | Format a query string.
 --
@@ -246,12 +236,6 @@ execute conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishExecute conn template result
 
--- | A version of 'execute' that does not perform query substitution.
-execute_ :: Connection -> Query -> IO Int64
-execute_ conn q@(Query stmt) = do
-  result <- exec conn stmt
-  finishExecute conn q result
-
 -- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
 --
@@ -263,44 +247,6 @@ executeMany _ _ [] = return 0
 executeMany conn q qs = do
   result <- exec conn =<< formatMany conn q qs
   finishExecute conn q result
-
-finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
-finishExecute _conn q result = do
-    status <- PQ.resultStatus result
-    case status of
-      PQ.CommandOk -> do
-          ncols <- PQ.nfields result
-          if ncols /= 0
-          then throwIO $ QueryError ("execute resulted in " ++ show ncols ++
-                                     "-column result") q
-          else do
-            nstr <- PQ.cmdTuples result
-            return $ case nstr of
-                       Nothing  -> 0   -- is this appropriate?
-                       Just str -> toInteger str
-      PQ.TuplesOk -> do
-          ncols <- PQ.nfields result
-          throwIO $ QueryError ("execute resulted in " ++ show ncols ++
-                                 "-column result") q
-      PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
-      PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
-      _ -> do
-        errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
-        statusmsg <- PQ.resStatus status
-        state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-        throwIO $ SqlError { sqlState = state
-                           , sqlNativeError = fromEnum status
-                           , sqlErrorMsg = B.concat [ "execute: ", statusmsg
-                                                    , ": ", errormsg ]}
-    where
-     toInteger str = B.foldl' delta 0 str
-                where
-                  delta acc c =
-                    if '0' <= c && c <= '9'
-                    then 10 * acc + fromIntegral (ord c - ord '0')
-                    else error ("finishExecute:  not an int: " ++ B.unpack str)
-
-
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
