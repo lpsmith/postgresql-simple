@@ -37,7 +37,6 @@ Library
   Build-depends:
     attoparsec >= 0.8.5.3,
     base < 5,
-    base16-bytestring,
     blaze-builder,
     blaze-textual,
     bytestring >= 0.9,

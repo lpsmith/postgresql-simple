@@ -133,6 +133,8 @@ import           Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
@@ -202,16 +204,29 @@ formatMany conn q@(Query template) qs = do
                  \([^?]*)$"
         [caseless]
 
-escapeStringConn :: Connection -> ByteString -> IO (Maybe ByteString)
-escapeStringConn conn s = withConnection conn $ \c -> do
-   PQ.escapeStringConn c s
+escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeStringConn conn s =
+    withConnection conn $ \c ->
+    PQ.escapeStringConn c s >>= checkError c
+
+escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeByteaConn conn s =
+    withConnection conn $ \c ->
+    PQ.escapeByteaConn c s >>= checkError c
+
+checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
+checkError c (Just x) = return $ Right x
+checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
-  where quote = inQuotes . fromByteString . maybe undefined id
-        sub (Plain  b) = pure b
-        sub (Escape s) = quote <$> escapeStringConn conn s
-        sub (Many  ys) = mconcat <$> mapM sub ys
+  where quote = either (\msg -> fmtError (utf8ToString msg) q xs)
+                       (inQuotes . fromByteString)
+        utf8ToString = T.unpack . TE.decodeUtf8
+        sub (Plain  b)      = pure b
+        sub (Escape s)      = quote <$> escapeStringConn conn s
+        sub (EscapeBytea s) = quote <$> escapeByteaConn conn s
+        sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
         zipParams (t:ts) (p:ps) = t `mappend` p `mappend` zipParams ts ps
@@ -611,9 +626,10 @@ fmtError msg q xs = throw FormatError {
                     , fmtQuery = q
                     , fmtParams = map twiddle xs
                     }
-  where twiddle (Plain b)  = toByteString b
-        twiddle (Escape s) = s
-        twiddle (Many ys)  = B.concat (map twiddle ys)
+  where twiddle (Plain b)       = toByteString b
+        twiddle (Escape s)      = s
+        twiddle (EscapeBytea s) = s
+        twiddle (Many ys)       = B.concat (map twiddle ys)
 
 -- $use
 --

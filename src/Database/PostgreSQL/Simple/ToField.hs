@@ -21,13 +21,10 @@ module Database.PostgreSQL.Simple.ToField
     , inQuotes
     ) where
 
-import Blaze.ByteString.Builder (Builder, fromByteString, fromLazyByteString,
-                                 toByteString)
+import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromChar)
 import Blaze.Text (integral, double, float)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Base16 as B16
-import qualified Data.ByteString.Base16.Lazy as L16
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
 import Data.Monoid (mappend)
@@ -58,14 +55,18 @@ data Action =
     -- ^ Escape and enclose in quotes before substituting. Use for all
     -- text-like types, and anything else that may contain unsafe
     -- characters when rendered.
+  | EscapeBytea ByteString
+    -- ^ Escape binary data for use as a @bytea@ literal.  Include surrounding
+    -- quotes.  This is used by the 'Binary' newtype wrapper.
   | Many [Action]
     -- ^ Concatenate a series of rendering actions.
     deriving (Typeable)
 
 instance Show Action where
-    show (Plain b)  = "Plain " ++ show (toByteString b)
-    show (Escape b) = "Escape " ++ show b
-    show (Many b)   = "Many " ++ show b
+    show (Plain b)       = "Plain " ++ show (toByteString b)
+    show (Escape b)      = "Escape " ++ show b
+    show (EscapeBytea b) = "EscapeBytea " ++ show b
+    show (Many b)        = "Many " ++ show b
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -87,16 +88,6 @@ instance (ToField a) => ToField (In [a]) where
         Plain (fromChar '(') :
         (intersperse (Plain (fromChar ',')) . map toField $ xs) ++
         [Plain (fromChar ')')]
-
-instance ToField (Binary SB.ByteString) where
-    toField (Binary bs) = Plain $ fromByteString "'\\x" `mappend`
-                                  fromByteString (B16.encode bs) `mappend`
-                                  fromChar '\''
-
-instance ToField (Binary LB.ByteString) where
-    toField (Binary bs) = Plain $ fromByteString "'\\x" `mappend`
-                                  fromLazyByteString (L16.encode bs) `mappend`
-                                  fromChar '\''
 
 renderNull :: Action
 renderNull = Plain (fromByteString "null")
@@ -166,6 +157,14 @@ instance ToField Float where
 instance ToField Double where
     toField v | isNaN v || isInfinite v = Plain (inQuotes (double v))
               | otherwise               = Plain (double v)
+    {-# INLINE toField #-}
+
+instance ToField (Binary SB.ByteString) where
+    toField (Binary bs) = EscapeBytea bs
+    {-# INLINE toField #-}
+
+instance ToField (Binary LB.ByteString) where
+    toField (Binary bs) = (EscapeBytea . SB.concat . LB.toChunks) bs
     {-# INLINE toField #-}
 
 instance ToField SB.ByteString where
