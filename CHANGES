@@ -5,6 +5,8 @@ Version 0.1.2:
   * postgresql-simple now sets standard_conforming_strings to "on".  You may
     need to adjust embedded string literals embedded inside your SQL queries.
 
+  * Exported (:.) from Database.PostgreSQL.Simple
+
 Version 0.1.1: (2012-05-06)
   * Added some preliminary documentation for the Ok, Notification, and 
     LargeObjects modules

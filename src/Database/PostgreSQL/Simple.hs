@@ -54,6 +54,7 @@ module Database.PostgreSQL.Simple
     , In(..)
     , Binary(..)
     , Only(..)
+    , (:.)(..)
     -- ** Exceptions
     , SqlError(..)
     , FormatError(fmtMessage, fmtQuery, fmtParams)
@@ -127,7 +128,7 @@ import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
-                   ( Binary(..), In(..), Only(..), Query(..) )
+                   ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Text.Regex.PCRE.Light (compile, caseless, match)
