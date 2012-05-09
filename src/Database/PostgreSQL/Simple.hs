@@ -205,7 +205,7 @@ escapeByteaConn conn s =
     PQ.escapeByteaConn c s >>= checkError c
 
 checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
-checkError c (Just x) = return $ Right x
+checkError _ (Just x) = return $ Right x
 checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
