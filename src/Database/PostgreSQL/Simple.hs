@@ -662,7 +662,7 @@ fmtError msg q xs = throw FormatError {
 -- Automated type inference means that you will often be able to avoid
 -- supplying explicit type signatures for the elements of a tuple.
 -- However, sometimes the compiler will not be able to infer your
--- types. Consider a care where you write a numeric literal in a
+-- types. Consider a case where you write a numeric literal in a
 -- parameter tuple:
 --
 -- > query conn "select ? + ?" (40,2)
