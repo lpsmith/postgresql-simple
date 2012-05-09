@@ -107,7 +107,7 @@ newtype Only a = Only {
 newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
--- | Wrap a mostly-binary string to be escaped in hexadecimal.
+-- | Wrap binary data for use as a @bytea@ value.
 newtype Binary a = Binary a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 

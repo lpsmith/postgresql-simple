@@ -12,7 +12,7 @@ Copyright:           (c) 2011 MailRank, Inc.
 Category:            Database
 Build-type:          Simple
 
-Cabal-version:       >=1.6
+Cabal-version:       >= 1.9.2
 
 Library
   hs-source-dirs: src
@@ -37,7 +37,6 @@ Library
   Build-depends:
     attoparsec >= 0.8.5.3,
     base < 5,
-    base16-bytestring,
     blaze-builder,
     blaze-textual,
     bytestring >= 0.9,
@@ -64,3 +63,19 @@ source-repository this
   type:     git
   location: http://github.com/lpsmith/postgresql-simple
   tag:      v0.1.1
+
+test-suite test
+  type:           exitcode-stdio-1.0
+
+  hs-source-dirs: test
+  main-is:        Main.hs
+  other-modules:
+    Bytea
+
+  build-depends: base
+               , base16-bytestring
+               , bytestring
+               , cryptohash
+               , HUnit
+               , postgresql-simple
+               , text
