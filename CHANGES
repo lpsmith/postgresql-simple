@@ -1,14 +1,17 @@
-Version 0.1.2:
+Version 0.1.2: (2012-05-09)
   * Switched to libpq-based escaping for bytea types;  Binary now works with
-    PostgreSQL 8
+    PostgreSQL 8 courtesy of Joey Adams.
 
-  * postgresql-simple now sets standard_conforming_strings to "on".  You may
-    need to adjust embedded string literals embedded inside your SQL queries.
+  * postgresql-simple now sets standard_conforming_strings to "on".  This
+    per-connection variable is initialized according to the server
+    configuration,  which defaults to "off" for PostgreSQL < 9,  and "on"
+    for PostgreSQL >= 9.   You may need to adjust any string literals in
+    your SQL queries,  or set the variable yourself.
 
   * Exported (:.) from Database.PostgreSQL.Simple
 
 Version 0.1.1: (2012-05-06)
-  * Added some preliminary documentation for the Ok, Notification, and 
+  * Added some preliminary documentation for the Ok, Notification, and
     LargeObjects modules
 
   * Implemented the `fail` method for the monad instance for `Ok`.
