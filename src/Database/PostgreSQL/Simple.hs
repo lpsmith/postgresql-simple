@@ -113,7 +113,6 @@ import           Control.Exception
                    ( Exception, onException, throw, throwIO, finally )
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
-import           Data.Char(ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import           Data.List (intersperse)
@@ -133,6 +132,8 @@ import           Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Text          as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
@@ -147,15 +148,6 @@ data FormatError = FormatError {
     } deriving (Eq, Show, Typeable)
 
 instance Exception FormatError
-
--- | Exception thrown if 'query' is used to perform an @INSERT@-like
--- operation, or 'execute' is used to perform a @SELECT@-like operation.
-data QueryError = QueryError {
-      qeMessage :: String
-    , qeQuery :: Query
-    } deriving (Eq, Show, Typeable)
-
-instance Exception QueryError
 
 -- | Format a query string.
 --
@@ -202,16 +194,29 @@ formatMany conn q@(Query template) qs = do
                  \([^?]*)$"
         [caseless]
 
-escapeStringConn :: Connection -> ByteString -> IO (Maybe ByteString)
-escapeStringConn conn s = withConnection conn $ \c -> do
-   PQ.escapeStringConn c s
+escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeStringConn conn s =
+    withConnection conn $ \c ->
+    PQ.escapeStringConn c s >>= checkError c
+
+escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeByteaConn conn s =
+    withConnection conn $ \c ->
+    PQ.escapeByteaConn c s >>= checkError c
+
+checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
+checkError c (Just x) = return $ Right x
+checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
-  where quote = inQuotes . fromByteString . maybe undefined id
-        sub (Plain  b) = pure b
-        sub (Escape s) = quote <$> escapeStringConn conn s
-        sub (Many  ys) = mconcat <$> mapM sub ys
+  where quote = either (\msg -> fmtError (utf8ToString msg) q xs)
+                       (inQuotes . fromByteString)
+        utf8ToString = T.unpack . TE.decodeUtf8
+        sub (Plain  b)      = pure b
+        sub (Escape s)      = quote <$> escapeStringConn conn s
+        sub (EscapeBytea s) = quote <$> escapeByteaConn conn s
+        sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
         zipParams (t:ts) (p:ps) = t `mappend` p `mappend` zipParams ts ps
@@ -231,12 +236,6 @@ execute conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishExecute conn template result
 
--- | A version of 'execute' that does not perform query substitution.
-execute_ :: Connection -> Query -> IO Int64
-execute_ conn q@(Query stmt) = do
-  result <- exec conn stmt
-  finishExecute conn q result
-
 -- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
 --
@@ -248,44 +247,6 @@ executeMany _ _ [] = return 0
 executeMany conn q qs = do
   result <- exec conn =<< formatMany conn q qs
   finishExecute conn q result
-
-finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
-finishExecute _conn q result = do
-    status <- PQ.resultStatus result
-    case status of
-      PQ.CommandOk -> do
-          ncols <- PQ.nfields result
-          if ncols /= 0
-          then throwIO $ QueryError ("execute resulted in " ++ show ncols ++
-                                     "-column result") q
-          else do
-            nstr <- PQ.cmdTuples result
-            return $ case nstr of
-                       Nothing  -> 0   -- is this appropriate?
-                       Just str -> toInteger str
-      PQ.TuplesOk -> do
-          ncols <- PQ.nfields result
-          throwIO $ QueryError ("execute resulted in " ++ show ncols ++
-                                 "-column result") q
-      PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
-      PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
-      _ -> do
-        errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
-        statusmsg <- PQ.resStatus status
-        state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-        throwIO $ SqlError { sqlState = state
-                           , sqlNativeError = fromEnum status
-                           , sqlErrorMsg = B.concat [ "execute: ", statusmsg
-                                                    , ": ", errormsg ]}
-    where
-     toInteger str = B.foldl' delta 0 str
-                where
-                  delta acc c =
-                    if '0' <= c && c <= '9'
-                    then 10 * acc + fromIntegral (ord c - ord '0')
-                    else error ("finishExecute:  not an int: " ++ B.unpack str)
-
-
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
@@ -467,6 +428,8 @@ finishQuery :: (FromRow r) => Connection -> Query -> PQ.Result -> IO [r]
 finishQuery conn q result = do
   status <- PQ.resultStatus result
   case status of
+    PQ.EmptyQuery ->
+        throwIO $ QueryError "query: Empty query" q
     PQ.CommandOk -> do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
@@ -494,6 +457,13 @@ finishQuery conn q result = do
              Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
              Errors [x] -> throwIO x
              Errors xs  -> throwIO $ ManyErrors xs
+    PQ.CopyOut ->
+        throwIO $ QueryError "query: COPY TO is not supported" q
+    PQ.CopyIn ->
+        throwIO $ QueryError "query: COPY FROM is not supported" q
+    PQ.BadResponse   -> throwResultError "query" result status
+    PQ.NonfatalError -> throwResultError "query" result status
+    PQ.FatalError    -> throwResultError "query" result status
 
 ellipsis :: ByteString -> ByteString
 ellipsis bs
@@ -611,9 +581,10 @@ fmtError msg q xs = throw FormatError {
                     , fmtQuery = q
                     , fmtParams = map twiddle xs
                     }
-  where twiddle (Plain b)  = toByteString b
-        twiddle (Escape s) = s
-        twiddle (Many ys)  = B.concat (map twiddle ys)
+  where twiddle (Plain b)       = toByteString b
+        twiddle (Escape s)      = s
+        twiddle (EscapeBytea s) = s
+        twiddle (Many ys)       = B.concat (map twiddle ys)
 
 -- $use
 --
