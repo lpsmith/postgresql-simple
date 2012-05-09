@@ -224,6 +224,7 @@ finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
 finishExecute _conn q result = do
     status <- PQ.resultStatus result
     case status of
+      PQ.EmptyQuery -> throwIO $ QueryError "execute: Empty query" q
       PQ.CommandOk -> do
           ncols <- PQ.nfields result
           if ncols /= 0
@@ -238,16 +239,13 @@ finishExecute _conn q result = do
           ncols <- PQ.nfields result
           throwIO $ QueryError ("execute resulted in " ++ show ncols ++
                                  "-column result") q
-      PQ.CopyIn  -> fail "FIXME: postgresql-simple does not currently support COPY IN"
-      PQ.CopyOut -> fail "FIXME: postgresql-simple does not currently support COPY OUT"
-      _ -> do
-        errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
-        statusmsg <- PQ.resStatus status
-        state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-        throwIO $ SqlError { sqlState = state
-                           , sqlNativeError = fromEnum status
-                           , sqlErrorMsg = B.concat [ "execute: ", statusmsg
-                                                    , ": ", errormsg ]}
+      PQ.CopyOut ->
+          throwIO $ QueryError "execute: COPY TO is not supported" q
+      PQ.CopyIn ->
+          throwIO $ QueryError "execute: COPY FROM is not supported" q
+      PQ.BadResponse   -> throwResultError "execute" result status
+      PQ.NonfatalError -> throwResultError "execute" result status
+      PQ.FatalError    -> throwResultError "execute" result status
     where
      toInteger str = B8.foldl' delta 0 str
                 where
@@ -256,6 +254,15 @@ finishExecute _conn q result = do
                     then 10 * acc + fromIntegral (ord c - ord '0')
                     else error ("finishExecute:  not an int: " ++ B8.unpack str)
 
+throwResultError :: ByteString -> PQ.Result -> PQ.ExecStatus -> IO a
+throwResultError context result status = do
+    errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
+    statusmsg <- PQ.resStatus status
+    state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+    throwIO $ SqlError { sqlState = state
+                       , sqlNativeError = fromEnum status
+                       , sqlErrorMsg = B.concat [ context, ": ", statusmsg
+                                                , ": ", errormsg ]}
 
 disconnectedError :: SqlError
 disconnectedError = SqlError {

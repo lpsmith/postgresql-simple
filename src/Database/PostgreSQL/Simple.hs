@@ -428,6 +428,8 @@ finishQuery :: (FromRow r) => Connection -> Query -> PQ.Result -> IO [r]
 finishQuery conn q result = do
   status <- PQ.resultStatus result
   case status of
+    PQ.EmptyQuery ->
+        throwIO $ QueryError "query: Empty query" q
     PQ.CommandOk -> do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
@@ -455,6 +457,13 @@ finishQuery conn q result = do
              Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
              Errors [x] -> throwIO x
              Errors xs  -> throwIO $ ManyErrors xs
+    PQ.CopyOut ->
+        throwIO $ QueryError "query: COPY TO is not supported" q
+    PQ.CopyIn ->
+        throwIO $ QueryError "query: COPY FROM is not supported" q
+    PQ.BadResponse   -> throwResultError "query" result status
+    PQ.NonfatalError -> throwResultError "query" result status
+    PQ.FatalError    -> throwResultError "query" result status
 
 ellipsis :: ByteString -> ByteString
 ellipsis bs
