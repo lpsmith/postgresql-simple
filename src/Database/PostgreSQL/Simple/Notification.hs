@@ -19,6 +19,7 @@
 module Database.PostgreSQL.Simple.Notification
      ( Notification(..)
      , getNotification
+     , getNotificationIfAvailable
      ) where
 
 import           Control.Concurrent ( threadWaitRead )
@@ -38,6 +39,11 @@ errfd :: String
 errfd   = "Database.PostgreSQL.Simple.Notification.getNotification: \
           \failed to fetch file descriptor"
 
+convertNotice :: PQ.Notify -> Notification
+convertNotice PQ.Notify{..}
+    = Notification { notificationPid     = notifyBePid
+                   , notificationChannel = notifyRelname
+                   , notificationData    = notifyExtra   }
 
 -- | Returns a single notification.   If no notifications are available,
 --   'getNotification' blocks until one arrives.
@@ -55,10 +61,24 @@ getNotification = loop False
                                          case mfd of
                                            Nothing -> fail errfd
                                            Just fd -> return (Left fd)
-                           Just x -> return (Right x)
+                           Just msg -> return (Right msg)
+        -- FIXME? what happens if the connection is closed/reset right here?
         case res of
           Left fd -> threadWaitRead fd >> loop True conn
-          Right PQ.Notify{..} -> do
-              return Notification { notificationPid     = notifyBePid
-                                  , notificationChannel = notifyRelname
-                                  , notificationData    = notifyExtra   }
+          Right msg -> return $! convertNotice msg
+
+-- | Non-blocking variant of 'getNotification'.   Returns a single notification,
+-- if available.   If no notifications are available,  returns 'Nothing'.
+
+getNotificationIfAvailable :: Connection -> IO (Maybe Notification)
+getNotificationIfAvailable conn =
+    withConnection conn $ \c -> do
+        mmsg <- PQ.notifies c
+        case mmsg of
+          Just msg -> return $! Just $! convertNotice msg
+          Nothing -> do
+              _ <- PQ.consumeInput c
+              mmsg' <- PQ.notifies c
+              case mmsg' of
+                Just msg -> return $! Just $! convertNotice msg
+                Nothing  -> return Nothing
