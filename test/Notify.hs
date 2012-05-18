@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Notify (testNotify) where
 
+import Common
+
 import Control.Applicative
 import Control.Concurrent
 import Control.Monad
 import Data.Function
 import Data.List
-import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.Notification
-import Test.HUnit
 
 import qualified Data.ByteString as B
 

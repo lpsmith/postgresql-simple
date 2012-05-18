@@ -1,9 +1,13 @@
-module Util (
+module Common (
+    module Database.PostgreSQL.Simple,
+    module Test.HUnit,
     md5,
 ) where
 
-import Data.ByteString  (ByteString)
-import Data.Text        (Text)
+import Data.ByteString              (ByteString)
+import Data.Text                    (Text)
+import Database.PostgreSQL.Simple
+import Test.HUnit
 
 import qualified Crypto.Hash.MD5        as MD5
 import qualified Data.ByteString.Base16 as Base16

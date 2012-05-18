@@ -1,12 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bytea (testBytea) where
 
-import Util (md5)
-
-import Database.PostgreSQL.Simple
-import Test.HUnit
-
-import qualified Data.ByteString    as B
+import Common
+import qualified Data.ByteString as B
 
 testBytea :: Connection -> Test
 testBytea conn = TestList
