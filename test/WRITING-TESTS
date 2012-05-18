@@ -3,9 +3,28 @@ starts the HUnit text-based test controller.
 
 To add a new module to the test suite, do the following:
 
- * Create a new module that exports a function of type Connection -> Test.
+ * Create a new module that exports a function of type TestEnv -> Test.
+   For example:
+
+        module Foo (testFoo) where
+
+        import Common
+
+        testFoo :: TestEnv -> Test
+        testFoo TestEnv{..} = ...
+
+   'TestEnv' (defined in Common.hs) contains information for accessing the
+   database.  `TestEnv{..}` is a record wildcard which brings the following
+   definitions into scope:
+
+        conn     :: Connection
+        withConn :: (Connection -> IO a) -> IO a
+
+   'conn' is a database connection shared by all the tests.
+   'withConn' can be used to open additional connections (to the same database).
+
    'Test' is basically a tree of 'Assertion's, where 'Assertion' is just a type
-   alias for IO ().  See Bytea.hs for reference.
+   alias for IO ().  See the HLint documentation for more information.
 
  * Add an entry to 'tests' in Main.hs (along with the corresponding
    module import) so the test driver will know about the new module.

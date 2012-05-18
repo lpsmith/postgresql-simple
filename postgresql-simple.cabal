@@ -70,7 +70,16 @@ test-suite test
   hs-source-dirs: test
   main-is:        Main.hs
   other-modules:
+    Common
     Bytea
+    Notify
+
+  ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
+
+  extensions: NamedFieldPuns
+            , OverloadedStrings
+            , Rank2Types
+            , RecordWildCards
 
   build-depends: base
                , base16-bytestring
