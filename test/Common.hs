@@ -1,4 +1,3 @@
-{-# LANGUAGE Rank2Types #-}
 module Common (
     module Database.PostgreSQL.Simple,
     module Test.HUnit,
