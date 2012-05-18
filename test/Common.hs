@@ -1,6 +1,8 @@
+{-# LANGUAGE Rank2Types #-}
 module Common (
     module Database.PostgreSQL.Simple,
     module Test.HUnit,
+    TestEnv(..),
     md5,
 ) where
 
@@ -12,6 +14,14 @@ import Test.HUnit
 import qualified Crypto.Hash.MD5        as MD5
 import qualified Data.ByteString.Base16 as Base16
 import qualified Data.Text.Encoding     as TE
+
+data TestEnv
+    = TestEnv
+        { conn     :: Connection
+            -- ^ Connection shared by all the tests
+        , withConn :: forall a. (Connection -> IO a) -> IO a
+            -- ^ Bracket for spawning additional connections
+        }
 
 -- | Return the MD5 hash of a 'ByteString', in lowercase hex format.
 --

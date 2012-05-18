@@ -1,15 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import Control.Exception            (bracket)
-import Control.Monad                (when)
-import Database.PostgreSQL.Simple
-import System.Exit                  (exitFailure)
-import System.IO
-import Test.HUnit
-
+import Common
 import Bytea
 import Notify
+
+import Control.Exception            (bracket)
+import Control.Monad                (when)
+import System.Exit                  (exitFailure)
+import System.IO
 
 -- | Action for connecting to the database that will be used for testing.
 --
@@ -18,18 +17,25 @@ import Notify
 testConnect :: IO Connection
 testConnect = connectPostgreSQL ""
 
-withConn :: (Connection -> IO a) -> IO a
-withConn = bracket testConnect close
+withTestEnv :: (TestEnv -> IO a) -> IO a
+withTestEnv cb =
+    withConn $ \conn ->
+        cb TestEnv
+            { conn     = conn
+            , withConn = withConn
+            }
+  where
+    withConn = bracket testConnect close
 
-tests :: Connection -> [Test]
-tests conn =
-    [ TestLabel "Bytea"     $ testBytea     conn
-    , TestLabel "Notify"    $ testNotify    conn    withConn
+tests :: [TestEnv -> Test]
+tests =
+    [ TestLabel "Bytea"     . testBytea
+    , TestLabel "Notify"    . testNotify
     ]
 
 main :: IO ()
 main = do
     mapM_ (`hSetBuffering` LineBuffering) [stdout, stderr]
     Counts{cases, tried, errors, failures} <-
-        withConn $ runTestTT . TestList . tests
+        withTestEnv $ \env -> runTestTT $ TestList $ map ($ env) tests
     when (cases /= tried || errors /= 0 || failures /= 0) $ exitFailure

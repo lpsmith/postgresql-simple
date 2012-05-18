@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Bytea (testBytea) where
 
 import Common
 import qualified Data.ByteString as B
 
-testBytea :: Connection -> Test
-testBytea conn = TestList
+testBytea :: TestEnv -> Test
+testBytea TestEnv{..} = TestList
     [ testStr "empty"                  []
     , testStr "\"hello\""              $ map (fromIntegral . fromEnum) ("hello" :: String)
     , testStr "ascending"              [0..255]

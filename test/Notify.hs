@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Notify (testNotify) where
 
 import Common
@@ -15,8 +16,8 @@ import qualified Data.ByteString as B
 -- TODO: Test with payload, but only for PostgreSQL >= 9.0
 -- (when that feature was introduced).
 
-testNotify :: Connection -> ((Connection -> IO ()) -> IO ()) -> Test
-testNotify conn withConn =
+testNotify :: TestEnv -> Test
+testNotify TestEnv{..} =
     TestCase $
     withConn $ \conn2 -> do
         execute_ conn "LISTEN foo"
