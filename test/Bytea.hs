@@ -1,15 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bytea where
+module Bytea (testBytea) where
 
-import Data.ByteString              (ByteString)
-import Data.Text                    (Text)
+import Util (md5)
+
 import Database.PostgreSQL.Simple
 import Test.HUnit
 
-import qualified Crypto.Hash.MD5    as MD5
 import qualified Data.ByteString    as B
-import qualified Data.ByteString.Base16 as Base16
-import qualified Data.Text.Encoding as TE
 
 testBytea :: Connection -> Test
 testBytea conn = TestList
@@ -31,6 +28,3 @@ testBytea conn = TestList
         assertBool "SQL -> Haskell conversion altered the string" $ bs == r
 
     doubleUp = concatMap (\x -> [x, x])
-
-md5 :: ByteString -> Text
-md5 = TE.decodeUtf8 . Base16.encode . MD5.hash
