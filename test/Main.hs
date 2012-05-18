@@ -1,11 +1,17 @@
 import Common
-import Bytea
-import Notify
-
 import Control.Exception            (bracket)
 import Control.Monad                (when)
 import System.Exit                  (exitFailure)
 import System.IO
+
+import Bytea
+import Notify
+
+tests :: [TestEnv -> Test]
+tests =
+    [ TestLabel "Bytea"     . testBytea
+    , TestLabel "Notify"    . testNotify
+    ]
 
 -- | Action for connecting to the database that will be used for testing.
 --
@@ -23,12 +29,6 @@ withTestEnv cb =
             }
   where
     withConn = bracket testConnect close
-
-tests :: [TestEnv -> Test]
-tests =
-    [ TestLabel "Bytea"     . testBytea
-    , TestLabel "Notify"    . testNotify
-    ]
 
 main :: IO ()
 main = do
