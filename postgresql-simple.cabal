@@ -72,6 +72,8 @@ test-suite test
   other-modules:
     Bytea
 
+  ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
+
   build-depends: base
                , base16-bytestring
                , bytestring
