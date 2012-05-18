@@ -9,15 +9,27 @@ import System.IO
 import Test.HUnit
 
 import Bytea
+import Notify
+
+-- | Action for connecting to the database that will be used for testing.
+--
+-- Note that some tests, such as Notify, use multiple connections, and assume
+-- that 'testConnect' connects to the same database every time it is called.
+testConnect :: IO Connection
+testConnect = connectPostgreSQL ""
+
+withConn :: (Connection -> IO a) -> IO a
+withConn = bracket testConnect close
 
 tests :: Connection -> [Test]
 tests conn =
-    [ TestLabel "Bytea" $ testBytea conn
+    [ TestLabel "Bytea"     $ testBytea     conn
+    , TestLabel "Notify"    $ testNotify    conn    withConn
     ]
 
 main :: IO ()
 main = do
     mapM_ (`hSetBuffering` LineBuffering) [stdout, stderr]
-    bracket (connectPostgreSQL "") close $ \conn -> do
-        Counts{cases, tried, errors, failures} <- runTestTT $ TestList $ tests conn
-        when (cases /= tried || errors /= 0 || failures /= 0) $ exitFailure
+    Counts{cases, tried, errors, failures} <-
+        withConn $ runTestTT . TestList . tests
+    when (cases /= tried || errors /= 0 || failures /= 0) $ exitFailure
