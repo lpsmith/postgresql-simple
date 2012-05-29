@@ -54,7 +54,7 @@ import           Data.Ratio (Ratio)
 import           Data.Time.Calendar (Day, fromGregorian)
 import           Data.Time.Clock (UTCTime)
 import           Data.Time.Format (parseTime)
-import           Data.Time.LocalTime (TimeOfDay, makeTimeOfDayValid)
+import           Data.Time.LocalTime (ZonedTime, TimeOfDay, makeTimeOfDayValid)
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
@@ -196,6 +196,20 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
+    fromField f =
+        case oid2builtin (typeOid f) of
+          Just Timestamp             -> doIt "%F %T%Q"   id
+          Just TimestampWithTimeZone -> doIt "%F %T%Q%z" (++ "00")
+          _ -> const $ returnError Incompatible f "types incompatible"
+        where
+          doIt _   _          Nothing   = returnError UnexpectedNull f ""
+          doIt fmt preprocess (Just bs) =
+              case parseTime defaultTimeLocale fmt str of
+                Just t  -> pure t
+                Nothing -> returnError ConversionFailed f "could not parse"
+              where str = preprocess (B8.unpack bs)
+
+instance FromField ZonedTime where
     fromField f =
         case oid2builtin (typeOid f) of
           Just Timestamp             -> doIt "%F %T%Q"   id
