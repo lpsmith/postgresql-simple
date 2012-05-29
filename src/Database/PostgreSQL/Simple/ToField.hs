@@ -31,7 +31,7 @@ import Data.Monoid (mappend)
 import Data.Time.Calendar (Day, showGregorian)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (formatTime)
-import Data.Time.LocalTime (TimeOfDay)
+import Data.Time.LocalTime (TimeOfDay, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
@@ -189,6 +189,10 @@ instance ToField LT.Text where
 
 instance ToField UTCTime where
     toField = Plain . Utf8.fromString . formatTime defaultTimeLocale "'%F %T%Q+00'"
+    {-# INLINE toField #-}
+
+instance ToField ZonedTime where
+    toField = Plain . Utf8.fromString . formatTime defaultTimeLocale "'%F %T%Q%z'"
     {-# INLINE toField #-}
 
 instance ToField Day where
