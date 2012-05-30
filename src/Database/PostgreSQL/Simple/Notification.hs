@@ -19,7 +19,7 @@
 module Database.PostgreSQL.Simple.Notification
      ( Notification(..)
      , getNotification
-     , getNotificationIfAvailable
+     , getNotificationNonBlocking
      ) where
 
 import           Control.Concurrent ( threadWaitRead )
@@ -70,8 +70,8 @@ getNotification = loop False
 -- | Non-blocking variant of 'getNotification'.   Returns a single notification,
 -- if available.   If no notifications are available,  returns 'Nothing'.
 
-getNotificationIfAvailable :: Connection -> IO (Maybe Notification)
-getNotificationIfAvailable conn =
+getNotificationNonBlocking :: Connection -> IO (Maybe Notification)
+getNotificationNonBlocking conn =
     withConnection conn $ \c -> do
         mmsg <- PQ.notifies c
         case mmsg of
