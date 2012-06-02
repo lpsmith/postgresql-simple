@@ -22,6 +22,11 @@ module Database.PostgreSQL.Simple.Time
      , parseLocalTimestamp
      , Date
      , parseDate
+     , parseUTCTime
+     , parseZonedTime
+     , parseLocalTime
+     , parseDay
+     , parseTimeOfDay
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation

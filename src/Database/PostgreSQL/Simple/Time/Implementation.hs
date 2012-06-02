@@ -50,6 +50,21 @@ type UTCTimestamp   = Unbounded UTCTime
 type ZonedTimestamp = Unbounded ZonedTime
 type Date           = Unbounded Day
 
+parseUTCTime   :: B.ByteString -> Either String UTCTime
+parseUTCTime   = A.parseOnly (getUTCTime <* A.endOfInput)
+
+parseZonedTime :: B.ByteString -> Either String ZonedTime
+parseZonedTime = A.parseOnly (getZonedTime <* A.endOfInput)
+
+parseLocalTime :: B.ByteString -> Either String LocalTime
+parseLocalTime = A.parseOnly (getLocalTime <* A.endOfInput)
+
+parseDay :: B.ByteString -> Either String Day
+parseDay = A.parseOnly (getDay <* A.endOfInput)
+
+parseTimeOfDay :: B.ByteString -> Either String TimeOfDay
+parseTimeOfDay = A.parseOnly (getTimeOfDay <* A.endOfInput)
+
 parseUTCTimestamp   :: B.ByteString -> Either String UTCTimestamp
 parseUTCTimestamp   = A.parseOnly (getUTCTimestamp <* A.endOfInput)
 
