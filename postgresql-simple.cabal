@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.1.3
+Version:             0.1.4
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -25,6 +25,8 @@ Library
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Ok
      Database.PostgreSQL.Simple.SqlQQ
+     Database.PostgreSQL.Simple.Time
+     Database.PostgreSQL.Simple.Time.Internal
      Database.PostgreSQL.Simple.ToField
      Database.PostgreSQL.Simple.ToRow
      Database.PostgreSQL.Simple.Types
@@ -33,6 +35,7 @@ Library
 
   Other-modules:
      Database.PostgreSQL.Simple.Compat
+     Database.PostgreSQL.Simple.Time.Implementation
 
   Build-depends:
     attoparsec >= 0.8.5.3,
@@ -62,7 +65,7 @@ source-repository head
 source-repository this
   type:     git
   location: http://github.com/lpsmith/postgresql-simple
-  tag:      v0.1.3
+  tag:      v0.1.4
 
 test-suite test
   type:           exitcode-stdio-1.0
