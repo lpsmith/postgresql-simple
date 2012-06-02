@@ -74,10 +74,10 @@ ff :: PG.BuiltinType -> String -> (B.ByteString -> Either String a)
 ff pgType hsType parse f mstr
     | typeOid f /= PG.builtin2oid pgType
     = left (Incompatible   (B8.unpack (typename f)) hsType "")
-    | Nothing <- mstr 
+    | Nothing <- mstr
     = left (UnexpectedNull (B8.unpack (typename f)) hsType "")
-    | Just str <- mstr 
-    = case parse str of 
+    | Just str <- mstr
+    = case parse str of
         Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
         Right val -> pure val
 {-# INLINE ff #-}
@@ -122,8 +122,9 @@ getDay = do
 getDate :: A.Parser Date
 getDate = getUnbounded getDay
 
-toPicos :: Num a => B.ByteString -> a
-toPicos str = toNum str * 10^(12 - B.length str)
+decimal :: Fractional a => B.ByteString -> a
+decimal str = toNum str / 10^(B.length str)
+{-# INLINE decimal #-}
 
 getTimeOfDay :: A.Parser TimeOfDay
 getTimeOfDay = do
@@ -132,9 +133,9 @@ getTimeOfDay = do
     minute <- digits "minutes"
     _      <- A.char ':'
     second <- digits "seconds"
-    picos  <- (A.char '.' *> (toPicos <$> A.takeWhile1 isDigit)) <|> return 0
+    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> return 0
 
-    let !picos' = second * 1000000000000 + picos
+    let !picos' = second + subsec
 
     case makeTimeOfDayValid hour minute picos' of
       Nothing -> fail "invalid time of day"
@@ -165,7 +166,7 @@ getUTCTime = do
     _    <- A.char ' '
     time <- getTimeOfDay
     zone <- getTimeZone
-    let (!dayDelta,!time') = utcToLocalTimeOfDay zone time
+    let (!dayDelta,!time') = localToUTCTimeOfDay zone time
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
     return (UTCTime day' time'')
