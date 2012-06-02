@@ -61,6 +61,7 @@ import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Database.PostgreSQL.Simple.Time
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.IO.Unsafe (unsafePerformIO)
 import           System.Locale (defaultTimeLocale)
@@ -239,6 +240,32 @@ instance FromField TimeOfDay where
                 case makeTimeOfDayValid hours mins (fromIntegral secs) of
                   Just t -> return (pure t)
                   _      -> return (returnError ConversionFailed f "could not parse")
+
+
+instance FromField UTCTimestamp where
+  fromField = ff TimestampWithTimeZone "UTCTimestamp" parseUTCTimestamp
+
+instance FromField ZonedTimestamp where
+  fromField = ff TimestampWithTimeZone "ZonedTimestamp" parseZonedTimestamp
+
+instance FromField LocalTimestamp where
+  fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
+
+instance FromField Date where
+  fromField = ff Date "Date" parseDate
+
+ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
+   -> Field -> Maybe B8.ByteString -> Ok a
+ff pgType hsType parse f mstr
+    | typeOid f /= builtin2oid pgType
+    = left (Incompatible   (B8.unpack (typename f)) hsType "")
+    | Nothing <- mstr
+    = left (UnexpectedNull (B8.unpack (typename f)) hsType "")
+    | Just str <- mstr
+    = case parse str of
+        Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
+        Right val -> return val
+{-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)

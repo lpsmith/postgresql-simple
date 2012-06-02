@@ -7,13 +7,10 @@
 -- Stability:   experimental
 --
 -- Time types that supports infinities.   Also includes new time parsers
--- with improved performance over GHC's time package.  See 
+-- with improved performance over GHC's time package.  See
 -- 'Database.PostgreSQL.Simple.Time.Internal'.
 --
 ------------------------------------------------------------------------------
-
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Database.PostgreSQL.Simple.Time
      ( Unbounded(..)

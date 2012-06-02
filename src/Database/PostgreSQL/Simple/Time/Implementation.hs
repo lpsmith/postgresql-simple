@@ -8,7 +8,7 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable, FlexibleInstances, PatternGuards #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Database.PostgreSQL.Simple.Time.Implementation where
 
@@ -17,21 +17,14 @@ import Prelude hiding (take)
 --import Blaze.ByteString.Builder.Char8(fromString, fromChar)
 import Control.Arrow((***))
 import Control.Applicative
-import Control.Exception
 import Control.Monad(when)
 import Data.Bits((.&.))
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Char8 as B8
 import Data.ByteString.Internal (c2w)
-import Data.Char
 import Data.Time hiding (getTimeZone, getZonedTime)
 import Data.Typeable
 import Data.Word(Word8)
 import qualified Data.Attoparsec.Char8 as A
-import qualified Database.PostgreSQL.Simple.BuiltinTypes as PG
-import Database.PostgreSQL.Simple.FromField
---import Database.PostgreSQL.Simple.ToField
-import Database.PostgreSQL.Simple.Ok
 
 data Unbounded a
    = NegInfinity
@@ -57,35 +50,6 @@ type UTCTimestamp   = Unbounded UTCTime
 type ZonedTimestamp = Unbounded ZonedTime
 type Date           = Unbounded Day
 
-instance FromField UTCTimestamp where
-  fromField = ff PG.TimestampWithTimeZone "UTCTimestamp" parseUTCTimestamp
-
-instance FromField ZonedTimestamp where
-  fromField = ff PG.TimestampWithTimeZone "ZonedTimestamp" parseZonedTimestamp
-
-instance FromField LocalTimestamp where
-  fromField = ff PG.Timestamp "LocalTimestamp" parseLocalTimestamp
-
-instance FromField Date where
-  fromField = ff PG.Date "Date" parseDate
-
-ff :: PG.BuiltinType -> String -> (B.ByteString -> Either String a)
-   -> Field -> Maybe B.ByteString -> Ok a
-ff pgType hsType parse f mstr
-    | typeOid f /= PG.builtin2oid pgType
-    = left (Incompatible   (B8.unpack (typename f)) hsType "")
-    | Nothing <- mstr
-    = left (UnexpectedNull (B8.unpack (typename f)) hsType "")
-    | Just str <- mstr
-    = case parse str of
-        Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
-        Right val -> pure val
-{-# INLINE ff #-}
-
-left :: Exception err => err -> Ok a
-left err = Errors [SomeException err]
-{-# INLINE left #-}
-
 parseUTCTimestamp   :: B.ByteString -> Either String UTCTimestamp
 parseUTCTimestamp   = A.parseOnly (getUTCTimestamp <* A.endOfInput)
 
@@ -106,7 +70,7 @@ getUnbounded getFinite
 
 getDay :: A.Parser Day
 getDay = do
-    yearStr <- A.takeWhile isDigit
+    yearStr <- A.takeWhile A.isDigit
     when (B.length yearStr < 4) (fail "year must consist of at least 4 digits")
 
     let !year = toNum yearStr
@@ -133,7 +97,7 @@ getTimeOfDay = do
     minute <- digits "minutes"
     _      <- A.char ':'
     second <- digits "seconds"
-    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 isDigit)) <|> return 0
+    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 A.isDigit)) <|> return 0
 
     let !picos' = second + subsec
 
@@ -186,7 +150,7 @@ digits :: Num n => String -> A.Parser n
 digits msg = do
   x <- A.anyChar
   y <- A.anyChar
-  if isDigit x && isDigit y
+  if A.isDigit x && A.isDigit y
   then return $! (10 * digit (c2w x) + digit (c2w y))
   else fail (msg ++ " is not 2 digits")
 {-# INLINE digits #-}
