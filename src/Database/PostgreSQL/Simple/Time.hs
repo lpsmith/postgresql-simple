@@ -14,19 +14,30 @@
 
 module Database.PostgreSQL.Simple.Time
      ( Unbounded(..)
-     , UTCTimestamp
-     , parseUTCTimestamp
-     , ZonedTimestamp
-     , parseZonedTimestamp
-     , LocalTimestamp
-     , parseLocalTimestamp
      , Date
-     , parseDate
+     , UTCTimestamp
+     , ZonedTimestamp
+     , LocalTimestamp
+     , parseDay
      , parseUTCTime
      , parseZonedTime
      , parseLocalTime
-     , parseDay
      , parseTimeOfDay
+     , parseDate
+     , parseUTCTimestamp
+     , parseZonedTimestamp
+     , parseLocalTimestamp
+     , dayToBuilder
+     , utcTimeToBuilder
+     , zonedTimeToBuilder
+     , localTimeToBuilder
+     , timeOfDayToBuilder
+     , timeZoneToBuilder
+     , dateToBuilder
+     , utcTimestampToBuilder
+     , zonedTimestampToBuilder
+     , localTimestampToBuilder
+     , unboundedToBuilder
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation
