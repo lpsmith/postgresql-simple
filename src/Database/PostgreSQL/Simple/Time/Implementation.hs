@@ -272,8 +272,9 @@ pad2 n = let (a,b) = n `quotRem` 10 in p a ++ p b
 
 -- | pad4 assumes its input is positive
 pad4 :: (Integral n, Show n) => n -> Builder
-pad4 n | n >= 1000 =                         integral n
-       | n >=  100 = fromChar '0'         ++ integral n
-       | n >=   10 = fromByteString "00"  ++ integral n
-       | otherwise = fromByteString "000" ++ integral n
+pad4 n | n >= 10000 = integral n
+       | otherwise  = p a ++ p b ++ p c ++ p d
+  where (ab,cd) = n `quotRem` 100
+        (a,b) = ab `quotRem` 10
+        (c,d) = cd `quotRem` 10
 {-# INLINE pad4 #-}
