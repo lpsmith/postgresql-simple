@@ -184,11 +184,7 @@ dayToBuilder (toGregorian -> (y,m,d)) = do
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
 timeOfDayToBuilder (TimeOfDay h m s) = do
-    pad2 h ++ fromChar ':' ++ pad2 m ++ fromChar ':' ++ showSec s
-  where
-    showSec s = case toMicroseconds s of
-                  (s, 0) -> pad2 s
-                  (s,us) -> pad2 s ++ fromChar '.' ++ showMicroseconds us
+    pad2 h ++ fromChar ':' ++ pad2 m ++ fromChar ':' ++ showSeconds s
 
 timeZoneToBuilder :: TimeZone -> Builder
 timeZoneToBuilder tz
@@ -231,34 +227,38 @@ localTimestampToBuilder = unboundedToBuilder localTimeToBuilder
 dateToBuilder  :: Date -> Builder
 dateToBuilder  = unboundedToBuilder dayToBuilder
 
-toMicroseconds :: Pico -> (Int,Int)
--- A kludge to work around the fact that Data.Fixed isn't very fast and doesn't
--- give me access to the MkFixed constructor.
-toMicroseconds p = let (x,y) = (unsafeCoerce p :: Integer)
-                                  `quotRem` 1000000000000
-                       (y',r) = y `quotRem` 1000000
-                       y'' = case compare r  500000 of
-                               LT           -> y'
-                               EQ | even y' -> y'
-                               _            -> y' + 1
-                    in ( fromIntegral x, fromIntegral y'' )
+showSeconds :: Pico -> Builder
+showSeconds xyz
+    | yz == 0   = pad2 x
+    | z  == 0   = pad2 x ++ fromChar '.' ++  showD6 y
+    | otherwise = pad2 x ++ fromChar '.' ++  pad6   y ++ showD6 z
+  where
+    -- A kludge to work around the fact that Data.Fixed isn't very fast and
+    -- doesn't give me access to the MkFixed constructor.
+    (x_,yz) = (unsafeCoerce xyz :: Integer)     `quotRem` 1000000000000
+    x = fromIntegral x_ :: Int
+    (fromIntegral -> y, fromIntegral -> z) = yz `quotRem` 1000000
 
--- Assumes the input is within the range [0..999999]
-showMicroseconds :: Int -> Builder
-showMicroseconds us =
-  case us `quotRem` 1000 of
-    (ms, 0) -> case ms `quotRem` 100 of
-                 (a, 0) -> p a
-                 (a,ms) -> case ms `quotRem` 10 of
-                   (b,0) -> p a ++ p b
-                   (b,c) -> p a ++ p b ++ p c
-    (ms,us) -> case ms `quotRem` 100 of
-                 (a,ms) -> case ms `quotRem` 10 of
-                   (b ,c) -> case us `quotRem` 100 of
-                        (d, 0) -> p a ++ p b ++ p c ++ p d
-                        (d,us) -> case us `quotRem` 10 of
-                          (e , 0) -> p a ++ p b ++ p c ++ p d ++ p e
-                          (e , f) -> p a ++ p b ++ p c ++ p d ++ p e ++ p f
+pad6 :: Int -> Builder
+pad6 xy = let (x,y) = xy `quotRem` 1000
+           in pad3 x ++ pad3 y
+
+showD6 :: Int -> Builder
+showD6 xy = case xy `quotRem` 1000 of
+              (x,0) -> showD3 x
+              (x,y) -> pad3 x ++ showD3 y
+
+pad3 :: Int -> Builder
+pad3 abc = let (ab,c) = abc `quotRem` 10
+               (a,b)  = ab  `quotRem` 10
+            in p a ++ p b ++ p c
+
+showD3 :: Int -> Builder
+showD3 abc = case abc `quotRem` 100 of
+              (a, 0) -> p a
+              (a,bc) -> case bc `quotRem` 10 of
+                          (b,0) -> p a ++ p b
+                          (b,c) -> p a ++ p b ++ p c
 
 -- | p assumes its input is in the range [0..9]
 p :: Integral n => n -> Builder
@@ -272,9 +272,9 @@ pad2 n = let (a,b) = n `quotRem` 10 in p a ++ p b
 
 -- | pad4 assumes its input is positive
 pad4 :: (Integral n, Show n) => n -> Builder
-pad4 n | n >= 10000 = integral n
-       | otherwise  = p a ++ p b ++ p c ++ p d
-  where (ab,cd) = n `quotRem` 100
-        (a,b) = ab `quotRem` 10
-        (c,d) = cd `quotRem` 10
+pad4 abcd | abcd >= 10000 = integral abcd
+          | otherwise     = p a ++ p b ++ p c ++ p d
+  where (ab,cd) = abcd `quotRem` 100
+        (a,b)   = ab   `quotRem` 10
+        (c,d)   = cd   `quotRem` 10
 {-# INLINE pad4 #-}
