@@ -8,9 +8,6 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable  #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Database.PostgreSQL.Simple.Time.Internal
      ( getDay
      , getDate
