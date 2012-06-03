@@ -6,9 +6,9 @@
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
 --
--- Time types that supports positive and negative infinity.   Also includes 
+-- Time types that supports positive and negative infinity.   Also includes
 -- new time parsers and printers with better performance than GHC's time package.
--- The parsers only understand the specific variant of ISO 8601 that PostgreSQL 
+-- The parsers only understand the specific variant of ISO 8601 that PostgreSQL
 -- emits,  and the printers attempt to duplicate this syntax.  These likely have
 -- problems and shortcomings.  Some that I know of:
 --
@@ -18,7 +18,7 @@
 --    @1883-11-18 11:59:59-05@,  and the timezone parser is incomplete.
 --    Timestamps without time zones do not have this problem.
 --
--- 2. Dates an times surrounding @1582-Feb-24@,  the date the Gregorian 
+-- 2. Dates an times surrounding @1582-Feb-24@,  the date the Gregorian
 --    Calendar was introduced,  should be investigated for conversion errors.
 --
 -- 3. Points in time Before Christ are not also not supported.  For example,
