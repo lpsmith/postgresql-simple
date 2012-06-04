@@ -5,12 +5,14 @@ import System.Exit                  (exitFailure)
 import System.IO
 
 import Bytea
+import ExecuteMany
 import Notify
 
 tests :: [TestEnv -> Test]
 tests =
-    [ TestLabel "Bytea"     . testBytea
-    , TestLabel "Notify"    . testNotify
+    [ TestLabel "Bytea"         . testBytea
+    , TestLabel "Notify"        . testNotify
+    , TestLabel "ExecuteMany"   . testExecuteMany
     ]
 
 -- | Action for connecting to the database that will be used for testing.
