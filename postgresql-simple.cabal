@@ -42,7 +42,6 @@ Library
     bytestring >= 0.9,
     containers,
     postgresql-libpq >= 0.6.2,
-    pcre-light,
     old-locale,
     template-haskell,
     text >= 0.11.1,
@@ -72,6 +71,7 @@ test-suite test
   other-modules:
     Common
     Bytea
+    ExecuteMany
     Notify
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind

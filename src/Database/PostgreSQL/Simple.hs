@@ -1,4 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards, NamedFieldPuns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -131,7 +136,6 @@ import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           Text.Regex.PCRE.Light (compile, caseless, match)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
@@ -182,18 +186,108 @@ formatQuery conn q@(Query template) qs
 formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
 formatMany conn q@(Query template) qs = do
-  case match re template [] of
-    Just [_,before,qbits,after] -> do
+  case parseTemplate template of
+    Just (before, qbits, after) -> do
       bs <- mapM (buildQuery conn q qbits . toRow) qs
       return . toByteString . mconcat $ fromByteString before :
                                         intersperse (fromChar ',') bs ++
                                         [fromByteString after]
-    _ -> error "foo"
+    Nothing -> fmtError "syntax error in query template for executeMany" q []
+
+-- Split the input string into three pieces, @before@, @qbits@, and @after@,
+-- following this grammar:
+--
+-- start: ^ before qbits after $
+--     before: ([^?]* [^?\w])? 'VALUES' \s*
+--     qbits:  '(' \s* '?' \s* (',' \s* '?' \s*)* ')'
+--     after:  [^?]*
+--
+-- \s: [ \t\n\r\f]
+-- \w: [A-Z] | [a-z] | [\x80-\xFF] | '_' | '$' | [0-9]
+--
+-- This would be much more concise with some sort of regex engine.
+-- 'formatMany' used to use pcre-light instead of this hand-written parser,
+-- but pcre is a hassle to install on Windows.
+parseTemplate :: ByteString -> Maybe (ByteString, ByteString, ByteString)
+parseTemplate template =
+    -- Convert input string to uppercase, to facilitate searching.
+    search $ B.map toUpper_ascii template
   where
-   re = compile "^([^?]+\\bvalues\\s*)\
-                 \(\\(\\s*[?](?:\\s*,\\s*[?])*\\s*\\))\
-                 \([^?]*)$"
-        [caseless]
+    -- Search for the next occurrence of "VALUES"
+    search bs =
+        case B.breakSubstring "VALUES" bs of
+            (x, y)
+                -- If "VALUES" is not present in the string, or any '?' characters
+                -- were encountered prior to it, fail.
+                | B.null y || ('?' `B.elem` x)
+               -> Nothing
+
+                -- If "VALUES" is preceded by an identifier character (a.k.a. \w),
+                -- try the next occurrence.
+                | not (B.null x) && isIdent (B.last x)
+               -> search $ B.drop 6 y
+
+                -- Otherwise, we have a legitimate "VALUES" token.
+                | otherwise
+               -> parseQueryBits $ skipSpace $ B.drop 6 y
+
+    -- Parse '(' \s* '?' \s* .  If this doesn't match
+    -- (and we don't consume a '?'), look for another "VALUES".
+    --
+    -- qb points to the open paren (if present), meaning it points to the
+    -- beginning of the "qbits" production described above.  This is why we
+    -- pass it down to finishQueryBits.
+    parseQueryBits qb
+        | Just ('(', skipSpace -> bs1) <- B.uncons qb
+        , Just ('?', skipSpace -> bs2) <- B.uncons bs1
+        = finishQueryBits qb bs2
+        | otherwise
+        = search qb
+
+    -- Parse (',' \s* '?' \s*)* ')' [^?]* .
+    --
+    -- Since we've already consumed at least one '?', there's no turning back.
+    -- The parse has to succeed here, or the whole thing fails
+    -- (because we don't allow '?' to appear outside of the VALUES list).
+    finishQueryBits qb bs0
+        | Just (')', bs1) <- B.uncons bs0
+        = if '?' `B.elem` bs1
+              then Nothing
+              else Just $ slice3 template qb bs1
+        | Just (',', skipSpace -> bs1) <- B.uncons bs0
+        , Just ('?', skipSpace -> bs2) <- B.uncons bs1
+        = finishQueryBits qb bs2
+        | otherwise
+        = Nothing
+
+    -- Slice a string into three pieces, given the start offset of the second
+    -- and third pieces.  Each "offset" is actually a tail of the uppercase
+    -- version of the template string.  Its length is used to infer the offset.
+    --
+    -- It is important to note that we only slice the original template.
+    -- We don't want our all-caps trick messing up the actual query string.
+    slice3 source p1 p2 =
+        (s1, s2, source'')
+      where
+        (s1, source')  = B.splitAt (B.length source - B.length p1) source
+        (s2, source'') = B.splitAt (B.length p1     - B.length p2) source'
+
+    toUpper_ascii c | c >= 'a' && c <= 'z' = toEnum (fromEnum c - 32)
+                    | otherwise            = c
+
+    -- Based on the definition of {ident_cont} in src/backend/parser/scan.l
+    -- in the PostgreSQL source.  No need to check [a-z], since we converted
+    -- the whole string to uppercase.
+    isIdent c = (c >= '0'    && c <= '9')
+             || (c >= 'A'    && c <= 'Z')
+             || (c >= '\x80' && c <= '\xFF')
+             || c == '_'
+             || c == '$'
+
+    -- Based on {space} in scan.l
+    isSpace_ascii c = (c == ' ') || (c >= '\t' && c <= '\r')
+
+    skipSpace = B.dropWhile isSpace_ascii
 
 escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
 escapeStringConn conn s =
