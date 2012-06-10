@@ -6,11 +6,13 @@ import System.IO
 
 import Bytea
 import Notify
+import Time
 
 tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Bytea"     . testBytea
     , TestLabel "Notify"    . testNotify
+    , TestLabel "Time"      . testTime
     ]
 
 -- | Action for connecting to the database that will be used for testing.
