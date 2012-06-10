@@ -28,10 +28,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
 import Data.Monoid (mappend)
-import Data.Time.Calendar (Day, showGregorian)
-import Data.Time.Clock (UTCTime)
-import Data.Time.Format (formatTime)
-import Data.Time.LocalTime (TimeOfDay, ZonedTime)
+import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
@@ -43,6 +40,7 @@ import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.LibPQ as PQ
+import           Database.PostgreSQL.Simple.Time
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -188,19 +186,39 @@ instance ToField LT.Text where
     {-# INLINE toField #-}
 
 instance ToField UTCTime where
-    toField = Plain . Utf8.fromString . formatTime defaultTimeLocale "'%F %T%Q+00'"
+    toField = Plain . inQuotes . utcTimeToBuilder
     {-# INLINE toField #-}
 
 instance ToField ZonedTime where
-    toField = Plain . Utf8.fromString . formatTime defaultTimeLocale "'%F %T%Q%z'"
+    toField = Plain . inQuotes . zonedTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField LocalTime where
+    toField = Plain . inQuotes . localTimeToBuilder
     {-# INLINE toField #-}
 
 instance ToField Day where
-    toField = Plain . inQuotes . Utf8.fromString . showGregorian
+    toField = Plain . inQuotes . dayToBuilder
     {-# INLINE toField #-}
 
 instance ToField TimeOfDay where
-    toField = Plain . inQuotes . Utf8.fromString . show
+    toField = Plain . inQuotes . timeOfDayToBuilder
+    {-# INLINE toField #-}
+
+instance ToField UTCTimestamp where
+    toField = Plain . inQuotes . utcTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField ZonedTimestamp where
+    toField = Plain . inQuotes . zonedTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField LocalTimestamp where
+    toField = Plain . inQuotes . localTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField Date where
+    toField = Plain . inQuotes . dateToBuilder
     {-# INLINE toField #-}
 
 -- | Surround a string with single-quote characters: \"@'@\"

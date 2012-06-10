@@ -42,7 +42,7 @@ module Database.PostgreSQL.Simple.FromField
 #include "MachDeps.h"
 
 import           Control.Applicative
-                   ( Applicative, (<|>), (<$>), (<*>), (<*), pure )
+                   ( Applicative, (<|>), (<$>), pure )
 import           Control.Exception (SomeException(..), Exception)
 import           Data.Attoparsec.Char8 hiding (Result)
 import           Data.Bits ((.&.), (.|.), shiftL)
@@ -51,19 +51,17 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
 import           Data.Ratio (Ratio)
-import           Data.Time.Calendar (Day, fromGregorian)
-import           Data.Time.Clock (UTCTime)
-import           Data.Time.Format (parseTime)
-import           Data.Time.LocalTime (ZonedTime, TimeOfDay, makeTimeOfDayValid)
+import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay
+                           , localTimeToUTC, utc )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Database.PostgreSQL.Simple.Time
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.IO.Unsafe (unsafePerformIO)
-import           System.Locale (defaultTimeLocale)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
@@ -196,49 +194,53 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-    fromField f =
-        case oid2builtin (typeOid f) of
-          Just Timestamp             -> doIt "%F %T%Q"   id
-          Just TimestampWithTimeZone -> doIt "%F %T%Q%z" (++ "00")
-          _ -> const $ returnError Incompatible f "types incompatible"
-        where
-          doIt _   _          Nothing   = returnError UnexpectedNull f ""
-          doIt fmt preprocess (Just bs) =
-              case parseTime defaultTimeLocale fmt str of
-                Just t  -> pure t
-                Nothing -> returnError ConversionFailed f "could not parse"
-              where str = preprocess (B8.unpack bs)
+  fromField f =
+    case oid2builtin (typeOid f) of
+      Just TimestampWithTimeZone -> doIt id parseUTCTime
+      Just Timestamp -> doIt (localTimeToUTC utc) parseLocalTime  -- deprecated
+      _ -> const $ returnError Incompatible f ""
+    where
+      doIt _finish _parse Nothing
+        = returnError UnexpectedNull f ""
+      doIt finish parse (Just bs)
+        = either (returnError ConversionFailed f) (pure . finish) (parse bs)
 
 instance FromField ZonedTime where
-    fromField f =
-        case oid2builtin (typeOid f) of
-          Just TimestampWithTimeZone -> doIt "%F %T%Q%z" (++ "00")
-          _ -> const $ returnError Incompatible f "types incompatible"
-        where
-          doIt _   _          Nothing   = returnError UnexpectedNull f ""
-          doIt fmt preprocess (Just bs) =
-              case parseTime defaultTimeLocale fmt str of
-                Just t  -> pure t
-                Nothing -> returnError ConversionFailed f "could not parse"
-              where str = preprocess (B8.unpack bs)
+  fromField = ff TimestampWithTimeZone "ZonedTime" parseZonedTime
+
+instance FromField LocalTime where
+  fromField = ff Timestamp "LocalTime" parseLocalTime
 
 instance FromField Day where
-    fromField f = atto ok date f
-        where ok = mkCompats [Date]
-              date = fromGregorian <$> (decimal <* char '-')
-                                   <*> (decimal <* char '-')
-                                   <*> decimal
+  fromField = ff Date "Day" parseDay
 
 instance FromField TimeOfDay where
-    fromField f = atto' ok time f
-        where ok = mkCompats [Time]
-              time = do
-                hours <- decimal <* char ':'
-                mins <- decimal <* char ':'
-                secs <- decimal :: Parser Int
-                case makeTimeOfDayValid hours mins (fromIntegral secs) of
-                  Just t -> return (pure t)
-                  _      -> return (returnError ConversionFailed f "could not parse")
+  fromField = ff Time "TimeOfDay" parseTimeOfDay
+
+instance FromField UTCTimestamp where
+  fromField = ff TimestampWithTimeZone "UTCTimestamp" parseUTCTimestamp
+
+instance FromField ZonedTimestamp where
+  fromField = ff TimestampWithTimeZone "ZonedTimestamp" parseZonedTimestamp
+
+instance FromField LocalTimestamp where
+  fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
+
+instance FromField Date where
+  fromField = ff Date "Date" parseDate
+
+ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
+   -> Field -> Maybe B8.ByteString -> Ok a
+ff pgType hsType parse f mstr
+    | typeOid f /= builtin2oid pgType
+    = left (Incompatible   (B8.unpack (typename f)) hsType "")
+    | Nothing <- mstr
+    = left (UnexpectedNull (B8.unpack (typename f)) hsType "")
+    | Just str <- mstr
+    = case parse str of
+        Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
+        Right val -> return val
+{-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
@@ -299,14 +301,3 @@ atto types p0 f dat = doFromField f types (go p0) dat
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
           Right  v -> pure v
-
-atto' :: forall a. (Typeable a)
-     => Compat -> Parser (Ok a) -> Field -> Maybe ByteString
-     -> Ok a
-atto' types p0 f dat = doFromField f types (go p0) dat
-  where
-    go :: Parser (Ok a) -> ByteString -> Ok a
-    go p s =
-        case parseOnly p s of
-          Left err -> returnError ConversionFailed f err
-          Right  v -> v
