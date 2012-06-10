@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      GenBuiltinTypes
--- Copyright:   (c) 2011 Leon P Smith
+-- Copyright:   (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
@@ -39,13 +39,13 @@ type Map = Map.Map B.ByteString Int
 builtins :: [(B.ByteString, B.ByteString)]
 builtins = [strings|
 bool
-bytea
+bytea       ByteA
 char
 name
 int8
 int2
 int4
-regproc
+regproc     RegProc
 text
 oid
 tid
@@ -53,7 +53,7 @@ xid
 cid
 xml
 point
-lseg
+lseg        LSeg
 path
 box
 polygon
@@ -61,26 +61,26 @@ line
 cidr
 float4
 float8
-abstime
-reltime
-tinterval
+abstime     AbsTime
+reltime     RelTime
+tinterval   TInterval
 unknown
 circle
 money
-macaddr
+macaddr     MacAddr
 inet
-bpchar
-varchar
+bpchar      BpChar
+varchar     VarChar
 date
 time
 timestamp
-timestamptz TimestampWithTimeZone
+timestamptz TimestampTZ
 interval
-timetz      TimeWithTimeZone
+timetz      TimeTZ
 bit
-varbit
+varbit      VarBit
 numeric
-refcursor
+refcursor   RefCursor
 record
 void
 |]
@@ -89,13 +89,7 @@ instance IsString Blaze.Builder where
    fromString = Blaze.fromByteString . fromString
 
 main = do
-  conn <- connect ConnectInfo {
-              connectHost = "127.0.0.1",
-              connectPort = 5432,
-              connectUser = "aliadmin",
-              connectPassword = "aliadmin",
-              connectDatabase = "postgres"
-            }
+  conn <- connectPostgreSQL ""
   xs <- query conn "SELECT typname::text, oid::int\
                    \  FROM pg_type\
                    \ WHERE typname IN ?"
@@ -130,7 +124,7 @@ renderFile oidmap builtins = ([longstring|
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.BuiltinTypes
--- Copyright:   (c) 2011 Leon P Smith
+-- Copyright:   (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
