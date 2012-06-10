@@ -51,8 +51,7 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
 import           Data.Ratio (Ratio)
-import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay
-                           , localTimeToUTC, utc )
+import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
@@ -194,16 +193,7 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField f =
-    case oid2builtin (typeOid f) of
-      Just TimestampWithTimeZone -> doIt id parseUTCTime
-      Just Timestamp -> doIt (localTimeToUTC utc) parseLocalTime  -- deprecated
-      _ -> const $ returnError Incompatible f ""
-    where
-      doIt _finish _parse Nothing
-        = returnError UnexpectedNull f ""
-      doIt finish parse (Just bs)
-        = either (returnError ConversionFailed f) (pure . finish) (parse bs)
+  fromField = ff TimestampWithTimeZone "UTCTime" parseUTCTime
 
 instance FromField ZonedTime where
   fromField = ff TimestampWithTimeZone "ZonedTime" parseZonedTime
