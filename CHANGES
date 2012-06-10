@@ -1,3 +1,28 @@
+Version 0.1.4: (2012-06-10)
+  * Removed pcre-light dependency,  courtesy of Joey Adams.
+
+  * Reworked support for the Time types.
+
+      * The conversion from PostgreSQL's `timestamp` (without time zone) type
+        to Haskell's `UTCTime` type is deprecated and will be removed in 0.2.
+
+      * `Data.Time.LocalTime` now has `FromField`/`ToField` instances.  It is
+        now the preferred way of dealing with `timestamp` (without time zone).
+
+      * `Database.PostgreSQL.Simple.Time` is a new module that offers types
+        that accomodate PostgreSQL's infinities.
+
+      * All time-related `FromField`/`ToField` instances are now based on new,
+        higher-speed parsers and printers instead of those provided by the
+        time package included in GHC.
+
+  * Planned breaking changes for 0.2:
+
+      * Removing the conversion from `timestamp` to `UTCTime`.
+
+      * Renaming some of the type names in `BuiltinTypes`.
+
+
 Version 0.1.3: (2012-05-30)
   * Made ZonedTime an instance of FromField and ToField
 
@@ -27,6 +52,7 @@ Version 0.1.1: (2012-05-06)
 
 
 Version 0.1:   (2012-05-04)
+
   * Renamed several modules, typeclasses, and functions:
 
         QueryParams  (renderParams)   -> ToRow   (toRow)
