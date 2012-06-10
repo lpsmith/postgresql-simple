@@ -39,6 +39,10 @@ testTime env@TestEnv{..} = TestCase $ do
   checkRoundTrips env
   execute_ conn "SET timezone TO 'Asia/Tokyo'"
   checkRoundTrips env
+  execute_ conn "SET timezone TO 'Asia/Kathmandu'"
+  checkRoundTrips env
+  execute_ conn "SET timezone TO 'America/St_Johns'"
+  checkRoundTrips env
 
 initializeTable :: TestEnv -> IO ()
 initializeTable TestEnv{..} = withTransaction conn $ do
@@ -48,7 +52,7 @@ initializeTable TestEnv{..} = withTransaction conn $ do
   let pop :: ByteString ->  Double -> IO () = \x y ->
                replicateM_ numTests $ execute conn
                  [sql| INSERT INTO testtime (y) VALUES
-                         ('1900-01-01 00:00:00+00'::timestamptz
+                         ('1936-01-01 00:00:00+00'::timestamptz
                           + ?::interval * ROUND(RANDOM() * ?)) |] (x,y)
   pop   "1 microsecond"  6.3113904e15
   pop  "10 microseconds" 6.3113904e14

@@ -136,10 +136,12 @@ getLocalTimestamp = getUnbounded getLocalTime
 
 getTimeZone :: A.Parser TimeZone
 getTimeZone = do
-    sign   <- A.satisfy (\c -> c == '+' || c == '-')
-    offset <- digits "timezone"
-    let !minutes = 60 * if sign == '+' then offset else -offset
-    return $! minutesToTimeZone minutes
+    sign  <- A.satisfy (\c -> c == '+' || c == '-')
+    hours <- digits "timezone"
+    mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+    let !absset = 60 * hours + mins
+        !offset = if sign == '+' then absset else -absset
+    return $! minutesToTimeZone offset
 
 getZonedTime :: A.Parser ZonedTime
 getZonedTime = ZonedTime <$> getLocalTime <*> getTimeZone
