@@ -1,3 +1,7 @@
+Version 0.1.4.1: (2012-06-10)
+  * Added support for timezones with minutes in their offset from UTC.
+
+
 Version 0.1.4: (2012-06-10)
   * Removed pcre-light dependency,  courtesy of Joey Adams.
 
@@ -52,7 +56,6 @@ Version 0.1.1: (2012-05-06)
 
 
 Version 0.1:   (2012-05-04)
-
   * Renamed several modules, typeclasses, and functions:
 
         QueryParams  (renderParams)   -> ToRow   (toRow)
