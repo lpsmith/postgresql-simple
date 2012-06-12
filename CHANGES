@@ -1,8 +1,11 @@
+Version 0.1.4.3: (2012-06-10)
+  * Fix language extensions for compatibility with GHC 7.0
+
 Version 0.1.4.2: (2012-06-10)
   * Fix a wayward dependency on Text.
 
 Version 0.1.4.1: (2012-06-10)
-  * Added support for timezones with minutes in their offset from UTC.
+  * Added support for timezones with minutes in their UTC offset.
 
 Version 0.1.4: (2012-06-10)
   * Removed pcre-light dependency,  courtesy of Joey Adams.
