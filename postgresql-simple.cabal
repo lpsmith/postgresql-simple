@@ -14,6 +14,9 @@ Build-type:          Simple
 
 Cabal-version:       >= 1.9.2
 
+extra-source-files:
+     CONTRIBUTORS
+
 Library
   hs-source-dirs: src
   Exposed-modules:
