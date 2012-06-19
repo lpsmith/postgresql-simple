@@ -1,3 +1,12 @@
+Version 0.2: (2012-06-19)
+  * Removed the conversion from `timestamp` to `UTCTime`.  Some code will be
+    broken even though it will still compile.
+
+  * Renamed a number of data constructors, mostly in the BuiltinTypes module.
+
+  * Exported ToRow/FromRow from Database.PostgreSQL.Simple
+
+
 Version 0.1.4.3: (2012-06-10)
   * Fix language extensions for compatibility with GHC 7.0
 
