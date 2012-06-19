@@ -56,6 +56,8 @@ module Database.PostgreSQL.Simple
       Base.ConnectInfo(..)
     , Connection
     , Query
+    , ToRow
+    , FromRow
     , In(..)
     , Binary(..)
     , Only(..)
