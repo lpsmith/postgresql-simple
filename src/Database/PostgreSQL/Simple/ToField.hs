@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, FlexibleInstances #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor       #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 
 ------------------------------------------------------------------------------
 -- |
