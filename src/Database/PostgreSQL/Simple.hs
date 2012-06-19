@@ -310,7 +310,7 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
         utf8ToString = T.unpack . TE.decodeUtf8
         sub (Plain  b)      = pure b
         sub (Escape s)      = quote <$> escapeStringConn conn s
-        sub (EscapeBytea s) = quote <$> escapeByteaConn conn s
+        sub (EscapeByteA s) = quote <$> escapeByteaConn conn s
         sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
@@ -678,7 +678,7 @@ fmtError msg q xs = throw FormatError {
                     }
   where twiddle (Plain b)       = toByteString b
         twiddle (Escape s)      = s
-        twiddle (EscapeBytea s) = s
+        twiddle (EscapeByteA s) = s
         twiddle (Many ys)       = B.concat (map twiddle ys)
 
 -- $use

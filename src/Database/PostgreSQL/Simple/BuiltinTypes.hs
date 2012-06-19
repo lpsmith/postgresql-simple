@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.BuiltinTypes
--- Copyright:   (c) 2011 Leon P Smith
+-- Copyright:   (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
@@ -27,13 +27,13 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 
 data BuiltinType
    = Bool
-   | Bytea
+   | ByteA
    | Char
    | Name
    | Int8
    | Int2
    | Int4
-   | Regproc
+   | RegProc
    | Text
    | Oid
    | Tid
@@ -41,7 +41,7 @@ data BuiltinType
    | Cid
    | Xml
    | Point
-   | Lseg
+   | LSeg
    | Path
    | Box
    | Polygon
@@ -49,88 +49,88 @@ data BuiltinType
    | Cidr
    | Float4
    | Float8
-   | Abstime
-   | Reltime
-   | Tinterval
+   | AbsTime
+   | RelTime
+   | TInterval
    | Unknown
    | Circle
    | Money
-   | Macaddr
+   | MacAddr
    | Inet
-   | Bpchar
-   | Varchar
+   | BpChar
+   | VarChar
    | Date
    | Time
    | Timestamp
-   | TimestampWithTimeZone
+   | TimestampTZ
    | Interval
-   | TimeWithTimeZone
+   | TimeTZ
    | Bit
-   | Varbit
+   | VarBit
    | Numeric
-   | Refcursor
+   | RefCursor
    | Record
    | Void
      deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
 
 builtin2oid :: BuiltinType -> PQ.Oid
 builtin2oid typ = PQ.Oid $ case typ of
-  Bool                  ->   16
-  Bytea                 ->   17
-  Char                  ->   18
-  Name                  ->   19
-  Int8                  ->   20
-  Int2                  ->   21
-  Int4                  ->   23
-  Regproc               ->   24
-  Text                  ->   25
-  Oid                   ->   26
-  Tid                   ->   27
-  Xid                   ->   28
-  Cid                   ->   29
-  Xml                   ->  142
-  Point                 ->  600
-  Lseg                  ->  601
-  Path                  ->  602
-  Box                   ->  603
-  Polygon               ->  604
-  Line                  ->  628
-  Cidr                  ->  650
-  Float4                ->  700
-  Float8                ->  701
-  Abstime               ->  702
-  Reltime               ->  703
-  Tinterval             ->  704
-  Unknown               ->  705
-  Circle                ->  718
-  Money                 ->  790
-  Macaddr               ->  829
-  Inet                  ->  869
-  Bpchar                -> 1042
-  Varchar               -> 1043
-  Date                  -> 1082
-  Time                  -> 1083
-  Timestamp             -> 1114
-  TimestampWithTimeZone -> 1184
-  Interval              -> 1186
-  TimeWithTimeZone      -> 1266
-  Bit                   -> 1560
-  Varbit                -> 1562
-  Numeric               -> 1700
-  Refcursor             -> 1790
-  Record                -> 2249
-  Void                  -> 2278
+  Bool        ->   16
+  ByteA       ->   17
+  Char        ->   18
+  Name        ->   19
+  Int8        ->   20
+  Int2        ->   21
+  Int4        ->   23
+  RegProc     ->   24
+  Text        ->   25
+  Oid         ->   26
+  Tid         ->   27
+  Xid         ->   28
+  Cid         ->   29
+  Xml         ->  142
+  Point       ->  600
+  LSeg        ->  601
+  Path        ->  602
+  Box         ->  603
+  Polygon     ->  604
+  Line        ->  628
+  Cidr        ->  650
+  Float4      ->  700
+  Float8      ->  701
+  AbsTime     ->  702
+  RelTime     ->  703
+  TInterval   ->  704
+  Unknown     ->  705
+  Circle      ->  718
+  Money       ->  790
+  MacAddr     ->  829
+  Inet        ->  869
+  BpChar      -> 1042
+  VarChar     -> 1043
+  Date        -> 1082
+  Time        -> 1083
+  Timestamp   -> 1114
+  TimestampTZ -> 1184
+  Interval    -> 1186
+  TimeTZ      -> 1266
+  Bit         -> 1560
+  VarBit      -> 1562
+  Numeric     -> 1700
+  RefCursor   -> 1790
+  Record      -> 2249
+  Void        -> 2278
 
 oid2builtin :: PQ.Oid -> Maybe BuiltinType
 oid2builtin (PQ.Oid x) = case x of
   16   -> Just Bool
-  17   -> Just Bytea
+  17   -> Just ByteA
   18   -> Just Char
   19   -> Just Name
   20   -> Just Int8
   21   -> Just Int2
   23   -> Just Int4
-  24   -> Just Regproc
+  24   -> Just RegProc
   25   -> Just Text
   26   -> Just Oid
   27   -> Just Tid
@@ -138,7 +138,7 @@ oid2builtin (PQ.Oid x) = case x of
   29   -> Just Cid
   142  -> Just Xml
   600  -> Just Point
-  601  -> Just Lseg
+  601  -> Just LSeg
   602  -> Just Path
   603  -> Just Box
   604  -> Just Polygon
@@ -146,77 +146,77 @@ oid2builtin (PQ.Oid x) = case x of
   650  -> Just Cidr
   700  -> Just Float4
   701  -> Just Float8
-  702  -> Just Abstime
-  703  -> Just Reltime
-  704  -> Just Tinterval
+  702  -> Just AbsTime
+  703  -> Just RelTime
+  704  -> Just TInterval
   705  -> Just Unknown
   718  -> Just Circle
   790  -> Just Money
-  829  -> Just Macaddr
+  829  -> Just MacAddr
   869  -> Just Inet
-  1042 -> Just Bpchar
-  1043 -> Just Varchar
+  1042 -> Just BpChar
+  1043 -> Just VarChar
   1082 -> Just Date
   1083 -> Just Time
   1114 -> Just Timestamp
-  1184 -> Just TimestampWithTimeZone
+  1184 -> Just TimestampTZ
   1186 -> Just Interval
-  1266 -> Just TimeWithTimeZone
+  1266 -> Just TimeTZ
   1560 -> Just Bit
-  1562 -> Just Varbit
+  1562 -> Just VarBit
   1700 -> Just Numeric
-  1790 -> Just Refcursor
+  1790 -> Just RefCursor
   2249 -> Just Record
   2278 -> Just Void
   _    -> Nothing
 
 builtin2typname :: BuiltinType -> ByteString
 builtin2typname typ = case typ of
-  Bool                  -> bool
-  Bytea                 -> bytea
-  Char                  -> char
-  Name                  -> name
-  Int8                  -> int8
-  Int2                  -> int2
-  Int4                  -> int4
-  Regproc               -> regproc
-  Text                  -> text
-  Oid                   -> oid
-  Tid                   -> tid
-  Xid                   -> xid
-  Cid                   -> cid
-  Xml                   -> xml
-  Point                 -> point
-  Lseg                  -> lseg
-  Path                  -> path
-  Box                   -> box
-  Polygon               -> polygon
-  Line                  -> line
-  Cidr                  -> cidr
-  Float4                -> float4
-  Float8                -> float8
-  Abstime               -> abstime
-  Reltime               -> reltime
-  Tinterval             -> tinterval
-  Unknown               -> unknown
-  Circle                -> circle
-  Money                 -> money
-  Macaddr               -> macaddr
-  Inet                  -> inet
-  Bpchar                -> bpchar
-  Varchar               -> varchar
-  Date                  -> date
-  Time                  -> time
-  Timestamp             -> timestamp
-  TimestampWithTimeZone -> timestamptz
-  Interval              -> interval
-  TimeWithTimeZone      -> timetz
-  Bit                   -> bit
-  Varbit                -> varbit
-  Numeric               -> numeric
-  Refcursor             -> refcursor
-  Record                -> record
-  Void                  -> void
+  Bool        -> bool
+  ByteA       -> bytea
+  Char        -> char
+  Name        -> name
+  Int8        -> int8
+  Int2        -> int2
+  Int4        -> int4
+  RegProc     -> regproc
+  Text        -> text
+  Oid         -> oid
+  Tid         -> tid
+  Xid         -> xid
+  Cid         -> cid
+  Xml         -> xml
+  Point       -> point
+  LSeg        -> lseg
+  Path        -> path
+  Box         -> box
+  Polygon     -> polygon
+  Line        -> line
+  Cidr        -> cidr
+  Float4      -> float4
+  Float8      -> float8
+  AbsTime     -> abstime
+  RelTime     -> reltime
+  TInterval   -> tinterval
+  Unknown     -> unknown
+  Circle      -> circle
+  Money       -> money
+  MacAddr     -> macaddr
+  Inet        -> inet
+  BpChar      -> bpchar
+  VarChar     -> varchar
+  Date        -> date
+  Time        -> time
+  Timestamp   -> timestamp
+  TimestampTZ -> timestamptz
+  Interval    -> interval
+  TimeTZ      -> timetz
+  Bit         -> bit
+  VarBit      -> varbit
+  Numeric     -> numeric
+  RefCursor   -> refcursor
+  Record      -> record
+  Void        -> void
 
 oid2typname :: PQ.Oid -> Maybe ByteString
 oid2typname (PQ.Oid x) = case x of

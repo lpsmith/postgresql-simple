@@ -53,7 +53,7 @@ data Action =
     -- ^ Escape and enclose in quotes before substituting. Use for all
     -- text-like types, and anything else that may contain unsafe
     -- characters when rendered.
-  | EscapeBytea ByteString
+  | EscapeByteA ByteString
     -- ^ Escape binary data for use as a @bytea@ literal.  Include surrounding
     -- quotes.  This is used by the 'Binary' newtype wrapper.
   | Many [Action]
@@ -63,7 +63,7 @@ data Action =
 instance Show Action where
     show (Plain b)       = "Plain " ++ show (toByteString b)
     show (Escape b)      = "Escape " ++ show b
-    show (EscapeBytea b) = "EscapeBytea " ++ show b
+    show (EscapeByteA b) = "EscapeByteA " ++ show b
     show (Many b)        = "Many " ++ show b
 
 -- | A type that may be used as a single parameter to a SQL query.
@@ -158,11 +158,11 @@ instance ToField Double where
     {-# INLINE toField #-}
 
 instance ToField (Binary SB.ByteString) where
-    toField (Binary bs) = EscapeBytea bs
+    toField (Binary bs) = EscapeByteA bs
     {-# INLINE toField #-}
 
 instance ToField (Binary LB.ByteString) where
-    toField (Binary bs) = (EscapeBytea . SB.concat . LB.toChunks) bs
+    toField (Binary bs) = (EscapeByteA . SB.concat . LB.toChunks) bs
     {-# INLINE toField #-}
 
 instance ToField SB.ByteString where

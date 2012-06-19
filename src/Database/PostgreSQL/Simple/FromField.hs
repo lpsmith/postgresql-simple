@@ -160,7 +160,7 @@ unBinary :: Binary t -> t
 unBinary (Binary x) = x
 
 instance FromField SB.ByteString where
-    fromField f dat = if typeOid f == builtin2oid Bytea
+    fromField f dat = if typeOid f == builtin2oid ByteA
                       then unBinary <$> fromField f dat
                       else doFromField f okText' (pure . B.copy) dat
 
@@ -195,10 +195,10 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField = ff TimestampWithTimeZone "UTCTime" parseUTCTime
+  fromField = ff TimestampTZ "UTCTime" parseUTCTime
 
 instance FromField ZonedTime where
-  fromField = ff TimestampWithTimeZone "ZonedTime" parseZonedTime
+  fromField = ff TimestampTZ "ZonedTime" parseZonedTime
 
 instance FromField LocalTime where
   fromField = ff Timestamp "LocalTime" parseLocalTime
@@ -210,10 +210,10 @@ instance FromField TimeOfDay where
   fromField = ff Time "TimeOfDay" parseTimeOfDay
 
 instance FromField UTCTimestamp where
-  fromField = ff TimestampWithTimeZone "UTCTimestamp" parseUTCTimestamp
+  fromField = ff TimestampTZ "UTCTimestamp" parseUTCTimestamp
 
 instance FromField ZonedTimestamp where
-  fromField = ff TimestampWithTimeZone "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff TimestampTZ "ZonedTimestamp" parseZonedTimestamp
 
 instance FromField LocalTimestamp where
   fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
@@ -251,9 +251,9 @@ compat :: Compat -> Compat -> Bool
 compat (Compat a) (Compat b) = a .&. b /= 0
 
 okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
-okText   = mkCompats [Name,Text,Char,Bpchar,Varchar]
-okText'  = mkCompats [Name,Text,Char,Bpchar,Varchar,Unknown]
-okBinary = mkCompats [Bytea]
+okText   = mkCompats [Name,Text,Char,BpChar,VarChar]
+okText'  = mkCompats [Name,Text,Char,BpChar,VarChar,Unknown]
+okBinary = mkCompats [ByteA]
 ok16 = mkCompats [Int2]
 ok32 = mkCompats [Int2,Int4]
 ok64 = mkCompats [Int2,Int4,Int8]
