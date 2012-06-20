@@ -9,7 +9,7 @@
 -- |
 -- Module:      Database.PostgreSQL.Simple
 -- Copyright:   (c) 2011 MailRank, Inc.
---              (c) 2011 Leon P Smith
+--              (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental

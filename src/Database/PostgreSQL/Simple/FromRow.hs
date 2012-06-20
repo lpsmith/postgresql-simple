@@ -3,7 +3,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.FromRow
--- Copyright:   (c) 2011 Leon P Smith
+-- Copyright:   (c) 2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental

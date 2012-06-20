@@ -6,13 +6,13 @@
 -- |
 -- Module:      Database.PostgreSQL.Simple.FromField
 -- Copyright:   (c) 2011 MailRank, Inc.
---              (c) 2011 Leon P Smith
+--              (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
 -- Portability: portable
 --
--- The 'Result' typeclass, for converting a single value in a row
+-- The 'FromField' typeclass, for converting a single value in a row
 -- returned by a SQL query into a more useful Haskell representation.
 --
 -- A Haskell numeric type is considered to be compatible with all

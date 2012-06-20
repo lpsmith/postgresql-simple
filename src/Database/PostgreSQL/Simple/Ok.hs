@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module      :  Database.PostgreSQL.Simple.Ok
--- Copyright   :  (c) 2011-2012 Leon P Smith
+-- Copyright   :  (c) 2012 Leon P Smith
 -- License     :  BSD3
 --
 -- Maintainer  :  leon@melding-monads.com

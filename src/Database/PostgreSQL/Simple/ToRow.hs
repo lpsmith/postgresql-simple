@@ -1,14 +1,14 @@
 ------------------------------------------------------------------------------
 -- |
--- Module:      Database.PostgreSQL.Simple.QueryParams
+-- Module:      Database.PostgreSQL.Simple.ToRow
 -- Copyright:   (c) 2011 MailRank, Inc.
---              (c) 2011 Leon P Smith
+--              (c) 2011-2012 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
 -- Portability: portable
 --
--- The 'QueryParams' typeclass, for rendering a collection of
+-- The 'ToRow' typeclass, for rendering a collection of
 -- parameters to a SQL query.
 --
 -- Predefined instances are provided for tuples containing up to ten
