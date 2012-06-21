@@ -1,3 +1,8 @@
+Version 0.2.0.1 (2012-06-21)
+  * Fixed a compatibility problem with PostgreSQL 8.1,  which does not allow
+    clients to set their own value for `standard_conforming_strings`.  This
+    connection variable is still set to `on` for PostgreSQL 8.2 and later.
+
 Version 0.2: (2012-06-19)
   * Removed the conversion from `timestamp` to `UTCTime`.  Some code will be
     broken even though it will still compile.
