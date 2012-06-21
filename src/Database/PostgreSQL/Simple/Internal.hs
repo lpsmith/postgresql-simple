@@ -153,9 +153,13 @@ connectPostgreSQL connstr = do
           connectionHandle  <- newMVar conn
           connectionObjects <- newMVar (IntMap.empty)
           let wconn = Connection{..}
-          _ <- execute_ wconn "SET standard_conforming_strings TO on;\
-                              \SET datestyle TO ISO"
-          return Connection{..}
+          version <- PQ.serverVersion conn
+          let settings
+                | version < 80200 = "SET datestyle TO ISO"
+                | otherwise       = "SET standard_conforming_strings TO on;\
+                                    \SET datestyle TO ISO"
+          _ <- execute_ wconn settings
+          return wconn
       _ -> do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
           throwIO $ SqlError { sqlNativeError = -1   -- FIXME?

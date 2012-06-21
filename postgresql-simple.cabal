@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.2
+Version:             0.2.0.1
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
