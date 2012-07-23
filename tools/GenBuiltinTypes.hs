@@ -83,6 +83,7 @@ numeric
 refcursor   RefCursor
 record
 void
+uuid        UUID
 |]
 
 instance IsString Blaze.Builder where

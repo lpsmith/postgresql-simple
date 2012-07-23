@@ -71,6 +71,7 @@ data BuiltinType
    | RefCursor
    | Record
    | Void
+   | UUID
      deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
 
 builtin2oid :: BuiltinType -> PQ.Oid
@@ -120,6 +121,7 @@ builtin2oid typ = PQ.Oid $ case typ of
   RefCursor   -> 1790
   Record      -> 2249
   Void        -> 2278
+  UUID        -> 2950
 
 oid2builtin :: PQ.Oid -> Maybe BuiltinType
 oid2builtin (PQ.Oid x) = case x of
@@ -168,6 +170,7 @@ oid2builtin (PQ.Oid x) = case x of
   1790 -> Just RefCursor
   2249 -> Just Record
   2278 -> Just Void
+  2950 -> Just UUID
   _    -> Nothing
 
 builtin2typname :: BuiltinType -> ByteString
@@ -217,6 +220,7 @@ builtin2typname typ = case typ of
   RefCursor   -> refcursor
   Record      -> record
   Void        -> void
+  UUID        -> uuid
 
 oid2typname :: PQ.Oid -> Maybe ByteString
 oid2typname (PQ.Oid x) = case x of
@@ -265,6 +269,7 @@ oid2typname (PQ.Oid x) = case x of
   1790 -> Just refcursor
   2249 -> Just record
   2278 -> Just void
+  2950 -> Just uuid
   _ -> Nothing
 
 bool :: ByteString
@@ -401,3 +406,6 @@ record = "record"
 
 void :: ByteString
 void = "void"
+
+uuid :: ByteString
+uuid = "uuid"
