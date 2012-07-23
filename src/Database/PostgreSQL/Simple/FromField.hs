@@ -27,6 +27,7 @@
 module Database.PostgreSQL.Simple.FromField
     (
       FromField(..)
+    , FieldParser
     , ResultError(..)
     , returnError
 
@@ -95,9 +96,11 @@ instance Exception ResultError
 left :: Exception a => a -> Ok b
 left = Errors . (:[]) . SomeException
 
+type FieldParser a = Field -> Maybe ByteString -> Ok a
+
 -- | A type that may be converted from a SQL type.
 class FromField a where
-    fromField :: Field -> Maybe ByteString -> Ok a
+    fromField :: FieldParser a
     -- ^ Convert a SQL value to a Haskell value.
     --
     -- Returns a list of exceptions if the conversion fails.  In the case of
