@@ -20,6 +20,7 @@ module Database.PostgreSQL.Simple.FromRow
      ( FromRow(..)
      , RowParser
      , field
+     , field'
      , numFieldsRemaining
      ) where
 
@@ -64,8 +65,8 @@ import Data.Vector ((!))
 class FromRow a where
     fromRow :: RowParser a
 
-field :: FromField a => RowParser a
-field = RP $ do
+field' :: (Field -> Maybe ByteString -> Ok a) -> RowParser a
+field' fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
     Row{..} <- ask
     column <- lift get
@@ -87,7 +88,10 @@ field = RP $ do
         let typename = typenames ! unCol column
             result = rowresult
             field = Field{..}
-        lift (lift (fromField field (getvalue result row column)))
+        lift (lift (fieldP field (getvalue result row column)))
+
+field :: FromField a => RowParser a
+field = field' fromField
 
 ellipsis :: ByteString -> ByteString
 ellipsis bs
