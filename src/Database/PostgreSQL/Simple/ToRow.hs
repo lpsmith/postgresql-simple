@@ -22,7 +22,7 @@ module Database.PostgreSQL.Simple.ToRow
     ) where
 
 import Database.PostgreSQL.Simple.ToField (Action(..), ToField(..))
-import Database.PostgreSQL.Simple.Types (Only(..))
+import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
 
 -- | A collection type that can be turned into a list of rendering
 -- 'Action's.
@@ -88,3 +88,6 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
 
 instance (ToField a) => ToRow [a] where
     toRow = map toField
+
+instance (ToRow a, ToRow b) => ToRow (a :. b) where
+    toRow (a :. b) = toRow a ++ toRow b
