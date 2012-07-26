@@ -1,8 +1,12 @@
+Version 0.2.2.0 (2012-07-26)
+  * Added a ToRow instance for the (:.) type, courtesy of Leonid Onokhov
+
+  * Added the type oid for PostgreSQL's `uuid` type to BuiltinTypes
+
 Version 0.2.1.0 (2012-07-23)
   * Added the FromRow.fieldWith operator, thanks to Leonid Onokhov
 
   * Added a type synonym for FieldParser
-
 
 Version 0.2.0.1 (2012-06-21)
   * Fixed a compatibility problem with PostgreSQL 8.1,  which does not allow
