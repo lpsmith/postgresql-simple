@@ -126,8 +126,7 @@ import qualified Data.IntMap as IntMap
 import           Data.List (intersperse)
 import           Data.Monoid (mappend, mconcat)
 import           Data.Typeable (Typeable)
-import           Database.PostgreSQL.Simple.BuiltinTypes
-                   ( oid2builtin, builtin2typname )
+import           Database.PostgreSQL.Simple.BuiltinTypes ( oid2typname )
 import           Database.PostgreSQL.Simple.Compat ( mask )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
@@ -934,8 +933,8 @@ fmtError msg q xs = throw FormatError {
 
 getTypename :: Connection -> PQ.Oid -> IO ByteString
 getTypename conn@Connection{..} oid =
-  case oid2builtin oid of
-    Just builtin -> return $! builtin2typname builtin
+  case oid2typname oid of
+    Just name -> return name
     Nothing -> modifyMVar connectionObjects $ \oidmap -> do
       case IntMap.lookup (oid2int oid) oidmap of
         Just name -> return (oidmap, name)
