@@ -4,6 +4,7 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -140,6 +141,7 @@ import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
+import           Database.PostgreSQL.Simple.SqlQQ (sql)
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
@@ -549,19 +551,19 @@ finishQuery conn q result = do
     PQ.TuplesOk -> do
         ncols <- PQ.nfields result
         let unCol (PQ.Col x) = fromIntegral x :: Int
-        typenames <- V.generateM (unCol ncols)
+        typeinfos <- V.generateM (unCol ncols)
                                  (\(PQ.Col . fromIntegral -> col) -> do
-                                    getTypename conn =<< PQ.ftype result col)
+                                    getTypeInfo conn =<< PQ.ftype result col)
         nrows <- PQ.ntuples result
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row -> do
-           let rw = Row row typenames result
+           let rw = Row row typeinfos result
            case runStateT (runReaderT (unRP fromRow) rw) 0 of
              Ok (val,col) | col == ncols -> return val
                           | otherwise -> do
                               vals <- forM' 0 (ncols-1) $ \c -> do
                                   v <- PQ.getvalue result row c
-                                  return ( typenames V.! unCol c
+                                  return ( typeinfos V.! unCol c
                                          , fmap ellipsis v       )
                               throw (ConversionFailed
                                (show (unCol ncols) ++ " values: " ++ show vals)
@@ -963,24 +965,36 @@ fmtError msg q xs = throw FormatError {
 --   wrong results. In such cases, write a @newtype@ wrapper and a
 --   custom 'Result' instance to handle your encoding.
 
-getTypename :: Connection -> PQ.Oid -> IO ByteString
-getTypename conn@Connection{..} oid =
+getTypeInfo :: Connection -> PQ.Oid -> IO TypeInfo
+getTypeInfo conn@Connection{..} oid =
   case oid2typname oid of
-    Just name -> return name
+    Just name -> return $! TypeInfo { typ = NamedOid oid name
+                                    , typelem = Nothing
+                                    }
     Nothing -> modifyMVar connectionObjects $ \oidmap -> do
       case IntMap.lookup (oid2int oid) oidmap of
-        Just name -> return (oidmap, name)
+        Just typeinfo -> return (oidmap, typeinfo)
         Nothing -> do
-            names <- query conn "SELECT typname FROM pg_type WHERE oid=?"
-                            (Only oid)
-            name <- case names of
-                      []  -> return $ throw SqlError {
-                                         sqlNativeError = -1,
-                                         sqlErrorMsg    = "invalid type oid",
-                                         sqlState       = ""
-                                       }
-                      [Only x] -> return x
-                      _   -> fail "typename query returned more than one result"
-                               -- oid is a primary key,  so the query should
-                               -- never return more than one result
-            return (IntMap.insert (oid2int oid) name oidmap, name)
+            names <- query conn
+                       [sql| SELECT p.oid, p.typname, c.oid, c.typname
+                             FROM pg_type AS p LEFT OUTER JOIN pg_type AS c
+                             ON c.oid = p.typelem
+                             WHERE p.oid = ?
+                       |] (Only oid)
+            typinf <- case names of
+                        []  -> return $ throw SqlError {
+                                           sqlNativeError = -1,
+                                           sqlErrorMsg    = "invalid type oid",
+                                           sqlState       = ""
+                                         }
+                        [(pOid, pTypName, mbCOid, mbCTypName)] ->
+                            return $! TypeInfo { typ     = NamedOid pOid pTypName
+                                               , typelem = do
+                                                   cOid     <- mbCOid
+                                                   cTypName <- mbCTypName
+                                                   return $ NamedOid cOid cTypName
+                                               }
+                        _   -> fail "typename query returned more than one result"
+                                 -- oid is a primary key,  so the query should
+                                 -- never return more than one result
+            return (IntMap.insert (oid2int oid) typinf oidmap, typinf)

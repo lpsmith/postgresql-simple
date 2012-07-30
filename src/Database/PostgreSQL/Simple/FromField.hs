@@ -282,7 +282,7 @@ doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Ok a)
           -> Maybe ByteString -> Ok a
 doFromField f types cvt (Just bs)
-    | Just typ <- oid2builtin (typeOid f)
+    | Just typ <- oid2builtin (typoid $ typ $ typeinfo f)
     , mkCompat typ `compat` types = cvt bs
     | otherwise = returnError Incompatible f "types incompatible"
 doFromField f _ _ _ = returnError UnexpectedNull f ""

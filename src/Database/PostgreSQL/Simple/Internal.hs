@@ -52,8 +52,19 @@ import           System.IO.Unsafe (unsafePerformIO)
 data Field = Field {
      result   :: !PQ.Result
    , column   :: {-# UNPACK #-} !PQ.Column
-   , typename :: !ByteString
+   , typeinfo :: !TypeInfo
    }
+
+data NamedOid = NamedOid { typoid  :: !PQ.Oid
+                         , typname :: !ByteString
+                         } deriving Show
+
+data TypeInfo = TypeInfo { typ     :: !NamedOid
+                         , typelem :: !(Maybe NamedOid)
+                         } deriving Show
+
+typename :: Field -> ByteString
+typename = typname . typ . typeinfo
 
 name :: Field -> Maybe ByteString
 name Field{..} = unsafePerformIO (PQ.fname result column)
@@ -76,7 +87,7 @@ typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
 
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
-   , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap ByteString))
+   , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap TypeInfo))
    }
 
 data SqlType
@@ -301,9 +312,12 @@ newNullConnection = do
 
 data Row = Row {
      row        :: {-# UNPACK #-} !PQ.Row
-   , typenames  :: !(V.Vector ByteString)
+   , typeinfos  :: !(V.Vector TypeInfo)
    , rowresult  :: !PQ.Result
    }
+
+typenames :: Row -> V.Vector ByteString
+typenames = V.map (typname . typ) . typeinfos
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )

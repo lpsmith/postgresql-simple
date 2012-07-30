@@ -68,13 +68,13 @@ class FromRow a where
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
-    Row{..} <- ask
+    r@Row{..} <- ask
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
     if (column >= ncols)
     then do
-        let vals = map (\c -> ( typenames ! (unCol c)
+        let vals = map (\c -> ( typenames r ! (unCol c)
                               , fmap ellipsis (getvalue rowresult row c) ))
                        [0..ncols-1]
             convertError = ConversionFailed
@@ -85,7 +85,7 @@ fieldWith fieldP = RP $ do
                 \convert and number in target type"
         lift (lift (Errors [SomeException convertError]))
     else do
-        let typename = typenames ! unCol column
+        let typeinfo = typeinfos ! unCol column
             result = rowresult
             field = Field{..}
         lift (lift (fieldP field (getvalue result row column)))
