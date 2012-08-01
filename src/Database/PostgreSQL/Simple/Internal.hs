@@ -82,8 +82,7 @@ format :: Field -> PQ.Format
 format Field{..} = unsafePerformIO (PQ.fformat result column)
 
 typeOid :: Field -> PQ.Oid
-typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
-
+typeOid = typoid . typ . typeinfo
 
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
