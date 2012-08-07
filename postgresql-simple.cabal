@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.2.2.0
+Version:             0.2.2.1
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -30,6 +30,7 @@ Library
      Database.PostgreSQL.Simple.SqlQQ
      Database.PostgreSQL.Simple.Time
      Database.PostgreSQL.Simple.Time.Internal
+     Database.PostgreSQL.Simple.SRID
      Database.PostgreSQL.Simple.ToField
      Database.PostgreSQL.Simple.ToRow
      Database.PostgreSQL.Simple.Types

@@ -130,7 +130,7 @@ defaultConnectInfo :: ConnectInfo
 defaultConnectInfo = ConnectInfo {
                        connectHost = "127.0.0.1"
                      , connectPort = 5432
-                     , connectUser = "postgres"
+                     , connectUser = "sam"
                      , connectPassword = ""
                      , connectDatabase = ""
                      }
