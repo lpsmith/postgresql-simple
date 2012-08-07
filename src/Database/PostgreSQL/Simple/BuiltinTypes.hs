@@ -42,6 +42,7 @@ data BuiltinType
    | Xml
    | Point
    | LSeg
+   | Geography
    | Path
    | Box
    | Polygon
@@ -92,6 +93,7 @@ builtin2oid typ = PQ.Oid $ case typ of
   Xml         ->  142
   Point       ->  600
   LSeg        ->  601
+  Geography   -> 18056
   Path        ->  602
   Box         ->  603
   Polygon     ->  604
@@ -141,6 +143,7 @@ oid2builtin (PQ.Oid x) = case x of
   142  -> Just Xml
   600  -> Just Point
   601  -> Just LSeg
+  18056 -> Just Geography
   602  -> Just Path
   603  -> Just Box
   604  -> Just Polygon
@@ -191,6 +194,7 @@ builtin2typname typ = case typ of
   Xml         -> xml
   Point       -> point
   LSeg        -> lseg
+  Geography   -> geography
   Path        -> path
   Box         -> box
   Polygon     -> polygon
@@ -240,6 +244,7 @@ oid2typname (PQ.Oid x) = case x of
   142  -> Just xml
   600  -> Just point
   601  -> Just lseg
+  18056 -> Just geography
   602  -> Just path
   603  -> Just box
   604  -> Just polygon
@@ -319,6 +324,9 @@ point = "point"
 
 lseg :: ByteString
 lseg = "lseg"
+
+geography :: ByteString
+geography = "geography"
 
 path :: ByteString
 path = "path"

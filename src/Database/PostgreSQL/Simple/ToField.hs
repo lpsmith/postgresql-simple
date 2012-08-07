@@ -41,6 +41,7 @@ import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Time
+import           Database.PostgreSQL.Simple.SRID
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -219,6 +220,10 @@ instance ToField LocalTimestamp where
 
 instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
+    {-# INLINE toField #-}
+
+instance ToField SRID where
+    toField (SRID b) = Plain $ fromByteString b
     {-# INLINE toField #-}
 
 -- | Surround a string with single-quote characters: \"@'@\"

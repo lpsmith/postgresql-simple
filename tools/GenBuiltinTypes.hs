@@ -54,6 +54,7 @@ cid
 xml
 point
 lseg        LSeg
+geography   Geography
 path
 box
 polygon
