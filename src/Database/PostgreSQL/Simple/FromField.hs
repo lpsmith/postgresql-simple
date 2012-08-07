@@ -62,6 +62,7 @@ import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import           Database.PostgreSQL.Simple.Time
+import           Database.PostgreSQL.Simple.SRID
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as SB
@@ -223,6 +224,12 @@ instance FromField LocalTimestamp where
 
 instance FromField Date where
   fromField = ff Date "Date" parseDate
+
+instance FromField SRID where
+    fromField f dat = if typeOid f == builtin2oid Geography
+                      then (SRID . unBinary) <$> fromField f dat
+                      else returnError Incompatible f "types incompatible"
+
 
 ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Ok a
