@@ -43,6 +43,9 @@ module Database.PostgreSQL.Simple
     -- ** Modifying multiple rows at once
     -- $many
 
+    -- ** @RETURNING@: modifications that returns results
+    -- $returning
+
     -- * Extracting results
     -- $result
 
@@ -86,6 +89,7 @@ module Database.PostgreSQL.Simple
     , foldWithOptions_
     , forEach
     , forEach_
+    , returning
     -- * Statements that do not return results
     , execute
     , execute_
@@ -193,7 +197,7 @@ formatMany conn q@(Query template) qs = do
       return . toByteString . mconcat $ fromByteString before :
                                         intersperse (fromChar ',') bs ++
                                         [fromByteString after]
-    Nothing -> fmtError "syntax error in query template for executeMany" q []
+    Nothing -> fmtError "syntax error in multi-row template" q []
 
 -- Split the input string into three pieces, @before@, @qbits@, and @after@,
 -- following this grammar:
@@ -343,6 +347,16 @@ executeMany _ _ [] = return 0
 executeMany conn q qs = do
   result <- exec conn =<< formatMany conn q qs
   finishExecute conn q result
+
+-- | Execute @INSERT ... RETURNING@, @UPDATE ... RETURNING@, or other SQL
+-- query that accepts multi-row input and is expected to return results.
+--
+-- Throws 'FormatError' if the query could not be formatted correctly.
+returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
+returning _ _ [] = return []
+returning conn q qs = do
+  result <- exec conn =<< formatMany conn q qs
+  finishQuery conn q result
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
@@ -855,6 +869,20 @@ fmtError msg q xs = throw FormatError {
 --
 -- > insert into users (first_name,last_name) values
 -- >   ('Boris','Karloff'),('Ed','Wood')
+
+-- $returning
+--
+-- The 'returning' function is similar to 'executeMany' but is
+-- intended for use with multi-tuple @INSERT@ or @UPDATE@ statements
+-- that make use of @RETURNING@.
+--
+-- For example, were there an auto-incrementing @id@ column and
+-- timestamp column @t@ that defaulted to the present time for the
+-- @sales@ table, then the following query would insert two new
+-- sales records and also return their new @id@s and timestamps.
+--
+-- > let q = "insert into sales (amount, label) values (?,?) returning id, t"
+-- > xs :: [(Int, UTCTime)] <- returning conn q [(20,"Chips"),(300,"Wood")]
 
 -- $result
 --
