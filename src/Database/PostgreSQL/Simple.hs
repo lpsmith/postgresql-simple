@@ -350,6 +350,10 @@ executeMany conn q qs = do
 
 -- | Execute @INSERT ... RETURNING@, @UPDATE ... RETURNING@, or other SQL
 -- query that accepts multi-row input and is expected to return results.
+-- Note that it is possible to write
+--    @'query' conn "INSERT ... RETURNING ..." ...@
+-- in cases where you are only inserting a single row,  and do not need
+-- functionality analogous to 'executeMany'.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
