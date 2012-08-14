@@ -33,8 +33,8 @@ data ArrayFormat = Array [ArrayFormat] | Bytes ByteString
 bracketed :: Char -> Parser [ArrayFormat]
 bracketed delim = char '{' *> option [] (arrays <|> strings) <* char '}'
   where
-    strings = sepBy (Bytes <$> (quoted <|> plain delim)) (char delim)
-    arrays  = sepBy (Array <$> bracketed delim) (char ',')
+    strings = sepBy1 (Bytes <$> (quoted <|> plain delim)) (char delim)
+    arrays  = sepBy1 (Array <$> bracketed delim) (char ',')
     -- NB: Arrays seem to always be delimited by commas.
 
 -- | Recognizes a quoted string. Doesn't parse it in the sense that no
