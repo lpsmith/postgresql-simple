@@ -54,6 +54,8 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
 import           Data.Ratio (Ratio)
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as S
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
@@ -62,6 +64,7 @@ import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import           Database.PostgreSQL.Simple.Time
+import           Database.PostgreSQL.Simple.Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as SB
@@ -240,6 +243,15 @@ ff pgType hsType parse f mstr
 instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
                     <|> (Left  <$> fromField f dat)
+
+instance (FromField a, Typeable a) => FromField (Seq a) where
+    fromField f dat = either (returnError ConversionFailed f)
+                             (S.fromList <$>)
+                             (parseOnly (fromArray ',' f) (maybe "" id dat))
+
+fromArray :: (FromField a) => Char -> Field -> Parser (Ok [a])
+fromArray delim f = sequence . (fromField f . Just
+                                            . fmt delim <$>) <$> array delim
 
 newtype Compat = Compat Word64
 
