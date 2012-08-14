@@ -18,23 +18,22 @@ import           Control.Applicative (Applicative(..), Alternative(..), (<$>))
 import           Data.ByteString.Char8 (ByteString, snoc, cons, copy)
 import           Data.Monoid
 import           Data.Attoparsec.Char8
-import           Database.PostgreSQL.Simple.FromField
 
 
 -- | Parse one of three primitive field formats: array, quoted and plain.
 arrayFormat :: Char -> Parser ArrayFormat
-arrayFormat delim  =  Array <$> bracketed delim
+arrayFormat delim  =  Array <$> array delim
                   <|> Bytes <$> plain delim
                   <|> Bytes <$> quoted
 
 data ArrayFormat = Array [ArrayFormat] | Bytes ByteString
     deriving (Eq, Show, Ord)
 
-bracketed :: Char -> Parser [ArrayFormat]
-bracketed delim = char '{' *> option [] (arrays <|> strings) <* char '}'
+array :: Char -> Parser [ArrayFormat]
+array delim = char '{' *> option [] (arrays <|> strings) <* char '}'
   where
     strings = sepBy1 (Bytes <$> (quoted <|> plain delim)) (char delim)
-    arrays  = sepBy1 (Array <$> bracketed delim) (char ',')
+    arrays  = sepBy1 (Array <$> array delim) (char ',')
     -- NB: Arrays seem to always be delimited by commas.
 
 -- | Recognizes a quoted string. Doesn't parse it in the sense that no
@@ -59,10 +58,9 @@ plain delim = copy <$> takeWhile1 (notInClass (delim:"\"{}"))
 -- | Format an array format item, using the delimiter character if the item is
 --   itself an array.
 fmt :: Char -> ArrayFormat -> ByteString
-fmt c x =
-  case x of
-    Array items -> '{' `cons` delimit c items `snoc` '}'
-    Bytes bytes -> bytes
+fmt c x = case x of
+            Array items -> '{' `cons` delimit c items `snoc` '}'
+            Bytes bytes -> bytes
 
 -- | Format a list of array format items, inserting the appropriate delimiter
 --   between them. When the items are arrays, they will be delimited with
