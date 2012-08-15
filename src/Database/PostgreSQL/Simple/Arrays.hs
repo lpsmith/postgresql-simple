@@ -15,42 +15,42 @@
 module Database.PostgreSQL.Simple.Arrays where
 
 import           Control.Applicative (Applicative(..), Alternative(..), (<$>))
-import           Data.ByteString.Char8 (ByteString, snoc, cons, copy)
+import           Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 import           Data.Monoid
 import           Data.Attoparsec.Char8
 
 
 -- | Parse one of three primitive field formats: array, quoted and plain.
 arrayFormat :: Char -> Parser ArrayFormat
-arrayFormat delim  =  Array <$> array delim
-                  <|> Bytes <$> plain delim
-                  <|> Bytes <$> quoted
+arrayFormat delim  =  Array  <$> array delim
+                  <|> Plain  <$> plain delim
+                  <|> Quoted <$> quoted
 
-data ArrayFormat = Array [ArrayFormat] | Bytes ByteString
-    deriving (Eq, Show, Ord)
+data ArrayFormat = Array [ArrayFormat]
+                 | Plain ByteString
+                 | Quoted ByteString
+                   deriving (Eq, Show, Ord)
 
 array :: Char -> Parser [ArrayFormat]
 array delim = char '{' *> option [] (arrays <|> strings) <* char '}'
   where
-    strings = sepBy1 (Bytes <$> (quoted <|> plain delim)) (char delim)
+    strings = sepBy1 (Quoted <$> quoted <|> Plain <$> plain delim) (char delim)
     arrays  = sepBy1 (Array <$> array delim) (char ',')
     -- NB: Arrays seem to always be delimited by commas.
 
--- | Recognizes a quoted string. Doesn't parse it in the sense that no
---   extraction occurs -- valid escape sequences and the delimiting quotes are
---   left in place. Makes a copy, because 'snoc' and 'cons' are used.
+-- | Recognizes a quoted string.
 quoted :: Parser ByteString
-quoted  = snoc <$> (cons <$> char '"' <*> option "" contents) <*> char '"'
+quoted  = char '"' *> option "" contents <* char '"'
   where
-    esc = string "\\\\" <|> string "\\\""
+    esc = char '\\' *> (char '\\' <|> char '"')
     unQ = takeWhile1 (notInClass "\"\\")
-    contents = mconcat <$> many (esc <|> unQ)
+    contents = mconcat <$> many (unQ <|> B.singleton <$> esc)
 
 -- | Recognizes a plain string literal, not containing quotes or brackets and
---   not containing the delimiter character. Makes a copy, to be consistent
---   with 'quoted', above.
+--   not containing the delimiter character.
 plain :: Char -> Parser ByteString
-plain delim = copy <$> takeWhile1 (notInClass (delim:"\"{}"))
+plain delim = takeWhile1 (notInClass (delim:"\"{}"))
 
 -- Mutually recursive 'fmt' and 'delimit' separate out value formatting
 -- from the subtleties of delimiting.
@@ -58,18 +58,37 @@ plain delim = copy <$> takeWhile1 (notInClass (delim:"\"{}"))
 -- | Format an array format item, using the delimiter character if the item is
 --   itself an array.
 fmt :: Char -> ArrayFormat -> ByteString
-fmt c x = case x of
-            Array items -> '{' `cons` delimit c items `snoc` '}'
-            Bytes bytes -> bytes
+fmt = fmt' False
 
 -- | Format a list of array format items, inserting the appropriate delimiter
 --   between them. When the items are arrays, they will be delimited with
 --   commas; otherwise, they are delimited with the passed-in-delimiter.
 delimit :: Char -> [ArrayFormat] -> ByteString
-delimit _           [] = ""
-delimit c          [x] = fmt c x
-delimit c (x:next:rem) = fmt c x `snoc` c' `mappend` delimit c (next:rem)
+delimit _      [] = ""
+delimit c     [x] = fmt' True c x
+delimit c (x:y:z) = fmt' True c x `B.snoc` c' `mappend` delimit c (y:z)
   where
     c' | Array _ <- x = ','
        | otherwise    = c
+
+-- | Format an array format item, using the delimiter character if the item is
+--   itself an array, optionally applying quoting rules. Creates copies for
+--   safety when used in 'FromField' instances.
+fmt' :: Bool -> Char -> ArrayFormat -> ByteString
+fmt' quoting c x =
+  case x of
+    Array items          -> '{' `B.cons` delimit c items `B.snoc` '}'
+    Plain bytes          -> B.copy bytes
+    Quoted q | quoting   -> '"' `B.cons` esc q `B.snoc` '"'
+             | otherwise -> B.copy q
+    -- NB: The 'snoc' and 'cons' functions always copy.
+
+-- | Escape a string according to Postgres double-quoted string format.
+esc :: ByteString -> ByteString
+esc = B.concatMap f
+  where
+    f '"'  = "\\\""
+    f '\\' = "\\\\"
+    f c    = B.singleton c
+  -- TODO: Implement easy performance improvements with unfoldr.
 
