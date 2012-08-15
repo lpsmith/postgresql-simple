@@ -36,6 +36,8 @@ import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
+import           Data.Foldable (toList)
+import           Data.Sequence (Seq)
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
@@ -220,6 +222,14 @@ instance ToField LocalTimestamp where
 instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
     {-# INLINE toField #-}
+
+instance (ToField a) => ToField (Seq a) where
+    toField xs = Many $
+        Plain (fromByteString "ARRAY[") :
+        (intersperse (Plain (fromChar ',')) . map toField $ toList xs) ++
+        [Plain (fromChar ']')]
+        -- Because the ARRAY[...] input syntax is being used, it is possible
+        -- that the use of type-specific separator characters is unnecessary.
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --
