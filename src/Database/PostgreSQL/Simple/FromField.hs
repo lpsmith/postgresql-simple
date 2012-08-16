@@ -53,6 +53,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
+import           Data.Maybe (fromMaybe)
 import           Data.Ratio (Ratio)
 import           Data.Sequence (Seq)
 import qualified Data.Sequence as S
@@ -250,8 +251,14 @@ instance (FromField a, Typeable a) => FromField (Seq a) where
                              (parseOnly (fromArray ',' f) (maybe "" id dat))
 
 fromArray :: (FromField a) => Char -> Field -> Parser (Ok [a])
-fromArray delim f = sequence . (fromField f . Just
-                                            . fmt delim <$>) <$> array delim
+fromArray delim f = sequence . (parseIt <$>) <$> array delim
+  where
+    fElem = f{ typeinfo = TypeInfo tElem Nothing }
+    tInfo = typeinfo f
+    tElem = fromMaybe (typ tInfo) (typelem tInfo)
+    parseIt item = (fromField f' . Just . fmt delim) item
+      where f' | Array _ <- item = f
+               | otherwise       = fElem
 
 newtype Compat = Compat Word64
 
