@@ -6,9 +6,6 @@ import Control.Concurrent
 import Control.Exception as E
 import Data.IORef
 
-atomic :: Connection -> IO a -> IO a
-atomic = withTransactionSerializable ReadWrite
-
 initCounter :: Connection -> IO ()
 initCounter conn = do
     0 <- execute_ conn "DROP TABLE IF EXISTS testSerializableCounter;\
@@ -38,7 +35,7 @@ testSerializable TestEnv{..} =
         finished        <- newEmptyMVar
 
         _ <- forkIO $ do
-            atomic conn2 $ do
+            withTransactionSerializable conn2 $ do
                 modifyIORef attemptCounter (+1)
                 n <- getCounter conn2
                 True <- tryPutMVar readyToBother ()
@@ -47,7 +44,7 @@ testSerializable TestEnv{..} =
             putMVar finished ()
 
         takeMVar readyToBother
-        atomic conn $ do
+        withTransactionSerializable conn $ do
             n <- getCounter conn
             putCounter conn (n+1)
         True <- tryPutMVar bothered ()
@@ -57,9 +54,12 @@ testSerializable TestEnv{..} =
         ac <- readIORef attemptCounter
         assertEqual "attemptCounter" 2 ac
 
-        ok <- E.catch (atomic conn (fail "Whoops") >> return False)
+        ok <- E.catch (do withTransactionSerializable conn (fail "Whoops")
+                          return False)
                       (\(_ :: IOException) -> return True)
-        assertBool "Exceptions (besides serialization failure) should be propagated through atomic" ok
+        assertBool "Exceptions (besides serialization failure) should be\
+                   \ propagated through withTransactionSerializable"
+                   ok
 
         -- Make sure transaction isn't dangling
         1 <- execute_ conn "UPDATE testSerializableCounter SET n=12345"
