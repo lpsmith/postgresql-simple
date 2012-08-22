@@ -67,6 +67,7 @@ module Database.PostgreSQL.Simple
     , (:.)(..)
     -- ** Exceptions
     , SqlError(..)
+    , PQ.ExecStatus(..)
     , FormatError(fmtMessage, fmtQuery, fmtParams)
     , QueryError(qeMessage, qeQuery)
     , ResultError(errSQLType, errHaskellType, errMessage)
