@@ -1026,11 +1026,7 @@ getTypename conn@Connection{..} oid =
             names <- query conn "SELECT typname FROM pg_type WHERE oid=?"
                             (Only oid)
             name <- case names of
-                      []  -> return $ throw SqlError {
-                                         sqlNativeError = -1,
-                                         sqlErrorMsg    = "invalid type oid",
-                                         sqlState       = ""
-                                       }
+                      []  -> return . throw $ fatalError "invalid type oid"
                       [Only x] -> return x
                       _   -> fail "typename query returned more than one result"
                                -- oid is a primary key,  so the query should
