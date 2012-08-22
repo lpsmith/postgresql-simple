@@ -78,6 +78,7 @@ test-suite test
     Bytea
     ExecuteMany
     Notify
+    Serializable
     Time
 
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind

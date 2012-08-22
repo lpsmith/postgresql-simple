@@ -97,6 +97,7 @@ module Database.PostgreSQL.Simple
 --    , Base.insertID
     -- * Transaction handling
     , withTransaction
+    , withTransactionSerializable
     , TransactionMode(..)
     , IsolationLevel(..)
     , ReadWriteMode(..)
@@ -105,6 +106,7 @@ module Database.PostgreSQL.Simple
     , defaultReadWriteMode
     , withTransactionLevel
     , withTransactionMode
+    , withTransactionModeRetry
 --    , Base.autocommit
     , begin
     , beginLevel
@@ -122,7 +124,8 @@ import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Control.Applicative ((<$>), pure)
 import           Control.Concurrent.MVar
 import           Control.Exception
-                   ( Exception, onException, throw, throwIO, finally )
+                   ( Exception, onException, throw, throwIO, finally
+                   , try, SomeException, fromException )
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
@@ -643,6 +646,24 @@ defaultReadWriteMode   =  DefaultReadWriteMode
 withTransaction :: Connection -> IO a -> IO a
 withTransaction = withTransactionMode defaultTransactionMode
 
+-- | Execute an action inside of a 'Serializable' transaction.  If a
+-- serialization failure occurs, roll back the transaction and try again.
+-- Be warned that this may execute the IO action multiple times.
+--
+-- A 'Serializable' transaction creates the illusion that your program has
+-- exclusive access to the database.  This means that, even in a concurrent
+-- setting, you can perform queries in sequence without having to worry about
+-- what might happen between one statement and the next.
+--
+-- Think of it as STM, but without @retry@.
+withTransactionSerializable :: Connection -> IO a -> IO a
+withTransactionSerializable =
+    withTransactionModeRetry
+        TransactionMode
+        { isolationLevel = Serializable
+        , readWriteMode  = ReadWrite
+        }
+
 -- | Execute an action inside a SQL transaction with a given isolation level.
 withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
 withTransactionLevel lvl
@@ -656,6 +677,37 @@ withTransactionMode mode conn act =
     r <- restore act `onException` rollback conn
     commit conn
     return r
+
+-- | Like 'withTransactionMode', but if a 'SqlError' arises whose 'sqlState' is
+-- @\"40001\"@ (@serialization_failure@), this will issue a @ROLLBACK@, then
+-- try the action again.  If any other exception arises, this will issue a
+-- @ROLLBACK@, but will propagate the exception instead of retrying.
+--
+-- This is used to implement 'withTransactionSerializable'.
+withTransactionModeRetry :: TransactionMode -> Connection -> IO a -> IO a
+withTransactionModeRetry mode conn act =
+    mask $ \restore ->
+        retryLoop $ try $ do
+            a <- restore act
+            commit conn
+            return a
+  where
+    retryLoop :: IO (Either SomeException a) -> IO a
+    retryLoop act' = do
+        beginMode mode conn
+        r <- act'
+        case r of
+            Left e -> do
+                rollback conn
+                case fromException e of
+                    Just SqlError{..} | sqlState == serialization_failure
+                      -> retryLoop act'
+                    _ -> throwIO e
+            Right a ->
+                return a
+
+    -- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+    serialization_failure = "40001"
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
