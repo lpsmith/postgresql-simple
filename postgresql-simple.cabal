@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.2.3.0
+Version:             0.2.4.0
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -66,7 +66,7 @@ source-repository head
 source-repository this
   type:     git
   location: http://github.com/lpsmith/postgresql-simple
-  tag:      v0.2.3.0
+  tag:      v0.2.4.0
 
 test-suite test
   type:           exitcode-stdio-1.0
