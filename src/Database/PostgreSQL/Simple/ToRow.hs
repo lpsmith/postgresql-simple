@@ -15,6 +15,7 @@
 -- elements.
 --
 ------------------------------------------------------------------------------
+{-# LANGUAGE FlexibleInstances #-}
 
 module Database.PostgreSQL.Simple.ToRow
     (
@@ -22,7 +23,7 @@ module Database.PostgreSQL.Simple.ToRow
     ) where
 
 import Database.PostgreSQL.Simple.ToField (Action(..), ToField(..))
-import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
+import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..), In(..))
 
 -- | A collection type that can be turned into a list of rendering
 -- 'Action's.
@@ -91,3 +92,6 @@ instance (ToField a) => ToRow [a] where
 
 instance (ToRow a, ToRow b) => ToRow (a :. b) where
     toRow (a :. b) = toRow a ++ toRow b
+
+instance (ToField a) => ToRow (In [a]) where
+    toRow as = [toField as]
