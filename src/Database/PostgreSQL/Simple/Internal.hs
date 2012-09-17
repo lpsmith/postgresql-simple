@@ -25,16 +25,17 @@ import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
 import           Data.ByteString(ByteString)
-import qualified Data.ByteString       as B
 import qualified Data.ByteString.Char8 as B8
 import           Data.Char (ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
+import           Data.Maybe(fromMaybe)
 import           Data.String
 import           Data.Typeable
 import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
+import           Database.PostgreSQL.LibPQ(ExecStatus(..))
 import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
@@ -85,9 +86,14 @@ data SqlType
 
 data SqlError = SqlError {
      sqlState       :: ByteString
-   , sqlNativeError :: Int
+   , sqlExecStatus  :: ExecStatus
    , sqlErrorMsg    :: ByteString
+   , sqlErrorDetail :: ByteString
+   , sqlErrorHint   :: ByteString
    } deriving (Show, Typeable)
+
+fatalError :: ByteString -> SqlError
+fatalError msg = SqlError "" FatalError msg "" ""
 
 instance Exception SqlError
 
@@ -162,9 +168,7 @@ connectPostgreSQL connstr = do
           return wconn
       _ -> do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
-          throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
-                             , sqlErrorMsg    = msg
-                             , sqlState       = ""  }
+          throwIO $ fatalError msg
 
 -- | Turns a 'ConnectInfo' data structure into a libpq connection string.
 
@@ -213,9 +217,7 @@ exec conn sql =
         case mres of
           Nothing -> do
             msg <- maybe "execute error" id <$> PQ.errorMessage h
-            throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
-                               , sqlErrorMsg    = msg
-                               , sqlState       = ""  }
+            throwIO $ fatalError msg
           Just res -> do
             return res
 
@@ -260,21 +262,22 @@ finishExecute _conn q result = do
                     else error ("finishExecute:  not an int: " ++ B8.unpack str)
 
 throwResultError :: ByteString -> PQ.Result -> PQ.ExecStatus -> IO a
-throwResultError context result status = do
-    errormsg  <- maybe "" id <$> PQ.resultErrorMessage result
-    statusmsg <- PQ.resStatus status
+throwResultError _ result status = do
+    errormsg  <- fromMaybe "" <$>
+                 PQ.resultErrorField result PQ.DiagMessagePrimary
+    detail    <- fromMaybe "" <$>
+                 PQ.resultErrorField result PQ.DiagMessageDetail
+    hint      <- fromMaybe "" <$>
+                 PQ.resultErrorField result PQ.DiagMessageHint
     state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
     throwIO $ SqlError { sqlState = state
-                       , sqlNativeError = fromEnum status
-                       , sqlErrorMsg = B.concat [ context, ": ", statusmsg
-                                                , ": ", errormsg ]}
+                       , sqlExecStatus = status
+                       , sqlErrorMsg = errormsg
+                       , sqlErrorDetail = detail
+                       , sqlErrorHint = hint }
 
 disconnectedError :: SqlError
-disconnectedError = SqlError {
-                      sqlNativeError = -1,
-                      sqlErrorMsg    = "connection disconnected",
-                      sqlState       = ""
-                    }
+disconnectedError = fatalError "connection disconnected"
 
 -- | Atomically perform an action with the database handle, if there is one.
 withConnection :: Connection -> (PQ.Connection -> IO a) -> IO a

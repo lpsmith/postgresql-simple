@@ -51,9 +51,7 @@ liftPQ str conn m = withConnection conn $ \c -> do
     case res of
       Nothing -> do
           msg <- maybe str id <$> PQ.errorMessage c
-          throwIO $ SqlError { sqlNativeError = -1   -- FIXME?
-                             , sqlErrorMsg    = msg
-                             , sqlState       = ""  }
+          throwIO $ fatalError msg
       Just  x -> return x
 
 loCreat :: Connection -> IO Oid
