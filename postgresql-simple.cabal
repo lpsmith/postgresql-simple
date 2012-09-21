@@ -33,6 +33,7 @@ Library
      Database.PostgreSQL.Simple.ToField
      Database.PostgreSQL.Simple.ToRow
      Database.PostgreSQL.Simple.Types
+     Database.PostgreSQL.Simple.Errors
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
 
