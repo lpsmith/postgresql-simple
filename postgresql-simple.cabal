@@ -21,6 +21,7 @@ Library
   hs-source-dirs: src
   Exposed-modules:
      Database.PostgreSQL.Simple
+     Database.PostgreSQL.Simple.Arrays
      Database.PostgreSQL.Simple.BuiltinTypes
      Database.PostgreSQL.Simple.FromField
      Database.PostgreSQL.Simple.FromRow
@@ -87,6 +88,7 @@ test-suite test
             , OverloadedStrings
             , Rank2Types
             , RecordWildCards
+            , PatternGuards
 
   build-depends: base
                , base16-bytestring

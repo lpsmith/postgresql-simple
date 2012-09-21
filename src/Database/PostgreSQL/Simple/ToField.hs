@@ -39,6 +39,8 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Time
 
@@ -220,6 +222,14 @@ instance ToField LocalTimestamp where
 instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
     {-# INLINE toField #-}
+
+instance (ToField a) => ToField (Vector a) where
+    toField xs = Many $
+        Plain (fromByteString "ARRAY[") :
+        (intersperse (Plain (fromChar ',')) . map toField $ V.toList xs) ++
+        [Plain (fromChar ']')]
+        -- Because the ARRAY[...] input syntax is being used, it is possible
+        -- that the use of type-specific separator characters is unnecessary.
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --
