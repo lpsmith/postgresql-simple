@@ -79,7 +79,7 @@ fieldWith fieldP = RP $ do
                        [0..ncols-1]
             convertError = ConversionFailed
                 (show (unCol ncols) ++ " values: " ++ show vals)
-                Nothing
+                ""
                 ("at least " ++ show (unCol column + 1)
                   ++ " slots in target type")
                 "mismatch between number of columns to \
