@@ -568,10 +568,11 @@ finishQuery conn q result = do
                                          , fmap ellipsis v       )
                               throw (ConversionFailed
                                (show (unCol ncols) ++ " values: " ++ show vals)
+                               ""
                                (show (unCol col) ++ " slots in target type")
                                "mismatch between number of columns to \
                                \convert and number in target type")
-             Errors []  -> throwIO $ ConversionFailed "" "" "unknown error"
+             Errors []  -> throwIO $ ConversionFailed "" "" "" "unknown error"
              Errors [x] -> throwIO x
              Errors xs  -> throwIO $ ManyErrors xs
     PQ.CopyOut ->
