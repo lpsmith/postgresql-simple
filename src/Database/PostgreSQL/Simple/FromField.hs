@@ -78,15 +78,18 @@ import qualified Data.Text.Lazy as LT
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
 data ResultError = Incompatible { errSQLType :: String
+                                , errSQLField :: String
                                 , errHaskellType :: String
                                 , errMessage :: String }
                  -- ^ The SQL and Haskell types are not compatible.
                  | UnexpectedNull { errSQLType :: String
+                                  , errSQLField :: String
                                   , errHaskellType :: String
                                   , errMessage :: String }
                  -- ^ A SQL @NULL@ was encountered when the Haskell
                  -- type did not permit it.
                  | ConversionFailed { errSQLType :: String
+                                    , errSQLField :: String
                                     , errHaskellType :: String
                                     , errMessage :: String }
                  -- ^ The SQL value could not be parsed, or could not
@@ -232,12 +235,12 @@ ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Ok a
 ff pgType hsType parse f mstr
     | typeOid f /= builtin2oid pgType
-    = left (Incompatible   (B8.unpack (typename f)) hsType "")
+    = left (Incompatible   (B8.unpack (typename f)) (maybe "" B8.unpack (name f)) hsType "")
     | Nothing <- mstr
-    = left (UnexpectedNull (B8.unpack (typename f)) hsType "")
+    = left (UnexpectedNull (B8.unpack (typename f)) (maybe "" B8.unpack (name f)) hsType "")
     | Just str <- mstr
     = case parse str of
-        Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
+        Left msg -> left (ConversionFailed (B8.unpack (typename f)) (maybe "" B8.unpack (name f)) hsType msg)
         Right val -> return val
 {-# INLINE ff #-}
 
@@ -300,9 +303,10 @@ doFromField f _ _ _ = returnError UnexpectedNull f ""
 --   exception value and returns it in a 'Left . SomeException'
 --   constructor.
 returnError :: forall a err . (Typeable a, Exception err)
-            => (String -> String -> String -> err)
+            => (String -> String -> String -> String -> err)
             -> Field -> String -> Ok a
 returnError mkErr f = left . mkErr (B.unpack (typename f))
+                                   (maybe "" B.unpack (name f))
                                    (show (typeOf (undefined :: a)))
 
 atto :: forall a. (Typeable a)
