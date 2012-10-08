@@ -68,6 +68,7 @@ module Database.PostgreSQL.Simple
     , (:.)(..)
     -- ** Exceptions
     , SqlError(..)
+    , PQ.ExecStatus(..)
     , FormatError(fmtMessage, fmtQuery, fmtParams)
     , QueryError(qeMessage, qeQuery)
     , ResultError(errSQLType, errHaskellType, errMessage)
@@ -1035,11 +1036,7 @@ getTypeInfo conn@Connection{..} oid =
                              WHERE p.oid = ?
                        |] (Only oid)
             typinf <- case names of
-                        []  -> return $ throw SqlError {
-                                           sqlNativeError = -1,
-                                           sqlErrorMsg    = "invalid type oid",
-                                           sqlState       = ""
-                                         }
+                        []  -> return $ throw (fatalError "invalid type oid")
                         [(pOid, pTypName, mbCOid, mbCTypName)] ->
                             return $! TypeInfo { typ     = NamedOid pOid pTypName
                                                , typelem = do
