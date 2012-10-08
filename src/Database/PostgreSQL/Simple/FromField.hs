@@ -53,15 +53,19 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
+import           Data.Maybe (fromMaybe)
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import           Database.PostgreSQL.Simple.Time
+import           Database.PostgreSQL.Simple.Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as SB
@@ -241,6 +245,21 @@ instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
                     <|> (Left  <$> fromField f dat)
 
+instance (FromField a, Typeable a) => FromField (Vector a) where
+    fromField f dat = either (returnError ConversionFailed f)
+                             (V.fromList <$>)
+                             (parseOnly (fromArray ',' f) (maybe "" id dat))
+
+fromArray :: (FromField a) => Char -> Field -> Parser (Ok [a])
+fromArray delim f = sequence . (parseIt <$>) <$> array delim
+  where
+    fElem = f{ typeinfo = TypeInfo tElem Nothing }
+    tInfo = typeinfo f
+    tElem = fromMaybe (typ tInfo) (typelem tInfo)
+    parseIt item = (fromField f' . Just . fmt delim) item
+      where f' | Array _ <- item = f
+               | otherwise       = fElem
+
 newtype Compat = Compat Word64
 
 mkCompats :: [BuiltinType] -> Compat
@@ -270,7 +289,7 @@ doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Ok a)
           -> Maybe ByteString -> Ok a
 doFromField f types cvt (Just bs)
-    | Just typ <- oid2builtin (typeOid f)
+    | Just typ <- oid2builtin (typoid $ typ $ typeinfo f)
     , mkCompat typ `compat` types = cvt bs
     | otherwise = returnError Incompatible f "types incompatible"
 doFromField f _ _ _ = returnError UnexpectedNull f ""
