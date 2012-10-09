@@ -110,7 +110,7 @@ format Field{..} = unsafePerformIO (PQ.fformat result column)
 --   to libpq's @PQftype@.
 
 typeOid :: Field -> PQ.Oid
-typeOid = typoid . typ . typeinfo
+typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
 
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
