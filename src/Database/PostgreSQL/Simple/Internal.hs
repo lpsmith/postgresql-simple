@@ -84,12 +84,17 @@ name :: Field -> Maybe ByteString
 name Field{..} = unsafePerformIO (PQ.fname result column)
 
 -- | Returns the name of the object id of the @table@ associated with the
---   column,  if any.  Returns 'invalidOid' when there is no such table;
+--   column,  if any.  Returns 'Nothing' when there is no such table;
 --   for example a computed column does not have a table associated with it.
 --   Analogous to libpq's @PQftable@.
 
-tableOid :: Field -> PQ.Oid
-tableOid Field{..} = unsafePerformIO (PQ.ftable result column)
+tableOid :: Field -> Maybe PQ.Oid
+tableOid Field{..} = toMaybeOid (unsafePerformIO (PQ.ftable result column))
+  where
+     toMaybeOid x
+       = if   x == PQ.invalidOid
+         then Nothing
+         else Just x
 
 -- | If the column has a table associated with it,  this returns the number
 --   of the associated table column.   Numbering starts from 0.  Analogous
