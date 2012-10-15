@@ -663,6 +663,15 @@ withTransactionSerializable =
         { isolationLevel = Serializable
         , readWriteMode  = ReadWrite
         }
+        retryOnNotSerializable
+  where
+    retryOnNotSerializable exception =
+      case exception of
+        SqlError{..} | sqlState == serialization_failure
+          -> True
+        _ -> False
+    -- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+    serialization_failure = "40001"
 
 -- | Execute an action inside a SQL transaction with a given isolation level.
 withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
@@ -678,14 +687,15 @@ withTransactionMode mode conn act =
     commit conn
     return r
 
--- | Like 'withTransactionMode', but if a 'SqlError' arises whose 'sqlState' is
--- @\"40001\"@ (@serialization_failure@), this will issue a @ROLLBACK@, then
--- try the action again.  If any other exception arises, this will issue a
--- @ROLLBACK@, but will propagate the exception instead of retrying.
+-- | Like 'withTransactionMode', but also takes a custom callback to
+-- determine if a transaction should be retried if an 'SqlError' occurs.
+-- If the callback returns True, then the transaction will be retried.
+-- If the callback returns False, or an exception other than an 'SqlError'
+-- occurs then the transaction will be rolled back and the exception rethrown.
 --
 -- This is used to implement 'withTransactionSerializable'.
-withTransactionModeRetry :: TransactionMode -> Connection -> IO a -> IO a
-withTransactionModeRetry mode conn act =
+withTransactionModeRetry :: TransactionMode -> (SqlError -> Bool) -> Connection -> IO a -> IO a
+withTransactionModeRetry mode shouldRetry conn act =
     mask $ \restore ->
         retryLoop $ try $ do
             a <- restore act
@@ -699,15 +709,11 @@ withTransactionModeRetry mode conn act =
         case r of
             Left e -> do
                 rollback conn
-                case fromException e of
-                    Just SqlError{..} | sqlState == serialization_failure
-                      -> retryLoop act'
-                    _ -> throwIO e
+                case fmap shouldRetry (fromException e) of
+                  Just True -> retryLoop act'
+                  _ -> throwIO e
             Right a ->
                 return a
-
-    -- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
-    serialization_failure = "40001"
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
