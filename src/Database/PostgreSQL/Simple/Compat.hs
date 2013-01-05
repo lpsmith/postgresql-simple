@@ -1,11 +1,13 @@
 {-# LANGUAGE CPP #-}
--- | This is a module of its own, because it uses the CPP extension, which
--- doesn't play well with the regex string literal in Simple.hs .
+-- | This is a module of its own, partly because it uses the CPP extension,
+-- which doesn't play well with backslash-broken string literals.
 module Database.PostgreSQL.Simple.Compat
     ( mask
+    , (<>)
     ) where
 
 import qualified Control.Exception as E
+import Data.Monoid
 
 -- | Like 'E.mask', but backported to base before version 4.3.0.
 --
@@ -23,3 +25,11 @@ mask io = do
     E.block $ io $ \m -> if b then m else E.unblock m
 #endif
 {-# INLINE mask #-}
+
+#if !MIN_VERSION_base(4,5,0)
+infixr 6 <>
+
+(<>) :: Monoid m => m -> m -> m
+(<>) = mappend
+{-# INLINE (<>) #-}
+#endif
