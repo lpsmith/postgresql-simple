@@ -133,10 +133,10 @@ import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import           Data.List (intersperse)
-import           Data.Monoid (mappend, mconcat)
+import           Data.Monoid (mconcat)
 import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.BuiltinTypes ( oid2typname )
-import           Database.PostgreSQL.Simple.Compat ( mask )
+import           Database.PostgreSQL.Simple.Compat ( mask, (<>) )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
@@ -325,7 +325,7 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
         sub (Many  ys)      = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
-        zipParams (t:ts) (p:ps) = t `mappend` p `mappend` zipParams ts ps
+        zipParams (t:ts) (p:ps) = t <> p <> zipParams ts ps
         zipParams [t] []        = t
         zipParams _ _ = fmtError (show (B.count '?' template) ++
                                   " '?' characters, but " ++
@@ -499,8 +499,7 @@ doFold FoldOptions{..} conn _template q a f = do
   where
     go = do
        -- FIXME:  what about name clashes with already-declared cursors?
-       _ <- execute_ conn ("DECLARE fold NO SCROLL CURSOR FOR "
-                           `mappend` q)
+       _ <- execute_ conn ("DECLARE fold NO SCROLL CURSOR FOR " <> q)
        loop a `finally` execute_ conn "CLOSE fold"
 
 -- FIXME: choose the Automatic chunkSize more intelligently

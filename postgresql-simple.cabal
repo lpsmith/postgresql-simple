@@ -80,6 +80,7 @@ test-suite test
     Common
     Bytea
     ExecuteMany
+    Fold
     Notify
     Serializable
     Time

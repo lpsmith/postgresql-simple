@@ -6,6 +6,7 @@ import System.IO
 
 import Bytea
 import ExecuteMany
+import Fold
 import Notify
 import Serializable
 import Time
@@ -15,6 +16,7 @@ tests =
     [ TestLabel "Bytea"         . testBytea
     , TestLabel "Notify"        . testNotify
     , TestLabel "ExecuteMany"   . testExecuteMany
+    , TestLabel "Fold"          . testFold
     , TestLabel "Time"          . testTime
     , TestLabel "Serializable"  . testSerializable
     ]
