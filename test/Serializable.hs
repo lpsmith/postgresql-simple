@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 module Serializable (testSerializable) where
 
 import Common

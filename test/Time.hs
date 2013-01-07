@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 {-
 
