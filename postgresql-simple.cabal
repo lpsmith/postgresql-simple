@@ -78,9 +78,6 @@ test-suite test
   main-is:        Main.hs
   other-modules:
     Common
-    Bytea
-    ExecuteMany
-    Fold
     Notify
     Serializable
     Time
@@ -92,6 +89,7 @@ test-suite test
             , Rank2Types
             , RecordWildCards
             , PatternGuards
+            , ScopedTypeVariables
 
   build-depends: base
                , base16-bytestring
