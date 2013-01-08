@@ -64,6 +64,7 @@ module Database.PostgreSQL.Simple
     , FromRow
     , In(..)
     , Binary(..)
+    , PGArray(..)
     , Only(..)
     , (:.)(..)
     -- ** Exceptions
@@ -143,7 +144,7 @@ import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
-                   ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
+                   ( Binary(..), PGArray(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
 import           Database.PostgreSQL.Simple.SqlQQ (sql)
 import qualified Database.PostgreSQL.LibPQ as PQ
