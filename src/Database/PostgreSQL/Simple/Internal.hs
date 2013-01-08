@@ -64,59 +64,6 @@ data TypeInfo = TypeInfo { typ     :: !NamedOid
                          , typelem :: !(Maybe NamedOid)
                          } deriving Show
 
--- | Returns the data type name.  This is the preferred way of identifying
---   types that do not have a stable type oid, such as types provided by
---   extensions to PostgreSQL.
---
---   More concretely,  it returns the @typname@ column associated with the
---   type oid in the @pg_type@ table.  First, postgresql-simple will check
---   built-in, static table.   If the type oid is not there, postgresql-simple
---   will check a per-connection cache,  and then finally query the database's
---   meta-schema.
-
-typename :: Field -> ByteString
-typename = typname . typ . typeinfo
-
--- | Returns the name of the column.  This is often determined by a table
---   definition,  but it can be set using an @as@ clause.
-
-name :: Field -> Maybe ByteString
-name Field{..} = unsafePerformIO (PQ.fname result column)
-
--- | Returns the name of the object id of the @table@ associated with the
---   column,  if any.  Returns 'Nothing' when there is no such table;
---   for example a computed column does not have a table associated with it.
---   Analogous to libpq's @PQftable@.
-
-tableOid :: Field -> Maybe PQ.Oid
-tableOid Field{..} = toMaybeOid (unsafePerformIO (PQ.ftable result column))
-  where
-     toMaybeOid x
-       = if   x == PQ.invalidOid
-         then Nothing
-         else Just x
-
--- | If the column has a table associated with it,  this returns the number
---   of the associated table column.   Numbering starts from 0.  Analogous
---   to libpq's @PQftablecol@.
-
-tableColumn :: Field -> Int
-tableColumn Field{..} = fromCol (unsafePerformIO (PQ.ftablecol result column))
-  where
-    fromCol (PQ.Col x) = fromIntegral x
-
--- | This returns whether the data was returned in a binary or textual format.
---   Analogous to libpq's @PQfformat@.
-
-format :: Field -> PQ.Format
-format Field{..} = unsafePerformIO (PQ.fformat result column)
-
--- | This returns the type oid associated with the column.  Analogous
---   to libpq's @PQftype@.
-
-typeOid :: Field -> PQ.Oid
-typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
-
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
    , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap TypeInfo))
