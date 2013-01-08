@@ -36,7 +36,6 @@ import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.LibPQ(ExecStatus(..))
-import           Database.PostgreSQL.Simple.BuiltinTypes (BuiltinType)
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Control.Monad.Trans.State.Strict
@@ -68,10 +67,6 @@ data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
    , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap TypeInfo))
    }
-
-data SqlType
-   = Builtin BuiltinType
-   | Other   Oid
 
 data SqlError = SqlError {
      sqlState       :: ByteString
