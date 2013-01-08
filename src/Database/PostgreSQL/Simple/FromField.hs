@@ -58,13 +58,11 @@ import           Data.Maybe (fromMaybe)
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
-import           Data.Vector (Vector)
-import qualified Data.Vector as V
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Database.PostgreSQL.Simple.Types (Binary(..), PGArray(..), Null(..))
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -305,9 +303,9 @@ instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
                     <|> (Left  <$> fromField f dat)
 
-instance (FromField a, Typeable a) => FromField (Vector a) where
+instance (FromField a, Typeable a) => FromField (PGArray a) where
     fromField f dat = either (returnError ConversionFailed f)
-                             (V.fromList <$>)
+                             (PGArray <$>)
                              (parseOnly (fromArray ',' f) (maybe "" id dat))
 
 fromArray :: (FromField a) => Char -> Field -> Parser (Ok [a])

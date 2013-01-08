@@ -20,6 +20,7 @@ module Database.PostgreSQL.Simple.Types
     , Only(..)
     , In(..)
     , Binary(..)
+    , PGArray(..)
     , Query(..)
     , Oid(..)
     , (:.)(..)
@@ -110,6 +111,11 @@ newtype In a = In a
 -- | Wrap binary data for use as a @bytea@ value.
 newtype Binary a = Binary a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
+
+-- | Wrap a list for use as a PostgreSQL array.
+newtype PGArray a = PGArray {
+      fromPGArray :: [a]
+    } deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without
 -- having to define dummy newtype wrappers every time.
