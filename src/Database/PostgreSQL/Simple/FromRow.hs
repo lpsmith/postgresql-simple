@@ -35,6 +35,7 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Types ((:.)(..))
+import           System.IO.Unsafe (unsafePerformIO)
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
@@ -65,16 +66,22 @@ import Data.Vector ((!))
 class FromRow a where
     fromRow :: RowParser a
 
+getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
+getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
+
+nfields :: PQ.Result -> PQ.Column
+nfields result = unsafePerformIO (PQ.nfields result)
+
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
-    r@Row{..} <- ask
+    Row{..} <- ask
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
     if (column >= ncols)
     then do
-        let vals = map (\c -> ( typenames r ! (unCol c)
+        let vals = map (\c -> ( typname (typ (typeinfos ! unCol c))
                               , fmap ellipsis (getvalue rowresult row c) ))
                        [0..ncols-1]
             convertError = ConversionFailed

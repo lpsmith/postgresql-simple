@@ -292,14 +292,5 @@ data Row = Row {
    , rowresult  :: !PQ.Result
    }
 
-typenames :: Row -> V.Vector ByteString
-typenames = V.map (typname . typ) . typeinfos
-
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
-
-getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
-getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
-
-nfields :: PQ.Result -> PQ.Column
-nfields result = unsafePerformIO (PQ.nfields result)
