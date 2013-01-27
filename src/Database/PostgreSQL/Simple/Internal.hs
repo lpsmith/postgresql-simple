@@ -41,7 +41,6 @@ import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import qualified Data.Vector as V
-import           System.IO.Unsafe (unsafePerformIO)
 
 -- | A Field represents metadata about a particular field
 --
