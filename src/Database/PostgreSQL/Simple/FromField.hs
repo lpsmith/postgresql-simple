@@ -290,15 +290,20 @@ instance FromField Date where
 
 ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Ok a
-ff pgType hsType parse f mstr
-    | typeOid f /= builtin2oid pgType
-    = left (Incompatible   (B8.unpack (typename f)) (tableOid f) (maybe "" B8.unpack (name f)) hsType "")
-    | Nothing <- mstr
-    = left (UnexpectedNull (B8.unpack (typename f)) (tableOid f) (maybe "" B8.unpack (name f)) hsType "")
-    | Just str <- mstr
-    = case parse str of
-        Left msg -> left (ConversionFailed (B8.unpack (typename f)) (tableOid f) (maybe "" B8.unpack (name f)) hsType msg)
-        Right val -> return val
+ff pgType hsType parse f mstr =
+  if typeOid f /= builtin2oid pgType
+  then err Incompatible ""
+  else case mstr of
+         Nothing -> err UnexpectedNull ""
+         Just str -> case parse str of
+                       Left msg -> err ConversionFailed msg
+                       Right val -> return val
+ where
+   err errC msg = left $ errC (B8.unpack (typename f))
+                              (tableOid f)
+                              (maybe "" B8.unpack (name f))
+                              hsType
+                              msg
 {-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
