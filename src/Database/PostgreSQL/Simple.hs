@@ -4,7 +4,6 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -145,7 +144,6 @@ import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
-import           Database.PostgreSQL.Simple.SqlQQ (sql)
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
@@ -1035,12 +1033,11 @@ getTypeInfo conn@Connection{..} oid =
       case IntMap.lookup (oid2int oid) oidmap of
         Just typeinfo -> return (oidmap, typeinfo)
         Nothing -> do
-            names <- query conn
-                       [sql| SELECT p.oid, p.typname, c.oid, c.typname
-                             FROM pg_type AS p LEFT OUTER JOIN pg_type AS c
-                             ON c.oid = p.typelem
-                             WHERE p.oid = ?
-                       |] (Only oid)
+            names <- query conn "SELECT p.oid, p.typname, c.oid, c.typname\
+                               \ FROM pg_type AS p LEFT OUTER JOIN pg_type AS c\
+                               \ ON c.oid = p.typelem\
+                               \ WHERE p.oid = ?"
+                                (Only oid)
             typinf <- case names of
                         []  -> return $ throw (fatalError "invalid type oid")
                         [(pOid, pTypName, mbCOid, mbCTypName)] ->
