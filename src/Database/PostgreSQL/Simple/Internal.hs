@@ -52,7 +52,6 @@ import qualified Data.Vector as V
 data Field = Field {
      result   :: !PQ.Result
    , column   :: {-# UNPACK #-} !PQ.Column
-   , typeinfo :: !TypeInfo
    }
 
 data NamedOid = NamedOid { typoid  :: !PQ.Oid
@@ -288,7 +287,6 @@ newNullConnection = do
 
 data Row = Row {
      row        :: {-# UNPACK #-} !PQ.Row
-   , typeinfos  :: !(V.Vector TypeInfo)
    , rowresult  :: !PQ.Result
    }
 

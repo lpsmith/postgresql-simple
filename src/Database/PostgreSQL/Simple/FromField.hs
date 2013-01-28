@@ -315,12 +315,7 @@ instance (FromField a, Typeable a) => FromField (Vector a) where
 fromArray :: (FromField a) => Char -> Field -> Parser (Conversion [a])
 fromArray delim f = sequence . (parseIt <$>) <$> array delim
   where
-    fElem = f{ typeinfo = TypeInfo tElem Nothing }
-    tInfo = typeinfo f
-    tElem = fromMaybe (typ tInfo) (typelem tInfo)
-    parseIt item = (fromField f' . Just . fmt delim) item
-      where f' | Array _ <- item = f
-               | otherwise       = fElem
+    parseIt item = (fromField f . Just . fmt delim) item
 
 newtype Compat = Compat Word64
 
@@ -351,7 +346,7 @@ doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Conversion a)
           -> Maybe ByteString -> Conversion a
 doFromField f types cvt (Just bs)
-    | Just typ <- oid2builtin (typoid $ typ $ typeinfo f)
+    | Just typ <- oid2builtin (typeOid f)
     , mkCompat typ `compat` types = cvt bs
     | otherwise = returnError Incompatible f "types incompatible"
 doFromField f _ _ _ = returnError UnexpectedNull f ""

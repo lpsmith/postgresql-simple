@@ -146,7 +146,6 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text          as T
 import qualified Data.Text.Encoding as TE
-import qualified Data.Vector as V
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
@@ -548,22 +547,19 @@ finishQuery conn q result = do
     PQ.CommandOk -> do
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
-        ncols <- PQ.nfields result
         let unCol (PQ.Col x) = fromIntegral x :: Int
-        typeinfos <- V.generateM (unCol ncols)
-                                 (\(PQ.Col . fromIntegral -> col) -> do
-                                    getTypeInfo conn =<< PQ.ftype result col)
         nrows <- PQ.ntuples result
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row -> do
-           let rw = Row row typeinfos result
+           let rw = Row row result
            okvc <- runConversion (runStateT (runReaderT (unRP fromRow) rw) 0) conn
            case okvc of
              Ok (val,col) | col == ncols -> return val
                           | otherwise -> do
                               vals <- forM' 0 (ncols-1) $ \c -> do
+                                  tinfo <- getTypeInfo conn =<< PQ.ftype result c
                                   v <- PQ.getvalue result row c
-                                  return ( typeinfos V.! unCol c
+                                  return ( tinfo
                                          , fmap ellipsis v       )
                               throw (ConversionFailed
                                (show (unCol ncols) ++ " values: " ++ show vals)

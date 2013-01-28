@@ -32,7 +32,9 @@ import Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.FromField
+import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types ((:.)(..))
+import           Database.PostgreSQL.Simple.TypeInfo
 import           System.IO.Unsafe (unsafePerformIO)
 
 import Control.Monad.Trans.State.Strict
@@ -70,19 +72,26 @@ getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
 nfields :: PQ.Result -> PQ.Column
 nfields result = unsafePerformIO (PQ.nfields result)
 
+getTypeInfoByCol :: Row -> PQ.Column -> Conversion TypeInfo
+getTypeInfoByCol Row{..} col = 
+    Conversion $ \conn -> do
+      oid <- PQ.ftype rowresult col
+      Ok <$> getTypeInfo conn oid
+
+getTypenameByCol :: Row -> PQ.Column -> Conversion ByteString
+getTypenameByCol row col = typname . typ <$> getTypeInfoByCol row col
+
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
-    Row{..} <- ask
+    r@Row{..} <- ask
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
     if (column >= ncols)
-    then do
-        let vals = map (\c -> ( typname (typ (typeinfos ! unCol c))
-                              , fmap ellipsis (getvalue rowresult row c) ))
-                       [0..ncols-1]
-            convertError = ConversionFailed
+    then lift $ lift $ do
+        vals <- mapM (getTypenameByCol r) [0..ncols-1]
+        let err = ConversionFailed
                 (show (unCol ncols) ++ " values: " ++ show vals)
                 Nothing
                 ""
@@ -90,10 +99,9 @@ fieldWith fieldP = RP $ do
                   ++ " slots in target type")
                 "mismatch between number of columns to \
                 \convert and number in target type"
-        lift (lift (conversionError convertError))
+        conversionError err
     else do
-        let typeinfo = typeinfos ! unCol column
-            result = rowresult
+        let result = rowresult
             field = Field{..}
         lift (lift (fieldP field (getvalue result row column)))
 
