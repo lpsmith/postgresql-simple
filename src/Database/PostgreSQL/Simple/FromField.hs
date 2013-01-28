@@ -34,6 +34,7 @@ module Database.PostgreSQL.Simple.FromField
 
     , Field
     , typename
+    , typeinfo
     , name
     , tableOid
     , tableColumn
@@ -139,8 +140,11 @@ class FromField a where
 --   meta-schema.
 
 typename :: Field -> Conversion ByteString
-typename field = Conversion $ \conn -> do
-                   Ok . typname . typ <$> getTypeInfo conn (typeOid field)
+typename field = typname . typ <$> typeinfo field
+
+typeinfo :: Field -> Conversion TypeInfo
+typeinfo Field{..} = Conversion $ \conn -> do
+                       Ok <$> (getTypeInfo conn =<< PQ.ftype result column)
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
