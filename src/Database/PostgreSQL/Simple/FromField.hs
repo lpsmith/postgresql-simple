@@ -23,12 +23,51 @@
 -- since a 'Double' might lose precision if representing a 64-bit @BigInt@,
 -- the two are /not/ considered compatible.
 --
+-- Because 'FromField' is a typeclass,  one may provide conversions to
+-- additional Haskell types without modifying postgresql-simple.  This is
+-- particularly useful for supporting PostgreSQL types that postgresql-simple
+-- does not support out-of-box.  Here's an example of what such an instance
+-- might look like for a UUID type that implements the @Read@ class:
+--
+-- @
+-- import Data.UUID ( UUID )
+-- import Database.PostgreSQL.Simple.BuiltinTypes
+--                  ( BuiltinType(UUID), builtin2oid )
+-- import qualified Data.ByteString as B
+--
+-- instance FromField UUID where
+--    fromField f mdata =
+--        if typeOid f /= builtin2oid UUID
+--        then returnError Incompatible f ""
+--        else case B.unpack `fmap` mdata of
+--               Nothing   -> returnError UnexpectedNull f ""
+--               Just data ->
+--                   case [ x | (x,t) <- reads data, ("","") <- lex t ] of
+--                     [x] -> Ok x
+--                     _   -> returnError ConversionError f data
+-- @
+--
+-- Note that because PostgreSQL's @uuid@ type is built into postgres and is
+-- not provided by an extension,  the 'typeOid' of @uuid@ does not change and
+-- thus we can examine it directly.   Here,  we simply pull the type oid out
+-- of the static table provided by postgresql-simple.
+--
+-- On the other hand if the type is provided by an extension,  such as
+-- @PostGIS@ or @hstore@,  then the 'typeOid' is not stable and can vary from
+-- database to database. In this case it is recommended that FromField
+-- instances use 'typename' instead.
+--
 ------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.FromField
     (
       FromField(..)
     , FieldParser
+    , Conversion()
+
+    , runConversion
+    , conversionMap
+    , conversionError
     , ResultError(..)
     , returnError
 
@@ -294,7 +333,7 @@ instance FromField LocalTimestamp where
 instance FromField Date where
   fromField = ff Date parseDate
 
-ff :: Typeable a 
+ff :: Typeable a
    => BuiltinType -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
 ff pgType parse f mstr =
