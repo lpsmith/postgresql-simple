@@ -293,3 +293,38 @@ data Row = Row {
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Ok) a }
    deriving ( Functor, Applicative, Alternative, Monad )
+
+newtype Conversion a = Conversion { runConversion :: Connection -> IO (Ok a) }
+
+instance Functor Conversion where
+   fmap f m = Conversion $ \conn -> (fmap . fmap) f (runConversion m conn)
+
+instance Applicative Conversion where
+   pure a    = Conversion $ \_conn -> pure (pure a)
+   mf <*> ma = Conversion $ \conn -> do
+                   okf <- runConversion mf conn
+                   case okf of
+                     Ok f -> (fmap . fmap) f (runConversion ma conn)
+                     Errors errs -> return (Errors errs)
+
+instance Alternative Conversion where
+   empty     = Conversion $ \_conn -> pure empty
+   ma <|> mb = Conversion $ \conn -> do
+                   oka <- runConversion ma conn
+                   case oka of
+                     Ok _     -> return oka
+                     Errors _ -> (oka <|>) <$> runConversion mb conn
+                       
+instance Monad Conversion where
+   return a = Conversion $ \_conn -> return (return a)
+   m >>= f = Conversion $ \conn -> do
+                 oka <- runConversion m conn 
+                 case oka of
+                   Ok a -> runConversion (f a) conn
+                   Errors err -> return (Errors err)
+
+conversionMap :: (Ok a -> Ok b) -> Conversion a -> Conversion b
+conversionMap f m = Conversion $ \conn -> f <$> runConversion m conn
+
+conversionError :: Exception err => err -> Conversion a
+conversionError err = Conversion $ \_ -> return (Errors [SomeException err])
