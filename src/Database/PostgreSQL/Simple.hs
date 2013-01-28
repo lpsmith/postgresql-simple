@@ -98,20 +98,8 @@ module Database.PostgreSQL.Simple
 --    , Base.insertID
     -- * Transaction handling
     , withTransaction
-    , withTransactionSerializable
-    , TransactionMode(..)
-    , IsolationLevel(..)
-    , ReadWriteMode(..)
-    , defaultTransactionMode
-    , defaultIsolationLevel
-    , defaultReadWriteMode
-    , withTransactionLevel
-    , withTransactionMode
-    , withTransactionModeRetry
 --    , Base.autocommit
     , begin
-    , beginLevel
-    , beginMode
     , commit
     , rollback
     -- * Helper functions
