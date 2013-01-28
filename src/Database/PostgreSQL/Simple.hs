@@ -557,7 +557,8 @@ finishQuery conn q result = do
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row -> do
            let rw = Row row typeinfos result
-           case runStateT (runReaderT (unRP fromRow) rw) 0 of
+           okvc <- runConversion (runStateT (runReaderT (unRP fromRow) rw) 0) conn
+           case okvc of
              Ok (val,col) | col == ncols -> return val
                           | otherwise -> do
                               vals <- forM' 0 (ncols-1) $ \c -> do

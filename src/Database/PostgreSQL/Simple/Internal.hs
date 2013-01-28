@@ -24,6 +24,7 @@ import Prelude hiding (catch)
 import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
+import           Control.Monad(MonadPlus(..))
 import           Data.ByteString(ByteString)
 import qualified Data.ByteString.Char8 as B8
 import           Data.Char (ord)
@@ -291,7 +292,7 @@ data Row = Row {
    , rowresult  :: !PQ.Result
    }
 
-newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Ok) a }
+newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Conversion) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
 newtype Conversion a = Conversion { runConversion :: Connection -> IO (Ok a) }
@@ -322,6 +323,10 @@ instance Monad Conversion where
                  case oka of
                    Ok a -> runConversion (f a) conn
                    Errors err -> return (Errors err)
+
+instance MonadPlus Conversion where
+   mzero = empty
+   mplus = (<|>)
 
 conversionMap :: (Ok a -> Ok b) -> Conversion a -> Conversion b
 conversionMap f m = Conversion $ \conn -> f <$> runConversion m conn

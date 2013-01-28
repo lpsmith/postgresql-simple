@@ -47,7 +47,7 @@ module Database.PostgreSQL.Simple.FromField
 
 import           Control.Applicative
                    ( Applicative, (<|>), (<$>), pure )
-import           Control.Exception (SomeException(..), Exception)
+import           Control.Exception (Exception)
 import           Data.Attoparsec.Char8 hiding (Result)
 import           Data.Bits ((.&.), (.|.), shiftL)
 import           Data.ByteString (ByteString)
@@ -65,6 +65,7 @@ import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Database.PostgreSQL.Simple.TypeInfo
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -104,10 +105,10 @@ data ResultError = Incompatible { errSQLType :: String
 
 instance Exception ResultError
 
-left :: Exception a => a -> Ok b
-left = Errors . (:[]) . SomeException
+left :: Exception a => a -> Conversion b
+left = conversionError
 
-type FieldParser a = Field -> Maybe ByteString -> Ok a
+type FieldParser a = Field -> Maybe ByteString -> Conversion a
 
 -- | A type that may be converted from a SQL type.
 class FromField a where
@@ -137,8 +138,9 @@ class FromField a where
 --   will check a per-connection cache,  and then finally query the database's
 --   meta-schema.
 
-typename :: Field -> ByteString
-typename = typname . typ . typeinfo
+typename :: Field -> Conversion ByteString
+typename field = Conversion $ \conn -> do
+                   Ok . typname . typ <$> getTypeInfo conn (typeOid field)
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
@@ -238,7 +240,7 @@ instance FromField LB.ByteString where
     fromField f dat = LB.fromChunks . (:[]) <$> fromField f dat
 
 unescapeBytea :: Field -> SB.ByteString
-              -> Ok (Binary SB.ByteString)
+              -> Conversion (Binary SB.ByteString)
 unescapeBytea f str = case unsafePerformIO (PQ.unescapeBytea str) of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
        Just str -> pure (Binary str)
@@ -262,48 +264,43 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField = ff TimestampTZ "UTCTime" parseUTCTime
+  fromField = ff TimestampTZ parseUTCTime
 
 instance FromField ZonedTime where
-  fromField = ff TimestampTZ "ZonedTime" parseZonedTime
+  fromField = ff TimestampTZ parseZonedTime
 
 instance FromField LocalTime where
-  fromField = ff Timestamp "LocalTime" parseLocalTime
+  fromField = ff Timestamp parseLocalTime
 
 instance FromField Day where
-  fromField = ff Date "Day" parseDay
+  fromField = ff Date parseDay
 
 instance FromField TimeOfDay where
-  fromField = ff Time "TimeOfDay" parseTimeOfDay
+  fromField = ff Time parseTimeOfDay
 
 instance FromField UTCTimestamp where
-  fromField = ff TimestampTZ "UTCTimestamp" parseUTCTimestamp
+  fromField = ff TimestampTZ parseUTCTimestamp
 
 instance FromField ZonedTimestamp where
-  fromField = ff TimestampTZ "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff TimestampTZ parseZonedTimestamp
 
 instance FromField LocalTimestamp where
-  fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
+  fromField = ff Timestamp parseLocalTimestamp
 
 instance FromField Date where
-  fromField = ff Date "Date" parseDate
+  fromField = ff Date parseDate
 
-ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
-   -> Field -> Maybe B8.ByteString -> Ok a
-ff pgType hsType parse f mstr =
+ff :: Typeable a 
+   => BuiltinType -> (B8.ByteString -> Either String a)
+   -> Field -> Maybe B8.ByteString -> Conversion a
+ff pgType parse f mstr =
   if typeOid f /= builtin2oid pgType
-  then err Incompatible ""
+  then returnError Incompatible f ""
   else case mstr of
-         Nothing -> err UnexpectedNull ""
+         Nothing -> returnError UnexpectedNull f ""
          Just str -> case parse str of
-                       Left msg -> err ConversionFailed msg
+                       Left msg -> returnError ConversionFailed f msg
                        Right val -> return val
- where
-   err errC msg = left $ errC (B8.unpack (typename f))
-                              (tableOid f)
-                              (maybe "" B8.unpack (name f))
-                              hsType
-                              msg
 {-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
@@ -315,7 +312,7 @@ instance (FromField a, Typeable a) => FromField (Vector a) where
                              (V.fromList <$>)
                              (parseOnly (fromArray ',' f) (maybe "" id dat))
 
-fromArray :: (FromField a) => Char -> Field -> Parser (Ok [a])
+fromArray :: (FromField a) => Char -> Field -> Parser (Conversion [a])
 fromArray delim f = sequence . (parseIt <$>) <$> array delim
   where
     fElem = f{ typeinfo = TypeInfo tElem Nothing }
@@ -351,8 +348,8 @@ okInt = ok64
 #endif
 
 doFromField :: forall a . (Typeable a)
-          => Field -> Compat -> (ByteString -> Ok a)
-          -> Maybe ByteString -> Ok a
+          => Field -> Compat -> (ByteString -> Conversion a)
+          -> Maybe ByteString -> Conversion a
 doFromField f types cvt (Just bs)
     | Just typ <- oid2builtin (typoid $ typ $ typeinfo f)
     , mkCompat typ `compat` types = cvt bs
@@ -366,18 +363,21 @@ doFromField f _ _ _ = returnError UnexpectedNull f ""
 --   constructor.
 returnError :: forall a err . (Typeable a, Exception err)
             => (String -> Maybe PQ.Oid -> String -> String -> String -> err)
-            -> Field -> String -> Ok a
-returnError mkErr f = left . mkErr (B.unpack (typename f))
-                                   (tableOid f)
-                                   (maybe "" B.unpack (name f))
-                                   (show (typeOf (undefined :: a)))
+            -> Field -> String -> Conversion a
+returnError mkErr f msg = do
+  typnam <- typename f
+  left $ mkErr (B.unpack typnam)
+               (tableOid f)
+               (maybe "" B.unpack (name f))
+               (show (typeOf (undefined :: a)))
+               msg
 
 atto :: forall a. (Typeable a)
      => Compat -> Parser a -> Field -> Maybe ByteString
-     -> Ok a
+     -> Conversion a
 atto types p0 f dat = doFromField f types (go p0) dat
   where
-    go :: Parser a -> ByteString -> Ok a
+    go :: Parser a -> ByteString -> Conversion a
     go p s =
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err

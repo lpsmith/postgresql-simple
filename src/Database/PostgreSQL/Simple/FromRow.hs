@@ -25,12 +25,10 @@ module Database.PostgreSQL.Simple.FromRow
      ) where
 
 import Control.Applicative (Applicative(..), (<$>))
-import Control.Exception (SomeException(..))
 import Control.Monad (replicateM)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Database.PostgreSQL.Simple.Types (Only(..))
-import Database.PostgreSQL.Simple.Ok
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.FromField
@@ -92,7 +90,7 @@ fieldWith fieldP = RP $ do
                   ++ " slots in target type")
                 "mismatch between number of columns to \
                 \convert and number in target type"
-        lift (lift (Errors [SomeException convertError]))
+        lift (lift (conversionError convertError))
     else do
         let typeinfo = typeinfos ! unCol column
             result = rowresult
