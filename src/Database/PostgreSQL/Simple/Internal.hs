@@ -41,7 +41,6 @@ import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
-import qualified Data.Vector as V
 
 -- | A Field represents metadata about a particular field
 --
@@ -52,6 +51,9 @@ import qualified Data.Vector as V
 data Field = Field {
      result   :: !PQ.Result
    , column   :: {-# UNPACK #-} !PQ.Column
+   , typeOid  :: {-# UNPACK #-} !PQ.Oid  
+     -- ^ This returns the type oid associated with the column.  Analogous 
+     --   to libpq's @PQftype@.
    }
 
 data NamedOid = NamedOid { typoid  :: !PQ.Oid

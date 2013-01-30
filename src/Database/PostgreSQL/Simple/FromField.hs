@@ -219,12 +219,6 @@ tableColumn Field{..} = fromCol (unsafePerformIO (PQ.ftablecol result column))
 format :: Field -> PQ.Format
 format Field{..} = unsafePerformIO (PQ.fformat result column)
 
--- | This returns the type oid associated with the column.  Analogous
---   to libpq's @PQftype@.
-
-typeOid :: Field -> PQ.Oid
-typeOid Field{..} = unsafePerformIO (PQ.ftype result column)
-
 instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
     fromField f bs      = Just <$> fromField f bs

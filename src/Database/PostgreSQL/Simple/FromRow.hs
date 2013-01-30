@@ -92,7 +92,7 @@ fieldWith fieldP = RP $ do
     then lift $ lift $ do
         vals <- mapM (getTypenameByCol r) [0..ncols-1]
         let err = ConversionFailed
-                (show (unCol ncols) ++ " values: " ++ show vals)
+                (show (unCol ncols) ++ " values: " ++ show (map ellipsis vals))
                 Nothing
                 ""
                 ("at least " ++ show (unCol column + 1)
@@ -101,9 +101,10 @@ fieldWith fieldP = RP $ do
                 \convert and number in target type"
         conversionError err
     else do
-        let result = rowresult
-            field = Field{..}
-        lift (lift (fieldP field (getvalue result row column)))
+      let !result = rowresult
+          !typeOid = unsafePerformIO (PQ.ftype result column)
+          !field = Field{..}
+      lift (lift (fieldP field (getvalue result row column)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField
