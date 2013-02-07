@@ -57,6 +57,7 @@ import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Word (Word64)
+import           Data.IP (IPRange)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Ok
@@ -223,6 +224,15 @@ instance FromField LocalTimestamp where
 
 instance FromField Date where
   fromField = ff Date "Date" parseDate
+
+instance FromField IPRange where
+  fromField = ff Cidr "IPRange" parseIPRange
+    where
+      parseIPRange s =
+        case [ x | (x, "") <- reads $ B8.unpack s ] of
+          [x] -> Right x
+          []  -> Left "no parse"
+          _   -> Left "ambiguous parse"
 
 ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Ok a

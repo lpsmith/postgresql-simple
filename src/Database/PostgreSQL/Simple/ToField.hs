@@ -32,6 +32,7 @@ import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
+import Data.IP (IPRange)
 import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
@@ -219,6 +220,10 @@ instance ToField LocalTimestamp where
 
 instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
+    {-# INLINE toField #-}
+
+instance ToField IPRange where
+    toField = Escape . toByteString . Utf8.fromShow
     {-# INLINE toField #-}
 
 -- | Surround a string with single-quote characters: \"@'@\"
