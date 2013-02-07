@@ -52,7 +52,8 @@ Library
     text >= 0.11.1,
     time,
     transformers,
-    vector
+    vector,
+    iproute == 1.2.*
 
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
               TypeOperators
