@@ -31,11 +31,11 @@ import qualified Data.ByteString.Char8 as B
 import Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
+import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types ((:.)(..))
 import           Database.PostgreSQL.Simple.TypeInfo
-import           System.IO.Unsafe (unsafePerformIO)
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
@@ -67,10 +67,10 @@ class FromRow a where
     fromRow :: RowParser a
 
 getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
-getvalue result row col = unsafePerformIO (PQ.getvalue result row col)
+getvalue result row col = unsafeDupablePerformIO (PQ.getvalue result row col)
 
 nfields :: PQ.Result -> PQ.Column
-nfields result = unsafePerformIO (PQ.nfields result)
+nfields result = unsafeDupablePerformIO (PQ.nfields result)
 
 getTypeInfoByCol :: Row -> PQ.Column -> Conversion TypeInfo
 getTypeInfoByCol Row{..} col = 
@@ -102,7 +102,7 @@ fieldWith fieldP = RP $ do
         conversionError err
     else do
       let !result = rowresult
-          !typeOid = unsafePerformIO (PQ.ftype result column)
+          !typeOid = unsafeDupablePerformIO (PQ.ftype result column)
           !field = Field{..}
       lift (lift (fieldP field (getvalue result row column)))
 

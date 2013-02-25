@@ -103,13 +103,13 @@ import qualified Data.Vector as V
 import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.BuiltinTypes
+import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import           Database.PostgreSQL.Simple.TypeInfo
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LB
@@ -189,7 +189,7 @@ typeinfo Field{..} = Conversion $ \conn -> do
 --   definition,  but it can be set using an @as@ clause.
 
 name :: Field -> Maybe ByteString
-name Field{..} = unsafePerformIO (PQ.fname result column)
+name Field{..} = unsafeDupablePerformIO (PQ.fname result column)
 
 -- | Returns the name of the object id of the @table@ associated with the
 --   column,  if any.  Returns 'Nothing' when there is no such table;
@@ -197,7 +197,7 @@ name Field{..} = unsafePerformIO (PQ.fname result column)
 --   Analogous to libpq's @PQftable@.
 
 tableOid :: Field -> Maybe PQ.Oid
-tableOid Field{..} = toMaybeOid (unsafePerformIO (PQ.ftable result column))
+tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column))
   where
      toMaybeOid x
        = if   x == PQ.invalidOid
@@ -209,7 +209,7 @@ tableOid Field{..} = toMaybeOid (unsafePerformIO (PQ.ftable result column))
 --   to libpq's @PQftablecol@.
 
 tableColumn :: Field -> Int
-tableColumn Field{..} = fromCol (unsafePerformIO (PQ.ftablecol result column))
+tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result column))
   where
     fromCol (PQ.Col x) = fromIntegral x
 
@@ -217,7 +217,7 @@ tableColumn Field{..} = fromCol (unsafePerformIO (PQ.ftablecol result column))
 --   Analogous to libpq's @PQfformat@.
 
 format :: Field -> PQ.Format
-format Field{..} = unsafePerformIO (PQ.fformat result column)
+format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
 
 instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
@@ -278,7 +278,7 @@ instance FromField LB.ByteString where
 
 unescapeBytea :: Field -> SB.ByteString
               -> Conversion (Binary SB.ByteString)
-unescapeBytea f str = case unsafePerformIO (PQ.unescapeBytea str) of
+unescapeBytea f str = case unsafeDupablePerformIO (PQ.unescapeBytea str) of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
        Just str -> pure (Binary str)
 

@@ -4,10 +4,20 @@
 module Database.PostgreSQL.Simple.Compat
     ( mask
     , (<>)
+    , unsafeDupablePerformIO
     ) where
 
 import qualified Control.Exception as E
 import Data.Monoid
+
+#if   __GLASGOW_HASKELL__ >= 702
+import System.IO.Unsafe (unsafeDupablePerformIO)
+#elif __GLASGOW_HASKELL__ >= 611
+import GHC.IO (unsafeDupablePerformIO)
+#else
+import GHC.IOBase (unsafeDupablePerformIO)
+#endif
+
 
 -- | Like 'E.mask', but backported to base before version 4.3.0.
 --
