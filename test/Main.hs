@@ -1,10 +1,14 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 import Common
+import Database.PostgreSQL.Simple.FromField (FromField)
 import Control.Exception as E
 import Control.Monad
 import Data.ByteString (ByteString)
+import Data.Typeable
 import qualified Data.ByteString as B
 import System.Exit (exitFailure)
 import System.IO
+import qualified Data.Vector as V
 
 import Notify
 import Serializable
@@ -18,6 +22,7 @@ tests =
     , TestLabel "Notify"        . testNotify
     , TestLabel "Serializable"  . testSerializable
     , TestLabel "Time"          . testTime
+    , TestLabel "Array"         . testArray
     ]
 
 testBytea :: TestEnv -> Test
@@ -74,6 +79,30 @@ testFold TestEnv{..} = TestCase $ do
     --  * Nested fold
 
     return ()
+
+queryFailure :: forall a. (FromField a, Typeable a, Show a)
+             => Connection -> Query -> a -> Assertion
+queryFailure conn q resultType = do
+  x :: Either SomeException [Only a] <- E.try $ query_ conn q
+  case x of
+    Left  _   -> return ()
+    Right val -> assertFailure ("Did not fail as expected:  "
+                              ++ show q
+                              ++ " :: "
+                              ++ show (typeOf resultType)
+                              ++ " -> " ++ show val)
+
+
+testArray :: TestEnv -> Test
+testArray TestEnv{..} = TestCase $ do
+    xs <- query_ conn "SELECT '{1,2,3,4}'::_int4"
+    xs @?= [Only (V.fromList [1,2,3,4 :: Int])]
+    xs <- query_ conn "SELECT '{{1,2},{3,4}}'::_int4"
+    xs @?= [Only (V.fromList [V.fromList [1,2],
+                              V.fromList [3,4 :: Int]])]
+    queryFailure conn "SELECT '{1,2,3,4}'::_int4" (undefined :: V.Vector Bool)
+    queryFailure conn "SELECT '{{1,2},{3,4}'::_int4" (undefined :: V.Vector Int)
+
 
 ------------------------------------------------------------------------
 

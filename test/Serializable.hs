@@ -4,6 +4,7 @@ import Common
 import Control.Concurrent
 import Control.Exception as E
 import Data.IORef
+import Database.PostgreSQL.Simple.Transaction
 
 initCounter :: Connection -> IO ()
 initCounter conn = do

@@ -83,6 +83,9 @@ test-suite test
     Serializable
     Time
 
+  Build-depends:
+     vector
+
   ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
 
   extensions: NamedFieldPuns
