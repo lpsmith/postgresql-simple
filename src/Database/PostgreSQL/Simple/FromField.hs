@@ -301,43 +301,50 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField = ff TimestampTZ parseUTCTime
+  fromField = ff TimestampTZ "UTCTime" parseUTCTime
 
 instance FromField ZonedTime where
-  fromField = ff TimestampTZ parseZonedTime
+  fromField = ff TimestampTZ "ZonedTime" parseZonedTime
 
 instance FromField LocalTime where
-  fromField = ff Timestamp parseLocalTime
+  fromField = ff Timestamp "LocalTime" parseLocalTime
 
 instance FromField Day where
-  fromField = ff Date parseDay
+  fromField = ff Date "Day" parseDay
 
 instance FromField TimeOfDay where
-  fromField = ff Time parseTimeOfDay
+  fromField = ff Time "TimeOfDay" parseTimeOfDay
 
 instance FromField UTCTimestamp where
-  fromField = ff TimestampTZ parseUTCTimestamp
+  fromField = ff TimestampTZ "UTCTimestamp" parseUTCTimestamp
 
 instance FromField ZonedTimestamp where
-  fromField = ff TimestampTZ parseZonedTimestamp
+  fromField = ff TimestampTZ "ZonedTimestamp" parseZonedTimestamp
 
 instance FromField LocalTimestamp where
-  fromField = ff Timestamp parseLocalTimestamp
+  fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
 
 instance FromField Date where
-  fromField = ff Date parseDate
+  fromField = ff Date "Date" parseDate
 
-ff :: Typeable a
-   => BuiltinType -> (B8.ByteString -> Either String a)
+ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
-ff pgType parse f mstr =
+ff pgType hsType parse f mstr =
   if typeOid f /= builtin2oid pgType
-  then returnError Incompatible f ""
+  then err Incompatible ""
   else case mstr of
-         Nothing -> returnError UnexpectedNull f ""
+         Nothing -> err UnexpectedNull ""
          Just str -> case parse str of
-                       Left msg -> returnError ConversionFailed f msg
+                       Left msg -> err ConversionFailed msg
                        Right val -> return val
+ where
+   err errC msg = do
+     typnam <- typename f
+     left $ errC (B8.unpack typnam)
+                 (tableOid f)
+                 (maybe "" B8.unpack (name f))
+                 hsType
+                 msg
 {-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
