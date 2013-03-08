@@ -29,14 +29,16 @@ import Data.Char
 --
 -- This quasiquoter attempts to mimimize whitespace;  otherwise the
 -- above query would consist of approximately half whitespace when sent
--- to the database backend.
+-- to the database backend.  It also recognizes and strips out standard
+-- sql comments "--".
 --
 -- The implementation of the whitespace reducer is currently incomplete.
 -- Thus it can mess up your syntax in cases where whitespace should be
 -- preserved as-is.  It does preserve whitespace inside standard SQL string
 -- literals.  But it can get confused by the non-standard PostgreSQL string
 -- literal syntax (which is the default setting in PostgreSQL 8 and below),
--- the extended escape string syntax,  and other similar constructs.
+-- the extended escape string syntax,  quoted identifiers,  and other similar
+-- constructs.
 --
 -- Of course, this caveat only applies to text written inside the SQL
 -- quasiquoter; whitespace reduction is a compile-time computation and
@@ -58,19 +60,28 @@ sql = QuasiQuoter
     }
 
 sqlExp :: String -> Q Exp
-sqlExp = stringE . outstring . dropSpace
-  where
-    dropSpace = dropWhile isSpace
+sqlExp = stringE . minimizeSpace
 
-    outstring ('\'':xs) = '\'' : instring xs
-    outstring (x:xs) | isSpace x = case dropSpace xs of
-                                     [] -> []
-                                     ys -> ' ' : outstring ys
-                     | otherwise = x : outstring xs
-    outstring [] = []
+minimizeSpace :: String -> String
+minimizeSpace = drop 1 . reduceSpace
+  where
+    needsReduced []          = False
+    needsReduced ('-':'-':_) = True
+    needsReduced (x:_)       = isSpace x
+
+    reduceSpace xs =
+        case dropWhile isSpace xs of
+          [] -> []
+          ('-':'-':ys) -> reduceSpace (dropWhile (/= '\n') ys)
+          ys -> ' ' : insql ys
+
+    insql ('\'':xs)            = '\'' : instring xs
+    insql xs | needsReduced xs = reduceSpace xs
+    insql (x:xs)               = x : insql xs
+    insql []                   = []
 
     instring ('\'':'\'':xs) = '\'':'\'': instring xs
-    instring ('\'':xs)      = '\'': outstring xs
+    instring ('\'':xs)      = '\'': insql xs
     instring (x:xs)         = x : instring xs
     instring []             = error "Database.PostgreSQL.Simple.SqlQQ.sql:\
                                     \ string literal not terminated"
