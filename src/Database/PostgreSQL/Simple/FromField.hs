@@ -235,6 +235,7 @@ ff pgType hsType parse f mstr
     = case parse str of
         Left msg -> left (ConversionFailed (B8.unpack (typename f)) hsType msg)
         Right val -> return val
+ff _ _ _ _ _ = error "Can't happen"
 {-# INLINE ff #-}
 
 instance (FromField a, FromField b) => FromField (Either a b) where
