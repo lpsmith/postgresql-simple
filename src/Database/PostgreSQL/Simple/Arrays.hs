@@ -66,7 +66,7 @@ fmt = fmt' False
 delimit :: Char -> [ArrayFormat] -> ByteString
 delimit _      [] = ""
 delimit c     [x] = fmt' True c x
-delimit c (x:y:z) = fmt' True c x `B.snoc` c' `mappend` delimit c (y:z)
+delimit c (x:y:z) = (fmt' True c x `B.snoc` c') `mappend` delimit c (y:z)
   where
     c' | Array _ <- x = ','
        | otherwise    = c
@@ -77,9 +77,9 @@ delimit c (x:y:z) = fmt' True c x `B.snoc` c' `mappend` delimit c (y:z)
 fmt' :: Bool -> Char -> ArrayFormat -> ByteString
 fmt' quoting c x =
   case x of
-    Array items          -> '{' `B.cons` delimit c items `B.snoc` '}'
+    Array items          -> '{' `B.cons` (delimit c items `B.snoc` '}')
     Plain bytes          -> B.copy bytes
-    Quoted q | quoting   -> '"' `B.cons` esc q `B.snoc` '"'
+    Quoted q | quoting   -> '"' `B.cons` (esc q `B.snoc` '"')
              | otherwise -> B.copy q
     -- NB: The 'snoc' and 'cons' functions always copy.
 
@@ -91,4 +91,3 @@ esc = B.concatMap f
     f '\\' = "\\\\"
     f c    = B.singleton c
   -- TODO: Implement easy performance improvements with unfoldr.
-
