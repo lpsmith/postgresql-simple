@@ -19,8 +19,6 @@
 
 module Database.PostgreSQL.Simple.Internal where
 
-import Prelude hiding (catch)
-
 import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
