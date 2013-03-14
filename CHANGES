@@ -1,3 +1,11 @@
+Version 0.2.4.1 (2012-08-29)
+  * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for 
+    pointing this out.
+
+Version 0.2.4.0 (2012-08-23)
+  * Added the `withTransactionSerializable` and `withTransactionModeRetry`
+    operators,  thanks to Joey Adams.
+
 Version 0.2.3.0 (2012-08-09)
   * Added the `returning` operator, thanks to Jason Dusek
 

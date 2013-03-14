@@ -103,7 +103,7 @@ newtype Only a = Only {
 --
 -- Example:
 --
--- > query c "select * from whatever where id in ?" (In [3,4,5])
+-- > query c "select * from whatever where id in ?" (Only (In [3,4,5]))
 newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
