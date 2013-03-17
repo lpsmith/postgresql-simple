@@ -1,3 +1,6 @@
+Version 0.2.5.0 (2013-03-17)
+  * Add basic array support.
+
 Version 0.2.4.1 (2012-08-29)
   * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for 
     pointing this out.
