@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.2.4.1
+Version:             0.2.5.0
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -21,6 +21,7 @@ Library
   hs-source-dirs: src
   Exposed-modules:
      Database.PostgreSQL.Simple
+     Database.PostgreSQL.Simple.Arrays
      Database.PostgreSQL.Simple.BuiltinTypes
      Database.PostgreSQL.Simple.FromField
      Database.PostgreSQL.Simple.FromRow
@@ -87,6 +88,7 @@ test-suite test
             , OverloadedStrings
             , Rank2Types
             , RecordWildCards
+            , PatternGuards
 
   build-depends: base
                , base16-bytestring
