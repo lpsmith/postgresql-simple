@@ -12,10 +12,10 @@
 
 module Database.PostgreSQL.Simple.TypeInfo
      ( getTypeInfo
-     , NamedOid(..)
      , TypeInfo(..)
      ) where
 
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.IntMap as IntMap
 import           Control.Concurrent.MVar
 import           Control.Exception (throw)
@@ -24,33 +24,40 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import {-# SOURCE #-} Database.PostgreSQL.Simple
 import                Database.PostgreSQL.Simple.Internal
 import                Database.PostgreSQL.Simple.Types
-import                Database.PostgreSQL.Simple.BuiltinTypes
+import                Database.PostgreSQL.Simple.TypeInfo.Types
+import                Database.PostgreSQL.Simple.TypeInfo.Static
 
 getTypeInfo :: Connection -> PQ.Oid -> IO TypeInfo
 getTypeInfo conn@Connection{..} oid =
-  case oid2typname oid of
-    Just name -> return $! TypeInfo { typ = NamedOid oid name
-                                    , typelem = Nothing
-                                    }
-    Nothing -> modifyMVar connectionObjects $ \oidmap -> do
-      case IntMap.lookup (oid2int oid) oidmap of
-        Just typeinfo -> return (oidmap, typeinfo)
-        Nothing -> do
-            names <- query conn "SELECT p.oid, p.typname, c.oid, c.typname\
-                               \ FROM pg_type AS p LEFT OUTER JOIN pg_type AS c\
-                               \ ON c.oid = p.typelem\
-                               \ WHERE p.oid = ?"
-                                (Only oid)
-            typinf <- case names of
-                        []  -> return $ throw (fatalError "invalid type oid")
-                        [(pOid, pTypName, mbCOid, mbCTypName)] ->
-                            return $! TypeInfo { typ     = NamedOid pOid pTypName
-                                               , typelem = do
-                                                   cOid     <- mbCOid
-                                                   cTypName <- mbCTypName
-                                                   return $ NamedOid cOid cTypName
-                                               }
-                        _   -> fail "typename query returned more than one result"
-                                 -- oid is a primary key,  so the query should
-                                 -- never return more than one result
-            return (IntMap.insert (oid2int oid) typinf oidmap, typinf)
+  case staticTypeInfo oid of
+    Just name -> return name
+    Nothing -> modifyMVar connectionObjects $ getTypeInfo' conn oid
+
+getTypeInfo' :: Connection -> PQ.Oid -> TypeInfoCache
+             -> IO (TypeInfoCache, TypeInfo)
+getTypeInfo' conn oid oidmap =
+  case IntMap.lookup (oid2int oid) oidmap of
+    Just typeinfo -> return (oidmap, typeinfo)
+    Nothing -> do
+      names  <- query conn "SELECT oid, typcategory, typdelim, typname, typelem\
+                         \ FROM pg_type WHERE oid = ?"
+                           (Only oid)
+      (oidmap', typeInfo) <-
+          case names of
+            []  -> return $ throw (fatalError "invalid type oid")
+            [(typoid, typcategory_, typdelim_, typname, typelem_)] -> do
+               let !typcategory = B8.index typcategory_ 0
+                   !typdelim    = B8.index typdelim_    0
+               if typcategory == 'A'
+                 then do
+                   (oidmap', typelem) <- getTypeInfo' conn typelem_ oidmap
+                   let !typeInfo = Array{..}
+                   return (oidmap', typeInfo)
+                 else do
+                   let !typeInfo = Basic{..}
+                   return (oidmap, typeInfo)
+            _ -> fail "typename query returned more than one result"
+                   -- oid is a primary key,  so the query should
+                   -- never return more than one result
+      let !oidmap'' = IntMap.insert (oid2int oid) typeInfo oidmap'
+      return $! (oidmap'', typeInfo)

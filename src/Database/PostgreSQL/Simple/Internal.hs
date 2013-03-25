@@ -39,6 +39,7 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.LibPQ(ExecStatus(..))
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
+import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 
@@ -56,17 +57,11 @@ data Field = Field {
      --   to libpq's @PQftype@.
    }
 
-data NamedOid = NamedOid { typoid  :: !PQ.Oid
-                         , typname :: !ByteString
-                         } deriving Show
-
-data TypeInfo = TypeInfo { typ     :: !NamedOid
-                         , typelem :: !(Maybe NamedOid)
-                         } deriving Show
+type TypeInfoCache = IntMap.IntMap TypeInfo
 
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
-   , connectionObjects :: {-# UNPACK #-} !(MVar (IntMap.IntMap TypeInfo))
+   , connectionObjects :: {-# UNPACK #-} !(MVar TypeInfoCache)
    }
 
 data SqlError = SqlError {

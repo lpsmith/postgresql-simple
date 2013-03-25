@@ -35,6 +35,7 @@ Library
      Database.PostgreSQL.Simple.ToRow
      Database.PostgreSQL.Simple.Transaction
      Database.PostgreSQL.Simple.TypeInfo
+     Database.PostgreSQL.Simple.TypeInfo.Static
      Database.PostgreSQL.Simple.Types
      Database.PostgreSQL.Simple.Errors
 -- Other-modules:
@@ -43,6 +44,7 @@ Library
   Other-modules:
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.Time.Implementation
+     Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
     attoparsec >= 0.8.5.3,

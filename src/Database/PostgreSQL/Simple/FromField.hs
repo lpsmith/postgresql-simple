@@ -73,7 +73,9 @@ module Database.PostgreSQL.Simple.FromField
 
     , Field
     , typename
-    , typeinfo
+    , TypeInfo(..)
+    , typeInfo
+    , typeInfoByOid
     , name
     , tableOid
     , tableColumn
@@ -94,7 +96,6 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.List (foldl')
-import           Data.Maybe (fromMaybe)
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
@@ -106,9 +107,9 @@ import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
-import           Database.PostgreSQL.Simple.TypeInfo
+import           Database.PostgreSQL.Simple.TypeInfo as TypeInfo
 import           Database.PostgreSQL.Simple.Time
-import           Database.PostgreSQL.Simple.Arrays
+import           Database.PostgreSQL.Simple.Arrays as Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
@@ -179,11 +180,15 @@ class FromField a where
 --   meta-schema.
 
 typename :: Field -> Conversion ByteString
-typename field = typname . typ <$> typeinfo field
+typename field = typname <$> typeInfo field
 
-typeinfo :: Field -> Conversion TypeInfo
-typeinfo Field{..} = Conversion $ \conn -> do
+typeInfo :: Field -> Conversion TypeInfo
+typeInfo Field{..} = Conversion $ \conn -> do
                        Ok <$> (getTypeInfo conn =<< PQ.ftype result column)
+
+typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
+typeInfoByOid oid = Conversion $ \conn -> do
+                      Ok <$> (getTypeInfo conn oid)
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
@@ -205,7 +210,7 @@ tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column
          else Just x
 
 -- | If the column has a table associated with it,  this returns the number
---   of the associated table column.   Numbering starts from 0.  Analogous
+--   off the associated table column.   Numbering starts from 0.  Analogous
 --   to libpq's @PQftablecol@.
 
 tableColumn :: Field -> Int
@@ -352,14 +357,27 @@ instance (FromField a, FromField b) => FromField (Either a b) where
                     <|> (Left  <$> fromField f dat)
 
 instance (FromField a, Typeable a) => FromField (Vector a) where
-    fromField f dat = either (returnError ConversionFailed f)
-                             (V.fromList <$>)
-                             (parseOnly (fromArray ',' f) (maybe "" id dat))
+    fromField f mdat = do
+        info <- typeInfo f
+        case info of
+          TypeInfo.Array{} ->
+              case mdat of
+                Nothing  -> returnError UnexpectedNull f ""
+                Just dat -> do
+                   case parseOnly (fromArray info f) dat of
+                     Left  err  -> returnError ConversionFailed f err
+                     Right conv -> V.fromList <$> conv 
+          _ -> returnError Incompatible f ""
 
-fromArray :: (FromField a) => Char -> Field -> Parser (Conversion [a])
-fromArray delim f = sequence . (parseIt <$>) <$> array delim
+fromArray :: (FromField a) 
+          => TypeInfo -> Field -> Parser (Conversion [a])
+fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
-    parseIt item = (fromField f . Just . fmt delim) item
+    delim = typdelim (typelem typeInfo)
+    fElem = f{ typeOid = typoid (typelem typeInfo) }
+    parseIt item = (fromField f' . Just . fmt delim) item
+      where f' | Arrays.Array _ <- item = f
+               | otherwise              = fElem
 
 newtype Compat = Compat Word64
 

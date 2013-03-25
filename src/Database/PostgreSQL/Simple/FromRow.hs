@@ -79,7 +79,7 @@ getTypeInfoByCol Row{..} col =
       Ok <$> getTypeInfo conn oid
 
 getTypenameByCol :: Row -> PQ.Column -> Conversion ByteString
-getTypenameByCol row col = typname . typ <$> getTypeInfoByCol row col
+getTypenameByCol row col = typname <$> getTypeInfoByCol row col
 
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
