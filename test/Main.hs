@@ -101,7 +101,7 @@ testArray TestEnv{..} = TestCase $ do
     xs @?= [Only (V.fromList [V.fromList [1,2],
                               V.fromList [3,4 :: Int]])]
     queryFailure conn "SELECT '{1,2,3,4}'::_int4" (undefined :: V.Vector Bool)
-    queryFailure conn "SELECT '{{1,2},{3,4}'::_int4" (undefined :: V.Vector Int)
+    queryFailure conn "SELECT '{{1,2},{3,4}}'::_int4" (undefined :: V.Vector Int)
 
 
 ------------------------------------------------------------------------
