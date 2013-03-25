@@ -108,6 +108,7 @@ import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
 import           Database.PostgreSQL.Simple.TypeInfo as TypeInfo
+import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TypeInfo
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays as Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -234,7 +235,7 @@ instance FromField Null where
 
 instance FromField Bool where
     fromField f bs
-      | typeOid f /= builtin2oid Bool = returnError Incompatible f ""
+      | typeOid f /= typoid (TypeInfo.bool) = returnError Incompatible f ""
       | bs == Nothing                 = returnError UnexpectedNull f ""
       | bs == Just "t"                = pure True
       | bs == Just "f"                = pure False
@@ -271,7 +272,7 @@ unBinary :: Binary t -> t
 unBinary (Binary x) = x
 
 instance FromField SB.ByteString where
-    fromField f dat = if typeOid f == builtin2oid ByteA
+    fromField f dat = if typeOid f == typoid TypeInfo.bytea
                       then unBinary <$> fromField f dat
                       else doFromField f okText' (pure . B.copy) dat
 
@@ -306,36 +307,36 @@ instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
 instance FromField UTCTime where
-  fromField = ff TimestampTZ "UTCTime" parseUTCTime
+  fromField = ff TypeInfo.timestamptz "UTCTime" parseUTCTime
 
 instance FromField ZonedTime where
-  fromField = ff TimestampTZ "ZonedTime" parseZonedTime
+  fromField = ff TypeInfo.timestamptz "ZonedTime" parseZonedTime
 
 instance FromField LocalTime where
-  fromField = ff Timestamp "LocalTime" parseLocalTime
+  fromField = ff TypeInfo.timestamp "LocalTime" parseLocalTime
 
 instance FromField Day where
-  fromField = ff Date "Day" parseDay
+  fromField = ff TypeInfo.date "Day" parseDay
 
 instance FromField TimeOfDay where
-  fromField = ff Time "TimeOfDay" parseTimeOfDay
+  fromField = ff TypeInfo.time "TimeOfDay" parseTimeOfDay
 
 instance FromField UTCTimestamp where
-  fromField = ff TimestampTZ "UTCTimestamp" parseUTCTimestamp
+  fromField = ff TypeInfo.timestamptz "UTCTimestamp" parseUTCTimestamp
 
 instance FromField ZonedTimestamp where
-  fromField = ff TimestampTZ "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff TypeInfo.timestamptz "ZonedTimestamp" parseZonedTimestamp
 
 instance FromField LocalTimestamp where
-  fromField = ff Timestamp "LocalTimestamp" parseLocalTimestamp
+  fromField = ff TypeInfo.timestamp "LocalTimestamp" parseLocalTimestamp
 
 instance FromField Date where
-  fromField = ff Date "Date" parseDate
+  fromField = ff TypeInfo.date "Date" parseDate
 
-ff :: BuiltinType -> String -> (B8.ByteString -> Either String a)
+ff :: TypeInfo -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
 ff pgType hsType parse f mstr =
-  if typeOid f /= builtin2oid pgType
+  if typeOid f /= typoid pgType
   then err Incompatible ""
   else case mstr of
          Nothing -> err UnexpectedNull ""
@@ -366,10 +367,10 @@ instance (FromField a, Typeable a) => FromField (Vector a) where
                 Just dat -> do
                    case parseOnly (fromArray info f) dat of
                      Left  err  -> returnError ConversionFailed f err
-                     Right conv -> V.fromList <$> conv 
+                     Right conv -> V.fromList <$> conv
           _ -> returnError Incompatible f ""
 
-fromArray :: (FromField a) 
+fromArray :: (FromField a)
           => TypeInfo -> Field -> Parser (Conversion [a])
 fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
