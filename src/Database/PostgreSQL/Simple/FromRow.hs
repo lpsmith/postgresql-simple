@@ -41,8 +41,6 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Class
 
-import Data.Vector ((!))
-
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
 --
