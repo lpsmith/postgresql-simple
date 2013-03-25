@@ -8,6 +8,7 @@ module Database.PostgreSQL.Simple.Transaction
     , withTransactionMode
     , withTransactionModeRetry
     , withTransactionSerializable
+    , isSerializationError
     , TransactionMode(..)
     , IsolationLevel(..)
     , ReadWriteMode(..)
@@ -104,13 +105,16 @@ withTransactionSerializable =
         { isolationLevel = Serializable
         , readWriteMode  = ReadWrite
         }
-        retryOnNotSerializable
-  where
-    retryOnNotSerializable exception =
+        isSerializationError
+
+
+isSerializationError :: SqlError -> Bool
+isSerializationError exception =
       case exception of
         SqlError{..} | sqlState == serialization_failure
           -> True
         _ -> False
+  where
     -- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
     serialization_failure = "40001"
 
