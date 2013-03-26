@@ -42,7 +42,7 @@ instance FromField UUID where
                Nothing   -> returnError UnexpectedNull f \"\"
                Just data ->
                   case [ x | (x,t) <- reads data, (\"\",\"\") <- lex t ] of
-                    [x] -> Ok x
+                    [x] -> return x
                     _   -> returnError ConversionError f data
 @
 
