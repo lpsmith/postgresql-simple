@@ -39,11 +39,11 @@ instance FromField UUID where
       if typeOid f /= builtin2oid UUID
         then returnError Incompatible f \"\"
         else case B.unpack \`fmap\` mdata of
-               Nothing   -> returnError UnexpectedNull f \"\"
-               Just data ->
-                  case [ x | (x,t) <- reads data, (\"\",\"\") <- lex t ] of
+               Nothing  -> returnError UnexpectedNull f \"\"
+               Just dat ->
+                  case [ x | (x,t) <- reads dat, (\"\",\"\") <- lex t ] of
                     [x] -> return x
-                    _   -> returnError ConversionError f data
+                    _   -> returnError ConversionError f dat
 @
 
 Note that because PostgreSQL's @uuid@ type is built into postgres and is
