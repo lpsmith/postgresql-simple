@@ -1,3 +1,49 @@
+Version 0.3.0.1 (2013-03-26)
+  * A large chunk of the documentation inside the FromField module had
+    silently failed to render in Haddock.
+
+Version 0.3.0.0 (2013-03-25)
+  * Added support for PostgreSQL's Array Types.  Thanks to Jason Dusek 
+    for his work on this feature.
+
+  * Added a brand new TypeInfo system that gives FromField instances
+    convenient and efficient access to the pg_type metatable.   This
+    replaced the older typename cache,  and was neccesary to properly
+    support postgres array types.   Thanks to Bas van Dijk for his
+    work on this feature.
+
+  * Changed the type of the `fromField` and `fromRow` methods to allow
+    a restricted set of IO actions,  and stopped pre-calculating the type
+    name of every column.    As a result,  the type of the `typename`
+    operator changed from `Field -> ByteString` to 
+    `Field -> Conversion ByteString`,  where Conversion is the new monad
+    that conversion computations run inside.
+
+  * Improved the documentation of the FromField module.
+
+  * Added the Database.PostgreSQL.Simple.Errors module,  which offers
+    some predicates and functions for interpreting SqlError values, courtesy
+    of Leonid Onokhov.
+
+  * Added a the name of a column and the associated table's object identifier
+    to ResultError exceptions,  courtesy of Jeff Chu.
+
+  * Moved most of the more detailed transaction operators into the
+    Database.PostgreSQL.Simple.Transaction module.
+
+  * Changed withTransactionModeRetry to accept a predicate of which
+    SqlErrors to retry,  due to the fact that serialization errors can
+    sometimes manifest themselves as constraint violations.   Thanks 
+    to Oliver Charles for pointing this out and implementing the change.
+
+  * Added simple tests of the fold operator,  thanks to Joey Adams.
+
+  * Added simple tests of the array conversion code.
+
+  * Added recognition of -- comments in the quasiquoter,  which are
+    now stripped out.
+
+
 Version 0.2.4.1 (2012-08-29)
   * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for 
     pointing this out.
