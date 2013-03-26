@@ -13,6 +13,9 @@ module Database.PostgreSQL.Simple.TypeInfo.Types where
 import Data.ByteString(ByteString)
 import Database.PostgreSQL.LibPQ(Oid)
 
+-- | A structure representing some of the metadata regarding a PostgreSQL
+--   type,  mostly taken from the @pg_type@ table.
+
 data TypeInfo
 
   = Basic { typoid      :: {-# UNPACK #-} !Oid

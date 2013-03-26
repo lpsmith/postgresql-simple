@@ -3,7 +3,7 @@ Version 0.3.0.1 (2013-03-26)
     silently failed to render in Haddock.
 
 Version 0.3.0.0 (2013-03-25)
-  * Added support for PostgreSQL's Array Types.  Thanks to Jason Dusek 
+  * Added support for PostgreSQL's Array Types.  Thanks to Jason Dusek
     for his work on this feature.
 
   * Added a brand new TypeInfo system that gives FromField instances
@@ -15,7 +15,7 @@ Version 0.3.0.0 (2013-03-25)
   * Changed the type of the `fromField` and `fromRow` methods to allow
     a restricted set of IO actions,  and stopped pre-calculating the type
     name of every column.    As a result,  the type of the `typename`
-    operator changed from `Field -> ByteString` to 
+    operator changed from `Field -> ByteString` to
     `Field -> Conversion ByteString`,  where Conversion is the new monad
     that conversion computations run inside.
 
@@ -33,7 +33,7 @@ Version 0.3.0.0 (2013-03-25)
 
   * Changed withTransactionModeRetry to accept a predicate of which
     SqlErrors to retry,  due to the fact that serialization errors can
-    sometimes manifest themselves as constraint violations.   Thanks 
+    sometimes manifest themselves as constraint violations.   Thanks
     to Oliver Charles for pointing this out and implementing the change.
 
   * Added simple tests of the fold operator,  thanks to Joey Adams.
@@ -45,7 +45,7 @@ Version 0.3.0.0 (2013-03-25)
 
 
 Version 0.2.4.1 (2012-08-29)
-  * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for 
+  * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for
     pointing this out.
 
 Version 0.2.4.0 (2012-08-23)
