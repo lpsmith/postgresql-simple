@@ -30,4 +30,12 @@ data TypeInfo
           , typname     :: !ByteString
           , typelem     :: !TypeInfo
           }
+
+  | Range { typoid      :: {-# UNPACK #-} !Oid
+          , typcategory :: {-# UNPACK #-} !Char
+          , typdelim    :: {-# UNPACK #-} !Char
+          , typname     :: !ByteString
+          , rngsubtype  :: !TypeInfo
+          }
+
     deriving (Show)

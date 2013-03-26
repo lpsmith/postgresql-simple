@@ -67,12 +67,24 @@ getTypeInfo' conn oid oidmap =
             [(typoid, typcategory_, typdelim_, typname, typelem_)] -> do
                let !typcategory = B8.index typcategory_ 0
                    !typdelim    = B8.index typdelim_    0
-               if typcategory == 'A'
-                 then do
+               case typcategory of
+                 'A' -> do
                    (oidmap', typelem) <- getTypeInfo' conn typelem_ oidmap
                    let !typeInfo = Array{..}
                    return (oidmap', typeInfo)
-                 else do
+                 'R' -> do
+                   rngsubtypeOids <- query conn "SELECT rngsubtype\
+                                               \ FROM pg_range\
+                                               \ WHERE rngtypid = ?"
+                                                (Only oid)
+                   case rngsubtypeOids of
+                     [Only rngsubtype_] -> do
+                        (oidmap', rngsubtype) <-
+                            getTypeInfo' conn rngsubtype_ oidmap
+                        let !typeInfo = Range{..}
+                        return (oidmap', typeInfo)
+                     _ -> fail "range subtype query failed to return exactly one result"
+                 _ -> do
                    let !typeInfo = Basic{..}
                    return (oidmap, typeInfo)
             _ -> fail "typename query returned more than one result"
