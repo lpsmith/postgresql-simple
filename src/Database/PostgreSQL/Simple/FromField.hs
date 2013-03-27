@@ -241,6 +241,16 @@ instance FromField Bool where
       | bs == Just "f"                = pure False
       | otherwise                     = returnError ConversionFailed f ""
 
+instance FromField Char where
+    fromField f bs =
+        if typeOid f /= typoid (TypeInfo.char)
+        then returnError Incompatible f ""
+        else case bs of
+               Nothing -> returnError UnexpectedNull f ""
+               Just bs -> if B.length bs /= 1
+                          then returnError ConversionFailed f "length not 1"
+                          else return $! (B.head bs)
+
 instance FromField Int16 where
     fromField = atto ok16 $ signed decimal
 
