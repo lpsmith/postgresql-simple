@@ -27,7 +27,6 @@ module Database.PostgreSQL.Simple.TypeInfo
      , TypeInfo(..)
      ) where
 
-import qualified Data.ByteString.Char8 as B8
 import qualified Data.IntMap as IntMap
 import           Control.Concurrent.MVar
 import           Control.Exception (throw)
@@ -64,9 +63,7 @@ getTypeInfo' conn oid oidmap =
       (oidmap', typeInfo) <-
           case names of
             []  -> return $ throw (fatalError "invalid type oid")
-            [(typoid, typcategory_, typdelim_, typname, typelem_)] -> do
-               let !typcategory = B8.index typcategory_ 0
-                   !typdelim    = B8.index typdelim_    0
+            [(typoid, typcategory, typdelim, typname, typelem_)] -> do
                case typcategory of
                  'A' -> do
                    (oidmap', typelem) <- getTypeInfo' conn typelem_ oidmap
