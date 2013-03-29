@@ -44,7 +44,7 @@ import Control.Monad.Trans.Class
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
 --
--- Note that instances can defined outside of postgresql-simple,  which is
+-- Note that instances can be defined outside of postgresql-simple,  which is
 -- often useful.   For example, here's an instance for a user-defined pair:
 --
 -- @data User = User { name :: String, fileQuota :: Int }
