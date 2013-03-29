@@ -736,7 +736,7 @@ fmtError msg q xs = throw FormatError {
 -- * There must be no other \"@?@\" characters anywhere in your
 --   template.
 --
--- * There must one or more \"@?@\" in the parentheses.
+-- * There must be one or more \"@?@\" in the parentheses.
 --
 -- * Extra white space is fine.
 --
@@ -805,7 +805,7 @@ fmtError msg q xs = throw FormatError {
 --
 -- Although SQL can accommodate @NULL@ as a value for any of these
 -- types, Haskell cannot. If your result contains columns that may be
--- @NULL@, be sure that you use 'Maybe' in those positions of of your
+-- @NULL@, be sure that you use 'Maybe' in those positions of your
 -- tuple.
 --
 -- > (Text, Maybe Int, Int)
