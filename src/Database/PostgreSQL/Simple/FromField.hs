@@ -14,6 +14,8 @@ Portability: portable
 
 The 'FromField' typeclass, for converting a single value in a row
 returned by a SQL query into a more useful Haskell representation.
+Note that each instance of 'FromField' is documented by a list of
+compatible postgresql types.
 
 A Haskell numeric type is considered to be compatible with all
 PostgreSQL numeric types that are less accurate than it. For instance,
@@ -225,14 +227,20 @@ tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result col
 format :: Field -> PQ.Format
 format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
 
+-- | For dealing with null values.  Compatible with any postgresql type
+--   compatible with type @a@.  Note that the type is not checked if
+--   the value is null, although it is inadvisable to rely on this
+--   behavior.
 instance (FromField a) => FromField (Maybe a) where
     fromField _ Nothing = pure Nothing
     fromField f bs      = Just <$> fromField f bs
 
+-- | compatible with any data type,  but the value must be null
 instance FromField Null where
     fromField _ Nothing  = pure Null
     fromField f (Just _) = returnError ConversionFailed f "data is not null"
 
+-- | bool
 instance FromField Bool where
     fromField f bs
       | typeOid f /= typoid (TypeInfo.bool) = returnError Incompatible f ""
@@ -241,6 +249,7 @@ instance FromField Bool where
       | bs == Just "f"                = pure False
       | otherwise                     = returnError ConversionFailed f ""
 
+-- | \"char\"
 instance FromField Char where
     fromField f bs =
         if typeOid f /= typoid (TypeInfo.char)
@@ -251,29 +260,43 @@ instance FromField Char where
                           then returnError ConversionFailed f "length not 1"
                           else return $! (B.head bs)
 
+-- | int2
 instance FromField Int16 where
     fromField = atto ok16 $ signed decimal
 
+-- | int2, int4
 instance FromField Int32 where
     fromField = atto ok32 $ signed decimal
 
+#if WORD_SIZE_IN_BITS < 64
+-- | int2, int4,  and if compiled as 64-bit code,  int8 as well.
+-- This library was compiled as 32-bit code.
+#else
+-- | int2, int4,  and if compiled as 64-bit code,  int8 as well.
+-- This library was compiled as 64-bit code.
+#endif
 instance FromField Int where
     fromField = atto okInt $ signed decimal
 
+-- | int2, int4, int8
 instance FromField Int64 where
     fromField = atto ok64 $ signed decimal
 
+-- | int2, int4, int8
 instance FromField Integer where
     fromField = atto ok64 $ signed decimal
 
+-- | int2, float4
 instance FromField Float where
     fromField = atto ok (realToFrac <$> double)
         where ok = mkCompats [Float4,Int2]
 
+-- | int2, int4, float4, float8
 instance FromField Double where
     fromField = atto ok double
         where ok = mkCompats [Float4,Float8,Int2,Int4]
 
+-- | int2, int4, float4, float8, numeric
 instance FromField (Ratio Integer) where
     fromField = atto ok rational
         where ok = mkCompats [Float4,Float8,Int2,Int4,Numeric]
@@ -281,14 +304,17 @@ instance FromField (Ratio Integer) where
 unBinary :: Binary t -> t
 unBinary (Binary x) = x
 
+-- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField SB.ByteString where
     fromField f dat = if typeOid f == typoid TypeInfo.bytea
                       then unBinary <$> fromField f dat
                       else doFromField f okText' (pure . B.copy) dat
 
+-- | oid
 instance FromField PQ.Oid where
     fromField f dat = PQ.Oid <$> atto (mkCompat Oid) decimal f dat
 
+-- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField LB.ByteString where
     fromField f dat = LB.fromChunks . (:[]) <$> fromField f dat
 
@@ -298,48 +324,62 @@ unescapeBytea f str = case unsafeDupablePerformIO (PQ.unescapeBytea str) of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
        Just str -> pure (Binary str)
 
+-- | bytea
 instance FromField (Binary SB.ByteString) where
     fromField f dat = case format f of
       PQ.Text   -> doFromField f okBinary (unescapeBytea f) dat
       PQ.Binary -> doFromField f okBinary (pure . Binary . B.copy) dat
 
+-- | bytea
 instance FromField (Binary LB.ByteString) where
     fromField f dat = Binary . LB.fromChunks . (:[]) . unBinary <$> fromField f dat
 
+-- | name, text, \"char\", bpchar, varchar
 instance FromField ST.Text where
     fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')
     -- FIXME:  check character encoding
 
+-- | name, text, \"char\", bpchar, varchar
 instance FromField LT.Text where
     fromField f dat = LT.fromStrict <$> fromField f dat
 
+-- | name, text, \"char\", bpchar, varchar
 instance FromField [Char] where
     fromField f dat = ST.unpack <$> fromField f dat
 
+-- | timestamptz
 instance FromField UTCTime where
   fromField = ff TypeInfo.timestamptz "UTCTime" parseUTCTime
 
+-- | timestamptz
 instance FromField ZonedTime where
   fromField = ff TypeInfo.timestamptz "ZonedTime" parseZonedTime
 
+-- | timestamp
 instance FromField LocalTime where
   fromField = ff TypeInfo.timestamp "LocalTime" parseLocalTime
 
+-- | date
 instance FromField Day where
   fromField = ff TypeInfo.date "Day" parseDay
 
+-- | time
 instance FromField TimeOfDay where
   fromField = ff TypeInfo.time "TimeOfDay" parseTimeOfDay
 
+-- | timestamptz
 instance FromField UTCTimestamp where
   fromField = ff TypeInfo.timestamptz "UTCTimestamp" parseUTCTimestamp
 
+-- | timestamptz
 instance FromField ZonedTimestamp where
   fromField = ff TypeInfo.timestamptz "ZonedTimestamp" parseZonedTimestamp
 
+-- | timestamp
 instance FromField LocalTimestamp where
   fromField = ff TypeInfo.timestamp "LocalTimestamp" parseLocalTimestamp
 
+-- | date
 instance FromField Date where
   fromField = ff TypeInfo.date "Date" parseDate
 
@@ -367,6 +407,7 @@ instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
                     <|> (Left  <$> fromField f dat)
 
+-- | any postgresql array whose elements are compatible with type @a@
 instance (FromField a, Typeable a) => FromField (Vector a) where
     fromField f mdat = do
         info <- typeInfo f
