@@ -25,6 +25,7 @@
 module Database.PostgreSQL.Simple.TypeInfo
      ( getTypeInfo
      , TypeInfo(..)
+     , Attribute(..)
      ) where
 
 import qualified Data.ByteString as B

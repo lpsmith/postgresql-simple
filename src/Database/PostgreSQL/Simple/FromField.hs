@@ -76,6 +76,7 @@ module Database.PostgreSQL.Simple.FromField
     , Field
     , typename
     , TypeInfo(..)
+    , Attribute(..)
     , typeInfo
     , typeInfoByOid
     , name
