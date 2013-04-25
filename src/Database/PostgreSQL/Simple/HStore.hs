@@ -22,9 +22,12 @@
 ------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.HStore
-     ( HStoreBuilder
-     , HStoreList(..)
+     ( HStoreList(..)
      , HStoreMap(..)
+     , HStoreBuilder
+     , HStoreText
+     , ToHStoreText(..)
+     , hstore
      ) where
 
 import Database.PostgreSQL.Simple.HStore.Implementation
