@@ -37,10 +37,17 @@ import           Data.Monoid(Monoid(..))
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
 
+class ToHStore a where
+   toHStore :: a -> HStoreBuilder
+
+-- | Represents valid hstore syntax.
 data HStoreBuilder
    = Empty
    | Comma !Builder
      deriving (Typeable)
+
+instance ToHStore HStoreBuilder where
+   toHStore = id
 
 toBuilder :: HStoreBuilder -> Builder
 toBuilder x = case x of
@@ -108,8 +115,11 @@ instance ToField HStoreBuilder where
 
 newtype HStoreList = HStoreList [(Text,Text)] deriving (Typeable, Show)
 
+instance ToHStore HStoreList where
+    toHStore (HStoreList xs) = mconcat (map (uncurry hstore) xs)
+
 instance ToField HStoreList where
-    toField (HStoreList xs) = toField (mconcat (map (uncurry hstore) xs))
+    toField xs = toField (toHStore xs)
 
 instance FromField HStoreList where
     fromField f mdat = do
@@ -128,11 +138,14 @@ instance FromField HStoreList where
                      Right (Right val) ->
                          return val
 
-newtype HStoreMap  = HStoreMap  (Map Text Text) deriving (Eq, Ord, Typeable, Show)
+newtype HStoreMap  = HStoreMap (Map Text Text) deriving (Eq, Ord, Typeable, Show)
+
+instance ToHStore HStoreMap where
+    toHStore (HStoreMap xs) = Map.foldWithKey f mempty xs
+      where f k v xs = hstore k v `mappend` xs
 
 instance ToField HStoreMap where
-    toField (HStoreMap xs) = toField (Map.foldWithKey f mempty xs)
-      where f k v xs = hstore k v `mappend` xs
+    toField xs = toField (toHStore xs)
 
 instance FromField HStoreMap where
     fromField f mdat = convert <$> fromField f mdat

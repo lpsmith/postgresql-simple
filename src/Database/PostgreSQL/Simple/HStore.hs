@@ -24,12 +24,13 @@
 module Database.PostgreSQL.Simple.HStore
      ( HStoreList(..)
      , HStoreMap(..)
+     , ToHStore(..)
      , HStoreBuilder
-     , HStoreText
-     , ToHStoreText(..)
-     , hstore
      , toBuilder
      , toLazyByteString
+     , hstore
+     , ToHStoreText(..)
+     , HStoreText
      ) where
 
 import Database.PostgreSQL.Simple.HStore.Implementation
