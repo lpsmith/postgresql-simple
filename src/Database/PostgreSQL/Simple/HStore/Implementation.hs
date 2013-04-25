@@ -16,7 +16,7 @@
 module Database.PostgreSQL.Simple.HStore.Implementation where
 
 import           Control.Applicative
-import           Blaze.ByteString.Builder 
+import           Blaze.ByteString.Builder as Blaze
     ( Builder, toLazyByteString, copyByteString )
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import qualified Data.Attoparsec.ByteString as P
@@ -41,6 +41,16 @@ data HStoreBuilder
    = Empty
    | Comma !Builder
      deriving (Typeable)
+
+toBuilder :: HStoreBuilder -> Builder
+toBuilder x = case x of
+                Empty -> mempty
+                Comma x -> x
+
+toLazyByteString :: HStoreBuilder -> BL.ByteString
+toLazyByteString x = case x of
+                       Empty -> BL.empty
+                       Comma x -> Blaze.toLazyByteString x
 
 instance Monoid HStoreBuilder where
     mempty = Empty
@@ -94,7 +104,7 @@ hstore (toHStoreText -> (HStoreText key)) (toHStoreText -> (HStoreText val)) =
 
 instance ToField HStoreBuilder where
     toField  Empty    = toField (BS.empty)
-    toField (Comma x) = toField (toLazyByteString x)
+    toField (Comma x) = toField (Blaze.toLazyByteString x)
 
 newtype HStoreList = HStoreList [(Text,Text)] deriving (Typeable, Show)
 
@@ -108,14 +118,14 @@ instance FromField HStoreList where
         then returnError Incompatible f ""
         else case mdat of
                Nothing  -> returnError UnexpectedNull f ""
-               Just dat -> 
+               Just dat ->
                    case P.parseOnly parseHStore dat of
-                     Left err -> 
+                     Left err ->
                          returnError ConversionFailed f err
-                     Right (Left err) -> 
+                     Right (Left err) ->
                          returnError ConversionFailed f "unicode exception" <|>
                            conversionError err
-                     Right (Right val) -> 
+                     Right (Right val) ->
                          return val
 
 newtype HStoreMap  = HStoreMap  (Map Text Text) deriving (Eq, Ord, Typeable, Show)
