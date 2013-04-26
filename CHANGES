@@ -1,3 +1,10 @@
+Version 0.3.1.0
+  * Added support for Range and Composite types to the TypeInfo system.
+
+  * Added support for hstore types in the Simple.HStore module.
+
+  * Improved documentation of the FromField module.
+
 Version 0.3.0.1 (2013-03-26)
   * A large chunk of the documentation inside the FromField module had
     silently failed to render in Haddock.
