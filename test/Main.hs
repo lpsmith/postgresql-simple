@@ -1,11 +1,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
+import Database.PostgreSQL.Simple.HStore
 import Control.Exception as E
 import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Typeable
 import qualified Data.ByteString as B
+import qualified Data.Map as Map
+import Data.Text(Text)
 import System.Exit (exitFailure)
 import System.IO
 import qualified Data.Vector as V
@@ -23,6 +26,7 @@ tests =
     , TestLabel "Serializable"  . testSerializable
     , TestLabel "Time"          . testTime
     , TestLabel "Array"         . testArray
+    , TestLabel "HStore"        . testHStore
     ]
 
 testBytea :: TestEnv -> Test
@@ -92,7 +96,6 @@ queryFailure conn q resultType = do
                               ++ show (typeOf resultType)
                               ++ " -> " ++ show val)
 
-
 testArray :: TestEnv -> Test
 testArray TestEnv{..} = TestCase $ do
     xs <- query_ conn "SELECT '{1,2,3,4}'::_int4"
@@ -103,6 +106,16 @@ testArray TestEnv{..} = TestCase $ do
     queryFailure conn "SELECT '{1,2,3,4}'::_int4" (undefined :: V.Vector Bool)
     queryFailure conn "SELECT '{{1,2},{3,4}}'::_int4" (undefined :: V.Vector Int)
 
+testHStore :: TestEnv -> Test
+testHStore TestEnv{..} = TestCase $ do
+    roundTrip [("foo","bar"),("bar","baz"),("baz","hello")]
+    roundTrip [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")]
+  where
+    roundTrip :: [(Text,Text)] -> Assertion
+    roundTrip xs = do
+      let m = Only (HStoreMap (Map.fromList xs))
+      m' <- query conn "SELECT ?::hstore" m
+      [m] @?= m'
 
 ------------------------------------------------------------------------
 
