@@ -1,3 +1,6 @@
+Version 0.3.1.2 (2013-04-29)
+  * Fixed hstore parser to not unnecessarily reverse the key-value pairs
+
 Version 0.3.1.1 (2013-04-29)
   * Fixed hstore parser to recognize empty hstores
 
