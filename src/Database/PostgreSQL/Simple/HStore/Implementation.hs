@@ -24,7 +24,6 @@ import qualified Data.Attoparsec.ByteString.Char8 as P (isSpace_w8)
 import qualified Data.ByteString as BS
 import           Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy          as BL
-import qualified Data.ByteString.Lazy.Internal as BL
 import           Data.Map(Map)
 import qualified Data.Map as Map
 import           Data.Text(Text)
@@ -129,7 +128,7 @@ instance FromField HStoreList where
         else case mdat of
                Nothing  -> returnError UnexpectedNull f ""
                Just dat ->
-                   case P.parseOnly parseHStore dat of
+                   case P.parseOnly (parseHStore <* P.endOfInput) dat of
                      Left err ->
                          returnError ConversionFailed f err
                      Right (Left err) ->
@@ -152,19 +151,13 @@ instance FromField HStoreMap where
       where convert (HStoreList xs) = HStoreMap (Map.fromList xs)
 
 parseHStore :: P.Parser (Either UnicodeException HStoreList)
-parseHStore = skipWhiteSpace >> loop id
+parseHStore =
+    reverseEither [] <$> P.sepBy' (skipWhiteSpace *> parseHStoreKeyVal)
+                                  (skipWhiteSpace *> P.word8 (c2w ','))
   where
-    loop acc = do
-      mkv <- parseHStoreKeyVal
-      case mkv of
-        Left err -> return (Left err)
-        Right kv -> do
-           skipWhiteSpace
-           (do
-              _ <- P.word8 (c2w ',')
-              skipWhiteSpace
-              loop (acc . (kv:))
-            ) <|> return (Right (HStoreList (acc [kv])))
+    reverseEither acc []                = Right (HStoreList acc)
+    reverseEither _acc ((Left err):_xs) = Left err
+    reverseEither acc ((Right x ):xs)   = reverseEither (x:acc) xs
 
 parseHStoreKeyVal :: P.Parser (Either UnicodeException (Text,Text))
 parseHStoreKeyVal = do
@@ -199,7 +192,7 @@ parseHStoreTexts :: ([Text] -> [Text])
 parseHStoreTexts acc = do
   mchunk <- TS.decodeUtf8' <$> P.takeWhile (not . isSpecialChar)
   case mchunk of
-    Left err -> return (Left err)
+    Left err    -> return (Left err)
     Right chunk ->
         (do
           _ <- P.word8 (c2w '\\')
