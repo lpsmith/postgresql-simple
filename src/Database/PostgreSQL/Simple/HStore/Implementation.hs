@@ -152,13 +152,10 @@ instance FromField HStoreMap where
       where convert (HStoreList xs) = HStoreMap (Map.fromList xs)
 
 parseHStore :: P.Parser (Either UnicodeException HStoreList)
-parseHStore =
-    reverseEither [] <$> P.sepBy' (skipWhiteSpace *> parseHStoreKeyVal)
-                                  (skipWhiteSpace *> P.word8 (c2w ','))
-  where
-    reverseEither acc []                = Right (HStoreList acc)
-    reverseEither _acc ((Left err):_xs) = Left err
-    reverseEither acc ((Right x ):xs)   = reverseEither (x:acc) xs
+parseHStore = do
+    kvs <- P.sepBy' (skipWhiteSpace *> parseHStoreKeyVal)
+                    (skipWhiteSpace *> P.word8 (c2w ','))
+    return $ HStoreList <$> sequence kvs
 
 parseHStoreKeyVal :: P.Parser (Either UnicodeException (Text,Text))
 parseHStoreKeyVal = do
