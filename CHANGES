@@ -1,3 +1,6 @@
+Version 0.3.1.1 (2013-04-29)
+  * Fixed hstore parser to recognize empty hstores
+
 Version 0.3.1.0 (2013-04-26)
   * Added support for Range and Composite types to the TypeInfo system.
 

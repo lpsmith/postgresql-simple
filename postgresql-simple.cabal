@@ -50,7 +50,7 @@ Library
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
-    attoparsec >= 0.8.5.3,
+    attoparsec >= 0.10.3,
     base < 5,
     blaze-builder,
     blaze-textual,
@@ -75,7 +75,7 @@ source-repository head
 source-repository this
   type:     git
   location: http://github.com/lpsmith/postgresql-simple
-  tag:      v0.3.1.0
+  tag:      v0.3.1.1
 
 test-suite test
   type:           exitcode-stdio-1.0
