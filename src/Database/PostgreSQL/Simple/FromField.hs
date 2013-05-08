@@ -404,6 +404,9 @@ ff pgType hsType parse f mstr =
                  msg
 {-# INLINE ff #-}
 
+-- | Compatible with both types.  Conversions to type @b@ are
+--   preferred,  the conversion to type @a@ will be tried after
+--   the 'Right' conversion fails.
 instance (FromField a, FromField b) => FromField (Either a b) where
     fromField f dat =   (Right <$> fromField f dat)
                     <|> (Left  <$> fromField f dat)

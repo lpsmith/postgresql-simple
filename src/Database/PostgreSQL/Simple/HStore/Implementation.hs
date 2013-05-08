@@ -115,12 +115,14 @@ instance ToField HStoreBuilder where
 
 newtype HStoreList = HStoreList [(Text,Text)] deriving (Typeable, Show)
 
+-- | hstore
 instance ToHStore HStoreList where
     toHStore (HStoreList xs) = mconcat (map (uncurry hstore) xs)
 
 instance ToField HStoreList where
     toField xs = toField (toHStore xs)
 
+-- | hstore
 instance FromField HStoreList where
     fromField f mdat = do
       typ <- typename f
