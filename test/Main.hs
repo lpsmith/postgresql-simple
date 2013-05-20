@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
 import Database.PostgreSQL.Simple.HStore
+import qualified Database.PostgreSQL.Simple.Transaction as ST
+import Control.Applicative
 import Control.Exception as E
 import Control.Monad
 import Data.ByteString (ByteString)
@@ -27,6 +30,7 @@ tests =
     , TestLabel "Time"          . testTime
     , TestLabel "Array"         . testArray
     , TestLabel "HStore"        . testHStore
+    , TestLabel "Savepoint"     . testSavepoint
     ]
 
 testBytea :: TestEnv -> Test
@@ -117,6 +121,79 @@ testHStore TestEnv{..} = TestCase $ do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+testSavepoint :: TestEnv -> Test
+testSavepoint TestEnv{..} = TestCase $ do
+    True <- expectError ST.isNoActiveTransactionError $
+            withSavepoint conn $ return ()
+
+    let getRows :: IO [Int]
+        getRows = map fromOnly <$> query_ conn "SELECT a FROM tmp_savepoint ORDER BY a"
+    withTransaction conn $ do
+        execute_ conn "CREATE TEMPORARY TABLE tmp_savepoint (a INT UNIQUE)"
+        execute_ conn "INSERT INTO tmp_savepoint VALUES (1)"
+        [1] <- getRows
+
+        withSavepoint conn $ do
+            execute_ conn "INSERT INTO tmp_savepoint VALUES (2)"
+            [1,2] <- getRows
+            return ()
+        [1,2] <- getRows
+
+        withSavepoint conn $ do
+            execute_ conn "INSERT INTO tmp_savepoint VALUES (3)"
+            [1,2,3] <- getRows
+            True <- expectError isUniqueViolation $
+                execute_ conn "INSERT INTO tmp_savepoint VALUES (2)"
+            True <- expectError ST.isFailedTransactionError getRows
+
+            -- Body returning successfully after handling error,
+            -- but 'withSavepoint' will roll back without complaining.
+            return ()
+        -- Rolling back clears the error condition.
+        [1,2] <- getRows
+
+        -- 'withSavepoint' will roll back after an exception, even if the
+        -- exception wasn't SQL-related.
+        True <- expectError (== TestException) $
+          withSavepoint conn $ do
+            execute_ conn "INSERT INTO tmp_savepoint VALUES (3)"
+            [1,2,3] <- getRows
+            throwIO TestException
+        [1,2] <- getRows
+
+        -- Nested savepoint can be rolled back while the
+        -- outer effects are retained.
+        withSavepoint conn $ do
+            execute_ conn "INSERT INTO tmp_savepoint VALUES (3)"
+            True <- expectError isUniqueViolation $
+              withSavepoint conn $ do
+                execute_ conn "INSERT INTO tmp_savepoint VALUES (4)"
+                [1,2,3,4] <- getRows
+                execute_ conn "INSERT INTO tmp_savepoint VALUES (4)"
+            [1,2,3] <- getRows
+            return ()
+        [1,2,3] <- getRows
+
+        return ()
+
+    -- Transaction committed successfully, even though there were errors
+    -- (but we rolled them back).
+    [1,2,3] <- getRows
+
+    return ()
+
+  where
+    expectError p io =
+        (io >> return False) `E.catch` \ex ->
+        if p ex then return True else throwIO ex
+    isUniqueViolation SqlError{..} = sqlState == "23505"
+
+data TestException
+  = TestException
+  deriving (Eq, Show, Typeable)
+
+instance Exception TestException
 
 ------------------------------------------------------------------------
 
