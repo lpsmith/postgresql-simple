@@ -98,6 +98,7 @@ module Database.PostgreSQL.Simple
 --    , Base.insertID
     -- * Transaction handling
     , withTransaction
+    , withSavepoint
 --    , Base.autocommit
     , begin
     , commit

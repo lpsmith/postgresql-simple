@@ -8,7 +8,6 @@ module Database.PostgreSQL.Simple.Transaction
     , withTransactionMode
     , withTransactionModeRetry
     , withTransactionSerializable
-    , isSerializationError
     , TransactionMode(..)
     , IsolationLevel(..)
     , ReadWriteMode(..)
@@ -21,13 +20,27 @@ module Database.PostgreSQL.Simple.Transaction
     , beginMode
     , commit
     , rollback
+
+    -- * Savepoint
+    , withSavepoint
+    , Savepoint
+    , newSavepoint
+    , releaseSavepoint
+    , rollbackToSavepoint
+    , rollbackToAndReleaseSavepoint
+
+    -- * Error predicates
+    , isSerializationError
+    , isNoActiveTransactionError
+    , isFailedTransactionError
     ) where
 
-import Control.Exception hiding (mask)
+import qualified Control.Exception as E
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
-import Database.PostgreSQL.Simple.Compat(mask)
+import Database.PostgreSQL.Simple.Compat (mask, (<>))
 
 
 -- | Of the four isolation levels defined by the SQL standard,
@@ -85,6 +98,8 @@ defaultReadWriteMode   =  DefaultReadWriteMode
 -- If the action throws /any/ kind of exception (not just a
 -- PostgreSQL-related exception), the transaction will be rolled back using
 -- 'rollback', then the exception will be rethrown.
+--
+-- For nesting transactions, see 'withSavepoint'.
 withTransaction :: Connection -> IO a -> IO a
 withTransaction = withTransactionMode defaultTransactionMode
 
@@ -107,17 +122,6 @@ withTransactionSerializable =
         }
         isSerializationError
 
-
-isSerializationError :: SqlError -> Bool
-isSerializationError exception =
-      case exception of
-        SqlError{..} | sqlState == serialization_failure
-          -> True
-        _ -> False
-  where
-    -- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
-    serialization_failure = "40001"
-
 -- | Execute an action inside a SQL transaction with a given isolation level.
 withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
 withTransactionLevel lvl
@@ -128,7 +132,7 @@ withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
 withTransactionMode mode conn act =
   mask $ \restore -> do
     beginMode mode conn
-    r <- restore act `onException` rollback conn
+    r <- restore act `E.onException` rollback conn
     commit conn
     return r
 
@@ -142,21 +146,21 @@ withTransactionMode mode conn act =
 withTransactionModeRetry :: TransactionMode -> (SqlError -> Bool) -> Connection -> IO a -> IO a
 withTransactionModeRetry mode shouldRetry conn act =
     mask $ \restore ->
-        retryLoop $ try $ do
+        retryLoop $ E.try $ do
             a <- restore act
             commit conn
             return a
   where
-    retryLoop :: IO (Either SomeException a) -> IO a
+    retryLoop :: IO (Either E.SomeException a) -> IO a
     retryLoop act' = do
         beginMode mode conn
         r <- act'
         case r of
             Left e -> do
                 rollback conn
-                case fmap shouldRetry (fromException e) of
+                case fmap shouldRetry (E.fromException e) of
                   Just True -> retryLoop act'
-                  _ -> throwIO e
+                  _ -> E.throwIO e
             Right a ->
                 return a
 
@@ -191,3 +195,69 @@ beginMode mode conn = do
                  DefaultReadWriteMode -> ""
                  ReadWrite -> " READ WRITE"
                  ReadOnly  -> " READ ONLY"
+
+------------------------------------------------------------------------
+-- Savepoint
+
+-- | Create a savepoint, and roll back to it if an error occurs.  This may only
+-- be used inside of a transaction, and provides a sort of
+-- \"nested transaction\".
+--
+-- See <http://www.postgresql.org/docs/current/static/sql-savepoint.html>
+withSavepoint :: Connection -> IO a -> IO a
+withSavepoint conn body =
+  mask $ \restore -> do
+    sp <- newSavepoint conn
+    r <- restore body `E.onException` rollbackToAndReleaseSavepoint conn sp
+    releaseSavepoint conn sp `E.catch` \err ->
+        if isFailedTransactionError err
+            then rollbackToAndReleaseSavepoint conn sp
+            else E.throwIO err
+    return r
+
+-- | Create a new savepoint.  This may only be used inside of a transaction.
+newSavepoint :: Connection -> IO Savepoint
+newSavepoint conn = do
+    name <- newTempName conn
+    _ <- execute_ conn ("SAVEPOINT " <> name)
+    return (Savepoint name)
+
+-- | Destroy a savepoint, but retain its effects.
+--
+-- Warning: this will throw a 'SqlError' matching 'isFailedTransactionError' if
+-- the transaction is aborted due to an error.  'commit' would merely warn and
+-- roll back.
+releaseSavepoint :: Connection -> Savepoint -> IO ()
+releaseSavepoint conn (Savepoint name) =
+    execute_ conn ("RELEASE SAVEPOINT " <> name) >> return ()
+
+-- | Roll back to a savepoint.  This will not release the savepoint.
+rollbackToSavepoint :: Connection -> Savepoint -> IO ()
+rollbackToSavepoint conn (Savepoint name) =
+    execute_ conn ("ROLLBACK TO SAVEPOINT " <> name) >> return ()
+
+-- | Roll back to a savepoint and release it.  This is like calling
+-- 'rollbackToSavepoint' followed by 'releaseSavepoint', but avoids a
+-- round trip to the database server.
+rollbackToAndReleaseSavepoint :: Connection -> Savepoint -> IO ()
+rollbackToAndReleaseSavepoint conn (Savepoint name) =
+    execute_ conn sql >> return ()
+  where
+    sql = "ROLLBACK TO SAVEPOINT " <> name <> "; RELEASE SAVEPOINT " <> name
+
+------------------------------------------------------------------------
+-- Error predicates
+--
+-- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+
+isSerializationError :: SqlError -> Bool
+isSerializationError = isSqlState "40001"
+
+isNoActiveTransactionError :: SqlError -> Bool
+isNoActiveTransactionError = isSqlState "25P01"
+
+isFailedTransactionError :: SqlError -> Bool
+isFailedTransactionError = isSqlState "25P02"
+
+isSqlState :: ByteString -> SqlError -> Bool
+isSqlState s SqlError{..} = sqlState == s
