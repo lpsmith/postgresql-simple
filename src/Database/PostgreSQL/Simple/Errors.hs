@@ -14,10 +14,8 @@ module Database.PostgreSQL.Simple.Errors
        )
        where
 
-import Prelude hiding (catch)
-
 import Control.Applicative
-import Control.Exception
+import Control.Exception as E
 
 import Data.Attoparsec.Char8
 import Data.ByteString       (ByteString)
@@ -75,7 +73,7 @@ constraintViolation e =
 -- > createUser = catchJust constraintViolationE catcher $ execute conn ...
 -- >   where
 -- >     catcher (_, UniqueViolation "user_login_key") = ...
--- >     catcher (e, _) = throw e
+-- >     catcher (e, _) = throwIO e
 --
 constraintViolationE :: SqlError -> Maybe (SqlError, ConstraintViolation)
 constraintViolationE e = fmap ((,) e) $ constraintViolation e
@@ -86,10 +84,10 @@ constraintViolationE e = fmap ((,) e) $ constraintViolation e
 -- > createUser = catchViolation catcher $ execute conn ...
 -- >   where
 -- >     catcher _ (UniqueViolation "user_login_key") = ...
--- >     catcher e _ = throw e
+-- >     catcher e _ = throwIO e
 catchViolation :: (SqlError -> ConstraintViolation -> IO a) -> IO a -> IO a
-catchViolation f m = catch m
-                     (\e -> maybe (throw e) (f e) $ constraintViolation e)
+catchViolation f m = E.catch m
+                     (\e -> maybe (throwIO e) (f e) $ constraintViolation e)
 
 -- Parsers just try to extract quoted strings from error messages, number
 -- of quoted strings depend on error type.
