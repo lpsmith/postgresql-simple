@@ -23,6 +23,7 @@ module Database.PostgreSQL.Simple.Types
     , Query(..)
     , Oid(..)
     , (:.)(..)
+    , Savepoint(..)
     ) where
 
 import Blaze.ByteString.Builder (toByteString)
@@ -130,3 +131,6 @@ newtype Binary a = Binary a
 data h :. t = h :. t deriving (Eq,Ord,Show,Read,Typeable)
 
 infixr 3 :.
+
+newtype Savepoint = Savepoint Query
+    deriving (Eq, Ord, Show, Read, Typeable)
