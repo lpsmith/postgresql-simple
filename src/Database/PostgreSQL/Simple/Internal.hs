@@ -1,4 +1,7 @@
-{-# LANGUAGE RecordWildCards, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Internal
@@ -30,6 +33,7 @@ import qualified Data.ByteString.Char8 as B8
 import           Data.Char (ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
+import           Data.IORef
 import           Data.Maybe(fromMaybe)
 import           Data.String
 import           Data.Typeable
@@ -62,6 +66,7 @@ type TypeInfoCache = IntMap.IntMap TypeInfo
 data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
    , connectionObjects :: {-# UNPACK #-} !(MVar TypeInfoCache)
+   , connectionTempNameCounter :: {-# UNPACK #-} !(IORef Int64)
    }
 
 data SqlError = SqlError {
@@ -138,6 +143,7 @@ connectPostgreSQL connstr = do
       PQ.ConnectionOk -> do
           connectionHandle  <- newMVar conn
           connectionObjects <- newMVar (IntMap.empty)
+          connectionTempNameCounter <- newIORef 0
           let wconn = Connection{..}
           version <- PQ.serverVersion conn
           let settings
@@ -280,6 +286,7 @@ newNullConnection :: IO Connection
 newNullConnection = do
     connectionHandle  <- newMVar =<< PQ.newNullConnection
     connectionObjects <- newMVar IntMap.empty
+    connectionTempNameCounter <- newIORef 0
     return Connection{..}
 
 data Row = Row {
@@ -328,3 +335,9 @@ conversionMap f m = Conversion $ \conn -> f <$> runConversion m conn
 
 conversionError :: Exception err => err -> Conversion a
 conversionError err = Conversion $ \_ -> return (Errors [SomeException err])
+
+newTempName :: Connection -> IO Query
+newTempName Connection{..} = do
+    !n <- atomicModifyIORef connectionTempNameCounter
+          (\n -> let !n' = n+1 in (n', n'))
+    return $! Query $ B8.pack $ "temp" ++ show n
