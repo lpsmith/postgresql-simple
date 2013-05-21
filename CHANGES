@@ -1,8 +1,13 @@
+Version 0.3.2.0 (2013-05-20)
+  * Added a savepoint abstraction to the Transaction module, courtesy
+    of Joey Adams
+
 Version 0.3.1.2 (2013-04-29)
   * Fixed hstore parser to not unnecessarily reverse the key-value pairs
 
 Version 0.3.1.1 (2013-04-29)
-  * Fixed hstore parser to recognize empty hstores
+  * Fixed hstore parser to recognize empty hstores, courtesy of Simon
+    Meier
 
 Version 0.3.1.0 (2013-04-26)
   * Added support for Range and Composite types to the TypeInfo system.
