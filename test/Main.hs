@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
@@ -8,6 +9,7 @@ import Control.Applicative
 import Control.Exception as E
 import Control.Monad
 import Data.ByteString (ByteString)
+import Data.IORef
 import Data.Typeable
 import qualified Data.ByteString as B
 import qualified Data.Map as Map
@@ -77,6 +79,48 @@ testFold TestEnv{..} = TestCase $ do
     xs <- fold_ conn "SELECT generate_series(1,10000)"
             [] $ \xs (Only x) -> return (x:xs)
     reverse xs @?= ([1..10000] :: [Int])
+
+    ref <- newIORef []
+    forEach conn "SELECT * FROM generate_series(1,?) a, generate_series(1,?) b"
+      (100 :: Int, 50 :: Int) $ \(a :: Int, b :: Int) -> do
+        xs <- readIORef ref
+        writeIORef ref $! (a,b):xs
+    xs <- readIORef ref
+    reverse xs @?= [(a,b) | a <- [1..100], b <- [1..50]]
+
+    -- Make sure fold propagates our exception.
+    ref <- newIORef []
+    True <- expectError (== TestException) $
+              forEach_ conn "SELECT generate_series(1,10)" $ \(Only a) ->
+                if a == 5 then do
+                  -- Cause a SQL error to trip up CLOSE.
+                  True <- expectError isSyntaxError $
+                          execute_ conn "asdf"
+                  True <- expectError ST.isFailedTransactionError $
+                          (query_ conn "SELECT 1" :: IO [(Only Int)])
+                  throwIO TestException
+                else do
+                  xs <- readIORef ref
+                  writeIORef ref $! (a :: Int) : xs
+    xs <- readIORef ref
+    reverse xs @?= [1..4]
+
+    withTransaction conn $ replicateM_ 2 $ do
+        xs <- fold_ conn "VALUES (1), (2), (3), (4), (5)"
+                [] $ \xs (Only x) -> return (x:xs)
+        reverse xs @?= ([1..5] :: [Int])
+
+    ref <- newIORef []
+    forEach_ conn "SELECT generate_series(1,101)" $ \(Only a) ->
+      forEach_ conn "SELECT generate_series(1,55)" $ \(Only b) -> do
+        xs <- readIORef ref
+        writeIORef ref $! (a :: Int, b :: Int) : xs
+    xs <- readIORef ref
+    reverse xs @?= [(a,b) | a <- [1..101], b <- [1..55]]
+
+    xs <- fold_ conn "SELECT 1 WHERE FALSE"
+            [] $ \xs (Only x) -> return (x:xs)
+    xs @?= ([] :: [Int])
 
     -- TODO: add more complete tests, e.g.:
     --
@@ -183,17 +227,22 @@ testSavepoint TestEnv{..} = TestCase $ do
 
     return ()
 
-  where
-    expectError p io =
-        (io >> return False) `E.catch` \ex ->
-        if p ex then return True else throwIO ex
-    isUniqueViolation SqlError{..} = sqlState == "23505"
-
 data TestException
   = TestException
   deriving (Eq, Show, Typeable)
 
 instance Exception TestException
+
+expectError :: Exception e => (e -> Bool) -> IO a -> IO Bool
+expectError p io =
+    (io >> return False) `E.catch` \ex ->
+    if p ex then return True else throwIO ex
+
+isUniqueViolation :: SqlError -> Bool
+isUniqueViolation SqlError{..} = sqlState == "23505"
+
+isSyntaxError :: SqlError -> Bool
+isSyntaxError SqlError{..} = sqlState == "42601"
 
 ------------------------------------------------------------------------
 
