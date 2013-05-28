@@ -112,8 +112,7 @@ import           Blaze.ByteString.Builder
                    ( Builder, fromByteString, toByteString )
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Control.Applicative ((<$>), pure)
-import           Control.Exception
-                   ( Exception, throw, throwIO, finally )
+import           Control.Exception as E
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
@@ -463,7 +462,7 @@ doFold :: ( FromRow row )
        -> a
        -> (a -> row -> IO a)
        -> IO a
-doFold FoldOptions{..} conn _template q a f = do
+doFold FoldOptions{..} conn _template q a0 f = do
     stat <- withConnection conn PQ.transactionStatus
     case stat of
       PQ.TransIdle    -> withTransactionMode transactionMode conn go
@@ -481,10 +480,23 @@ doFold FoldOptions{..} conn _template q a f = do
       PQ.TransUnknown -> fail "foldWithOpts FIXME:  PQ.TransUnknown"
          -- Not sure what this means.
   where
-    go = do
-       -- FIXME:  what about name clashes with already-declared cursors?
-       _ <- execute_ conn ("DECLARE fold NO SCROLL CURSOR FOR " <> q)
-       loop a `finally` execute_ conn "CLOSE fold"
+    declare = do
+        name <- newTempName conn
+        _ <- execute_ conn $ "DECLARE " <> name <> " NO SCROLL CURSOR FOR " <> q
+        return name
+    fetch name = query_ conn $
+        "FETCH FORWARD " <> (Query . B.pack . show) chunkSize <> " FROM " <> name
+    close name =
+        (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
+            -- Don't throw exception if CLOSE failed because the transaction is
+            -- aborted.  Otherwise, it will throw away the original error.
+            if isFailedTransactionError ex then return () else throwIO ex
+
+    go = bracket declare close $ \name ->
+         let loop a = do
+                 rs <- fetch name
+                 if null rs then return a else foldM f a rs >>= loop
+          in loop a0
 
 -- FIXME: choose the Automatic chunkSize more intelligently
 --   One possibility is to use the type of the results,  although this
@@ -495,9 +507,6 @@ doFold FoldOptions{..} conn _template q a f = do
     chunkSize = case fetchQuantity of
                  Automatic   -> 256
                  Fixed n     -> n
-    loop a = do
-      rs <- query conn "FETCH FORWARD ? FROM fold" (Only chunkSize)
-      if null rs then return a else foldM f a rs >>= loop
 
 -- | A version of 'fold' that does not transform a state value.
 forEach :: (ToRow q, FromRow r) =>
