@@ -1,3 +1,9 @@
+Version 0.3.3.0 (2013-05-29)
+  * Fixed two issues with the fold operator:  fold would raise the wrong
+    exception,  and also named the fold using a freshly generated temporary
+    name,  allowing folds to be nested.   Thanks to Joey Adams for his
+    work on these issues.
+
 Version 0.3.2.0 (2013-05-20)
   * Added a savepoint abstraction to the Transaction module, courtesy
     of Joey Adams
