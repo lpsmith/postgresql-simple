@@ -111,6 +111,7 @@ module Database.PostgreSQL.Simple
 import           Blaze.ByteString.Builder
                    ( Builder, fromByteString, toByteString )
 import           Blaze.ByteString.Builder.Char8 (fromChar)
+import           Blaze.Text ( integral )
 import           Control.Applicative ((<$>), pure)
 import           Control.Exception as E
 import           Control.Monad (foldM)
@@ -482,10 +483,15 @@ doFold FoldOptions{..} conn _template q a0 f = do
   where
     declare = do
         name <- newTempName conn
-        _ <- execute_ conn $ "DECLARE " <> name <> " NO SCROLL CURSOR FOR " <> q
+        _ <- execute_ conn $ mconcat 
+                 [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
         return name
-    fetch name = query_ conn $
-        "FETCH FORWARD " <> (Query . B.pack . show) chunkSize <> " FROM " <> name
+    fetch (Query name) = query_ conn $
+        Query (toByteString (fromByteString "FETCH FORWARD " 
+                             <> integral chunkSize
+                             <> fromByteString " FROM "
+                             <> fromByteString name
+                            ))
     close name =
         (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
             -- Don't throw exception if CLOSE failed because the transaction is
