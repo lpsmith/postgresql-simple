@@ -1,4 +1,6 @@
-{-# LANGUAGE RecordWildCards, NamedFieldPuns #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -22,7 +24,7 @@ module Database.PostgreSQL.Simple.Notification
      , getNotificationNonBlocking
      ) where
 
-import           Control.Concurrent ( threadWaitRead )
+import           Control.Concurrent
 import           Control.Monad ( when )
 import qualified Data.ByteString as B
 import           Database.PostgreSQL.Simple.Internal
@@ -36,8 +38,7 @@ data Notification = Notification
    }
 
 errfd :: String
-errfd   = "Database.PostgreSQL.Simple.Notification.getNotification: \
-          \failed to fetch file descriptor"
+errfd = "Database.PostgreSQL.Simple.Notification.getNotification: failed to fetch file descriptor"
 
 convertNotice :: PQ.Notify -> Notification
 convertNotice PQ.Notify{..}
@@ -49,9 +50,9 @@ convertNotice PQ.Notify{..}
 --   'getNotification' blocks until one arrives.
 
 getNotification :: Connection -> IO Notification
-getNotification = loop False
+getNotification conn = loop False
   where
-    loop doConsume conn = do
+    loop doConsume = do
         res <- withConnection conn $ \c -> do
                          when doConsume (PQ.consumeInput c >> return ())
                          mmsg <- PQ.notifies c
@@ -64,7 +65,16 @@ getNotification = loop False
                            Just msg -> return (Right msg)
         -- FIXME? what happens if the connection is closed/reset right here?
         case res of
-          Left fd -> threadWaitRead fd >> loop True conn
+#if defined(mingw32_HOST_OS)
+          -- threadWaitRead doesn't work for sockets on Windows, so just poll
+          -- for input every second (PQconsumeInput is non-blocking).
+          --
+          -- We could call select(), but FFI calls can't be interrupted with
+          -- async exceptions, whereas threadDelay can.
+          Left _fd -> threadDelay 1000000 >> loop True
+#else
+          Left fd -> threadWaitRead fd >> loop True
+#endif
           Right msg -> return $! convertNotice msg
 
 -- | Non-blocking variant of 'getNotification'.   Returns a single notification,
