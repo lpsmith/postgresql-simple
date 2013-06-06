@@ -18,10 +18,10 @@
 --
 -- Note that on Windows,  @getNotification@ currently uses a polling loop
 -- of 1 second to check for more notifications,  due to some inadequacies
--- in GHC's IO implementation and interface on that platform.   See GHC 
+-- in GHC's IO implementation and interface on that platform.   See GHC
 -- issue #7353 for more information.  While this workaround is less than
 -- ideal,  notifications are still better than polling the database directly.
--- Notifications do not create any extra work for the backend,  and are 
+-- Notifications do not create any extra work for the backend,  and are
 -- likely cheaper on the client side as well.
 --
 -- <http://hackage.haskell.org/trac/ghc/ticket/7353>
