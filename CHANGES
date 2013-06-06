@@ -1,3 +1,7 @@
+Version 0.3.3.1 (2013-06-06)
+  * `getNotification` now works on Windows,  albeit using a one-second
+    polling loop,  courtesy of Joey Adams.
+
 Version 0.3.3.0 (2013-05-29)
   * Fixed two issues with the fold operator:  fold would raise the wrong
     exception,  and also named the fold using a freshly generated temporary
