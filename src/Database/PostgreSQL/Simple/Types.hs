@@ -80,6 +80,7 @@ instance Monoid Query where
     mempty = Query B.empty
     mappend (Query a) (Query b) = Query (B.append a b)
     {-# INLINE mappend #-}
+    mconcat xs = Query (B.concat (map fromQuery xs))
 
 -- | A single-value \"collection\".
 --
