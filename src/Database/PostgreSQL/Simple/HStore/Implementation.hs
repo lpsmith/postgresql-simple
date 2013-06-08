@@ -143,7 +143,7 @@ instance FromField HStoreList where
 newtype HStoreMap  = HStoreMap (Map Text Text) deriving (Eq, Ord, Typeable, Show)
 
 instance ToHStore HStoreMap where
-    toHStore (HStoreMap xs) = Map.foldWithKey f mempty xs
+    toHStore (HStoreMap xs) = Map.foldrWithKey f mempty xs
       where f k v xs = hstore k v `mappend` xs
 
 instance ToField HStoreMap where
