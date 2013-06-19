@@ -696,7 +696,7 @@ fmtError msg q xs = throw FormatError {
 --
 -- The obvious approach would appear to be something like this:
 --
--- > instance (Param a) => QueryParam a where
+-- > instance (ToField a) => ToRow a where
 -- >     ...
 --
 -- Unfortunately, this wreaks havoc with type inference, so we take a
@@ -775,9 +775,10 @@ fmtError msg q xs = throw FormatError {
 
 -- $returning
 --
--- The 'returning' function is similar to 'executeMany' but is
--- intended for use with multi-tuple @INSERT@ or @UPDATE@ statements
--- that make use of @RETURNING@.
+-- PostgreSQL supports returning values from data manipulation statements
+-- such as @INSERT@ and @UPDATE@.   You can use these statements by
+-- using 'query' instead of 'execute'.   For multi-tuple inserts,
+-- use 'returning' instead of 'executeMany'.
 --
 -- For example, were there an auto-incrementing @id@ column and
 -- timestamp column @t@ that defaulted to the present time for the
@@ -785,7 +786,8 @@ fmtError msg q xs = throw FormatError {
 -- sales records and also return their new @id@s and timestamps.
 --
 -- > let q = "insert into sales (amount, label) values (?,?) returning id, t"
--- > xs :: [(Int, UTCTime)] <- returning conn q [(20,"Chips"),(300,"Wood")]
+-- > xs :: [(Int, UTCTime)] <- query conn q (15,"Sawdust")
+-- > ys :: [(Int, UTCTime)] <- returning conn q [(20,"Chips"),(300,"Wood")]
 
 -- $result
 --
