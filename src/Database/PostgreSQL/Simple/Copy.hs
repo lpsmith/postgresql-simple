@@ -28,8 +28,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as P
 import           Data.Int(Int64)
 import qualified Data.ByteString.Char8 as B
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           Database.PostgreSQL.Simple hiding
-                   ( fold, fold_, forEach, forEach_ )
+import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.Types
 import           Database.PostgreSQL.Simple.Internal
 
