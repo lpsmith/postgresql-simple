@@ -84,9 +84,9 @@ getCopyData conn = withConnection conn loop
             result  <- maybe (fail errCmdStatus) return =<< PQ.getResult pqconn
             cmdStat <- maybe (fail errCmdStatus) return =<< PQ.cmdStatus result
             let rowCount = P.string "COPY " *> P.decimal
-            case P.parseOnly rowCount cmdStat of
+            case P.parseOnly (rowCount <* P.endOfInput) cmdStat of
               Left  _ -> fail errCmdStatusFmt
-              Right n -> return (CopyOutDone n)
+              Right n -> return $! CopyOutDone n
 #if defined(mingw32_HOST_OS)
         PQ.CopyOutWouldBlock -> do
             fail (B.unpack funcName ++ ": the impossible happened")
