@@ -36,6 +36,7 @@ module Database.PostgreSQL.Simple.Notification
 
 import           Control.Concurrent
 import           Control.Monad ( when )
+import           Control.Exception ( throwIO )
 import qualified Data.ByteString as B
 import           Database.PostgreSQL.Simple.Internal
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -46,9 +47,6 @@ data Notification = Notification
    , notificationChannel :: !B.ByteString
    , notificationData    :: !B.ByteString
    }
-
-errfd :: String
-errfd = "Database.PostgreSQL.Simple.Notification.getNotification: failed to fetch file descriptor"
 
 convertNotice :: PQ.Notify -> Notification
 convertNotice PQ.Notify{..}
@@ -62,6 +60,7 @@ convertNotice PQ.Notify{..}
 getNotification :: Connection -> IO Notification
 getNotification conn = loop False
   where
+    funcName = "Database.PostgreSQL.Simple.Notification.getNotification"
     loop doConsume = do
         res <- withConnection conn $ \c -> do
                          when doConsume (PQ.consumeInput c >> return ())
@@ -70,7 +69,7 @@ getNotification conn = loop False
                            Nothing -> do
                                          mfd <- PQ.socket c
                                          case mfd of
-                                           Nothing -> fail errfd
+                                           Nothing -> throwIO $ fdError funcName
                                            Just fd -> return (Left fd)
                            Just msg -> return (Right msg)
         -- FIXME? what happens if the connection is closed/reset right here?
