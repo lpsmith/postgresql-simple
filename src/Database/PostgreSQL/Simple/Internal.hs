@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
+
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Internal
@@ -9,7 +10,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- Internal bits.  This interface is less stable and can change at any time.
 -- In particular this means that while the rest of the postgresql-simple
@@ -44,6 +44,7 @@ import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
+import           GHC.IO.Exception
 
 -- | A Field represents metadata about a particular field
 --
@@ -54,8 +55,8 @@ import           Control.Monad.Trans.Reader
 data Field = Field {
      result   :: !PQ.Result
    , column   :: {-# UNPACK #-} !PQ.Column
-   , typeOid  :: {-# UNPACK #-} !PQ.Oid  
-     -- ^ This returns the type oid associated with the column.  Analogous 
+   , typeOid  :: {-# UNPACK #-} !PQ.Oid
+     -- ^ This returns the type oid associated with the column.  Analogous
      --   to libpq's @PQftype@.
    }
 
@@ -315,11 +316,11 @@ instance Alternative Conversion where
                    case oka of
                      Ok _     -> return oka
                      Errors _ -> (oka <|>) <$> runConversion mb conn
-                       
+
 instance Monad Conversion where
    return a = Conversion $ \_conn -> return (return a)
    m >>= f = Conversion $ \conn -> do
-                 oka <- runConversion m conn 
+                 oka <- runConversion m conn
                  case oka of
                    Ok a -> runConversion (f a) conn
                    Errors err -> return (Errors err)
@@ -339,3 +340,14 @@ newTempName Connection{..} = do
     !n <- atomicModifyIORef connectionTempNameCounter
           (\n -> let !n' = n+1 in (n', n'))
     return $! Query $ B8.pack $ "temp" ++ show n
+
+-- FIXME?  What error should getNotification and getCopyData throw?
+fdError :: ByteString -> IOError
+fdError funcName = IOError {
+                     ioe_handle      = Nothing,
+                     ioe_type        = ResourceVanished,
+                     ioe_location    = B8.unpack funcName,
+                     ioe_description = "failed to fetch file descriptor",
+                     ioe_errno       = Nothing,
+                     ioe_filename    = Nothing
+                   }
