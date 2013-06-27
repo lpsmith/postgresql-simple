@@ -79,7 +79,7 @@ getCopyData conn = withConnection conn loop
       row <- PQ.getCopyData pqconn True
 #endif
       case row of
-        PQ.CopyOutRow rowdata -> return (CopyOutRow rowdata)
+        PQ.CopyOutRow rowdata -> return $! CopyOutRow rowdata
         PQ.CopyOutDone        -> do
             result  <- maybe (fail errCmdStatus) return =<< PQ.getResult pqconn
             cmdStat <- maybe (fail errCmdStatus) return =<< PQ.cmdStatus result
