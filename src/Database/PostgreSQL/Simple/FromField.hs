@@ -10,7 +10,6 @@ Copyright:   (c) 2011 MailRank, Inc.
 License:     BSD3
 Maintainer:  Leon P Smith <leon@melding-monads.com>
 Stability:   experimental
-Portability: portable
 
 The 'FromField' typeclass, for converting a single value in a row
 returned by a SQL query into a more useful Haskell representation.

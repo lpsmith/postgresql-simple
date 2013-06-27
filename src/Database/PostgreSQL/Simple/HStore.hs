@@ -5,7 +5,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- Parsers and printers for hstore,  a extended type bundled with
 -- PostgreSQL providing finite maps from text strings to text strings.

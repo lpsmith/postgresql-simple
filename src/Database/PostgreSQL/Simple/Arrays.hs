@@ -7,7 +7,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- A Postgres array parser and pretty-printer.
 ------------------------------------------------------------------------------

@@ -9,7 +9,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- The 'ToField' typeclass, for rendering a parameter to a SQL query.
 --

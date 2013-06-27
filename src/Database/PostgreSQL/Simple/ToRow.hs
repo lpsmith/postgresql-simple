@@ -6,7 +6,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- The 'ToRow' typeclass, for rendering a collection of
 -- parameters to a SQL query.

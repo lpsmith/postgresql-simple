@@ -13,7 +13,6 @@
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- A mid-level client library for the PostgreSQL database, aimed at ease of
 -- use and high performance.
