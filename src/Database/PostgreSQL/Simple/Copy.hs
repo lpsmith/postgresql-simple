@@ -201,7 +201,6 @@ getCopyCommandTag :: B.ByteString -> PQ.Connection -> IO Int64
 getCopyCommandTag funcName pqconn = do
     result  <- maybe (fail errCmdStatus) return =<< PQ.getResult pqconn
     cmdStat <- maybe (fail errCmdStatus) return =<< PQ.cmdStatus result
-    print cmdStat
     let rowCount =   P.string "COPY " *> (P.decimal <* P.endOfInput)
                  <|> (P.endOfInput *> pure 0)
     case P.parseOnly rowCount cmdStat of
