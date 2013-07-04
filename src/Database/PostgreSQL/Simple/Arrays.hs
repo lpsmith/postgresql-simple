@@ -90,4 +90,3 @@ esc = B.concatMap f
     f '\\' = "\\\\"
     f c    = B.singleton c
   -- TODO: Implement easy performance improvements with unfoldr.
-

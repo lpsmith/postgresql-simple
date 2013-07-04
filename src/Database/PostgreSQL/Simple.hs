@@ -482,11 +482,11 @@ doFold FoldOptions{..} conn _template q a0 f = do
   where
     declare = do
         name <- newTempName conn
-        _ <- execute_ conn $ mconcat 
+        _ <- execute_ conn $ mconcat
                  [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
         return name
     fetch (Query name) = query_ conn $
-        Query (toByteString (fromByteString "FETCH FORWARD " 
+        Query (toByteString (fromByteString "FETCH FORWARD "
                              <> integral chunkSize
                              <> fromByteString " FROM "
                              <> fromByteString name

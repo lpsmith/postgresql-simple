@@ -70,7 +70,7 @@ nfields :: PQ.Result -> PQ.Column
 nfields result = unsafeDupablePerformIO (PQ.nfields result)
 
 getTypeInfoByCol :: Row -> PQ.Column -> Conversion TypeInfo
-getTypeInfoByCol Row{..} col = 
+getTypeInfoByCol Row{..} col =
     Conversion $ \conn -> do
       oid <- PQ.ftype rowresult col
       Ok <$> getTypeInfo conn oid

@@ -16,7 +16,7 @@
 -- or @COPY TO STDOUT@ query as documented in the link above.  Then
 -- call @getCopyData@ repeatedly until it returns 'CopyOutDone' in
 -- the former case,  or in the latter, call @putCopyData@ repeatedly
--- and then finish by calling either @putCopyEnd@ to proceed or 
+-- and then finish by calling either @putCopyEnd@ to proceed or
 -- @putCopyError@ to abort.
 --
 -- You cannot issue another query on the same connection while a copy
@@ -50,7 +50,7 @@ import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.Types
 import           Database.PostgreSQL.Simple.Internal
 
--- | Issue a query that changes a connection's state to @CopyIn@ 
+-- | Issue a query that changes a connection's state to @CopyIn@
 --   (via a @COPY FROM STDIN@ query) or @CopyOut@ (via @COPY TO STDOUT@)
 --   query.  Performs parameter subsitution.
 
@@ -59,7 +59,7 @@ copy conn template qs = do
     q <- formatQuery conn template qs
     doCopy "Database.PostgreSQL.Simple.Copy.copy" conn template q
 
--- | Issue a query that changes a connection's state to @CopyIn@ 
+-- | Issue a query that changes a connection's state to @CopyIn@
 --   (via a @COPY FROM STDIN@ query) or @CopyOut@ (via @COPY TO STDOUT@)
 --   query.  Does not perform parameter subsitution.
 
@@ -85,7 +85,7 @@ doCopy funcName conn template q = do
       PQ.FatalError    -> throwResultError funcName result status
 
 data CopyOutResult
-   = CopyOutRow  !B.ByteString         -- ^ Data representing either exactly 
+   = CopyOutRow  !B.ByteString         -- ^ Data representing either exactly
                                        --   one row of the result,  or header
                                        --   or footer data depending on format.
    | CopyOutDone {-# UNPACK #-} !Int64 -- ^ No more rows, and a count of the
@@ -93,7 +93,7 @@ data CopyOutResult
      deriving (Eq, Typeable, Show)
 
 -- | A connection must be in the @CopyOut@ state in order to call this
---   function,  via a @COPY TO STDOUT@ query.  If this returns a 'CopyOutRow', 
+--   function,  via a @COPY TO STDOUT@ query.  If this returns a 'CopyOutRow',
 --   the connection remains in the @CopyOut@ state, if it returns 'CopyOutDone',
 --   then the connection has reverted to the ready state.
 
@@ -135,9 +135,9 @@ getCopyData conn = withConnection conn loop
 
 -- | A connection must be in the @CopyIn@ state in order to call this
 --   function,  via a @COPY FROM STDIN@ query.  The connection remains
---   in a @CopyIn@ state after this function is called.   Note that 
+--   in a @CopyIn@ state after this function is called.   Note that
 --   the data does not need to represent a single row,  or even an
---   integral number of rows.  The net result of 
+--   integral number of rows.  The net result of
 --   @putCopyData conn a >> putCopyData conn b@
 --   is the same as @putCopyData conn c@ whenever @c == BS.append a b@.
 
