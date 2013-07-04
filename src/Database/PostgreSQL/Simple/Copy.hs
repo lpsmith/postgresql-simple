@@ -8,7 +8,23 @@
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
 --
--- mid-level support for COPY IN and COPY OUT.
+-- mid-level support for COPY IN and COPY OUT.   See
+-- <http://www.postgresql.org/docs/9.2/static/sql-copy.html> for
+-- more information.
+--
+-- To use this binding,  first call 'copy' with a @COPY FROM STDIN@
+-- or @COPY TO STDOUT@ query as documented in the link above.  Then
+-- call @getCopyData@ repeatedly until it returns 'CopyOutDone' in
+-- the former case,  or in the latter case call @putCopyData@ repeatedly
+-- and then finally call either @putCopyEnd@ to proceed or @putCopyError@
+-- to abort.
+--
+-- You cannot issue another query on the same connection while a copy
+-- is ongoing; this will result in an exception.   It is harmless to
+-- concurrently call @getNotification@ on a connection while it is in
+-- a copy in or copy out state,  however be aware that current versions
+-- of the PostgreSQL backend will not deliver notifications to a client
+-- while a transaction is ongoing.
 --
 ------------------------------------------------------------------------------
 
@@ -22,7 +38,7 @@ module Database.PostgreSQL.Simple.Copy
     ) where
 
 import           Control.Applicative
-import           Control.Concurrent ( threadWaitRead, threadWaitWrite )
+import           Control.Concurrent
 import           Control.Exception  ( throwIO )
 import qualified Data.Attoparsec.ByteString.Char8 as P
 import           Data.Int(Int64)
@@ -57,7 +73,6 @@ doCopy funcName conn template q = do
       PQ.BadResponse   -> throwResultError funcName result status
       PQ.NonfatalError -> throwResultError funcName result status
       PQ.FatalError    -> throwResultError funcName result status
-{-# INLINE doCopy #-}
 
 data CopyOutResult
    = CopyOutRow  !B.ByteString         -- ^ Data representing exactly one row
@@ -77,13 +92,12 @@ getCopyData conn = withConnection conn loop
 #endif
       case row of
         PQ.CopyOutRow rowdata -> return $! CopyOutRow rowdata
-        PQ.CopyOutDone        -> do
-            CopyOutDone <$> getCopyCommandTag funcName pqconn
+        PQ.CopyOutDone -> CopyOutDone <$> getCopyCommandTag funcName pqconn
 #if defined(mingw32_HOST_OS)
         PQ.CopyOutWouldBlock -> do
             fail (B.unpack funcName ++ ": the impossible happened")
 #else
-        PQ.CopyOutWouldBlock  -> do
+        PQ.CopyOutWouldBlock -> do
             mfd <- PQ.socket pqconn
             case mfd of
               Nothing -> throwIO (fdError funcName)
@@ -92,7 +106,7 @@ getCopyData conn = withConnection conn loop
                   _ <- PQ.consumeInput pqconn
                   loop pqconn
 #endif
-        PQ.CopyOutError       -> do
+        PQ.CopyOutError -> do
             mmsg <- PQ.errorMessage pqconn
             throwIO SqlError {
                           sqlState       = "",
