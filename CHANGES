@@ -1,6 +1,11 @@
+Version 0.3.4.0 (2013-07-23)
+  * Added direct support for COPY IN and COPY OUT,  without having
+    to use raw postgresql-libpq calls and postgresql-simple's Internal
+    module.
+
 Version 0.3.3.2 (2013-06-18)
   * Optimized the definition of `mconcat` in the Monoid instance for
-    the Query type,  courtesy of Joey Adams. 
+    the Query type,  courtesy of Joey Adams.
 
 Version 0.3.3.1 (2013-06-06)
   * `getNotification` now works on Windows,  albeit using a one-second
