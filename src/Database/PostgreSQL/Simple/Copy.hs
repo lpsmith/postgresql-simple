@@ -14,10 +14,10 @@
 --
 -- To use this binding,  first call 'copy' with a @COPY FROM STDIN@
 -- or @COPY TO STDOUT@ query as documented in the link above.  Then
--- call @getCopyData@ repeatedly until it returns 'CopyOutDone' in
--- the former case,  or in the latter, call @putCopyData@ repeatedly
--- and then finish by calling either @putCopyEnd@ to proceed or
--- @putCopyError@ to abort.
+-- call 'getCopyData' repeatedly until it returns 'CopyOutDone' in
+-- the former case,  or in the latter, call 'putCopyData' repeatedly
+-- and then finish by calling either 'putCopyEnd' to proceed or
+-- 'putCopyError' to abort.
 --
 -- You cannot issue another query on the same connection while a copy
 -- is ongoing; this will result in an exception.   It is harmless to

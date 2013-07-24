@@ -3,6 +3,10 @@ Version 0.3.4.0 (2013-07-23)
     to use raw postgresql-libpq calls and postgresql-simple's Internal
     module.
 
+  * Changed `getNotification` so that it throws a IOError (resource vanished)
+    exception instead of an ErrorCall exception when it fails to fetch
+    the connection's file descriptor from libpq.
+
 Version 0.3.3.2 (2013-06-18)
   * Optimized the definition of `mconcat` in the Monoid instance for
     the Query type,  courtesy of Joey Adams.
