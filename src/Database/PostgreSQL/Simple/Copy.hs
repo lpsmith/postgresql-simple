@@ -12,17 +12,17 @@
 -- <http://www.postgresql.org/docs/9.2/static/sql-copy.html> for
 -- more information.
 --
--- To use this binding,  first call 'copy' with a @COPY FROM STDIN@
--- or @COPY TO STDOUT@ query as documented in the link above.  Then
--- call 'getCopyData' repeatedly until it returns 'CopyOutDone' in
--- the former case,  or in the latter, call 'putCopyData' repeatedly
--- and then finish by calling either 'putCopyEnd' to proceed or
--- 'putCopyError' to abort.
+-- To use this binding,  first call 'copy' with an appropriate
+-- query as documented in the link above.  Then, in the case of a
+-- @COPY TO STDOUT@ query,  call 'getCopyData' repeatedly until it
+-- returns 'CopyOutDone'.   In the case of a @COPY FROM STDIN@
+-- query,  call 'putCopyData' repeatedly and then finish by calling
+-- either 'putCopyEnd' to proceed or 'putCopyError' to abort.
 --
 -- You cannot issue another query on the same connection while a copy
 -- is ongoing; this will result in an exception.   It is harmless to
 -- concurrently call @getNotification@ on a connection while it is in
--- a copy in or copy out state,  however be aware that current versions
+-- a @CopyIn@ or @CopyOut@ state,  however be aware that current versions
 -- of the PostgreSQL backend will not deliver notifications to a client
 -- while a transaction is ongoing.
 --
@@ -50,18 +50,22 @@ import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.Types
 import           Database.PostgreSQL.Simple.Internal
 
--- | Issue a query that changes a connection's state to @CopyIn@
---   (via a @COPY FROM STDIN@ query) or @CopyOut@ (via @COPY TO STDOUT@)
---   query.  Performs parameter subsitution.
+
+-- | Issue a @COPY FROM STDIN@ or @COPY TO STDOUT@ query.   In the former
+--   case, the connection's state will change to @CopyIn@;  in the latter,
+--   @CopyOut@.  The connection must be in the normal state in order
+--   to call this function.  Performs parameter subsitution.
 
 copy :: ( ToRow params ) => Connection -> Query -> params -> IO ()
 copy conn template qs = do
     q <- formatQuery conn template qs
     doCopy "Database.PostgreSQL.Simple.Copy.copy" conn template q
 
--- | Issue a query that changes a connection's state to @CopyIn@
---   (via a @COPY FROM STDIN@ query) or @CopyOut@ (via @COPY TO STDOUT@)
---   query.  Does not perform parameter subsitution.
+
+-- | Issue a @COPY FROM STDIN@ or @COPY TO STDOUT@ query.   In the former
+--   case, the connection's state will change to @CopyIn@;  in the latter,
+--   @CopyOut@.  The connection must be in the normal state in order
+--   to call this function.  Does not perform parameter subsitution.
 
 copy_ :: Connection -> Query -> IO ()
 copy_ conn (Query q) = do
@@ -92,10 +96,12 @@ data CopyOutResult
                                        --   number of rows returned.
      deriving (Eq, Typeable, Show)
 
--- | A connection must be in the @CopyOut@ state in order to call this
---   function,  via a @COPY TO STDOUT@ query.  If this returns a 'CopyOutRow',
---   the connection remains in the @CopyOut@ state, if it returns 'CopyOutDone',
---   then the connection has reverted to the ready state.
+
+-- | Retrieve some data from a @COPY TO STDOUT@ query.   A connection
+--   must be in the @CopyOut@ state in order to call this function.  If this
+--   returns a 'CopyOutRow', the connection remains in the @CopyOut@ state,
+--   if it returns 'CopyOutDone', then the connection has reverted to the
+--   ready state.
 
 getCopyData :: Connection -> IO CopyOutResult
 getCopyData conn = withConnection conn loop
@@ -133,13 +139,17 @@ getCopyData conn = withConnection conn loop
                           sqlErrorHint   = funcName
                         }
 
--- | A connection must be in the @CopyIn@ state in order to call this
---   function,  via a @COPY FROM STDIN@ query.  The connection remains
---   in a @CopyIn@ state after this function is called.   Note that
+
+-- | Feed some data to a @COPY FROM STDIN@ query.  Note that
 --   the data does not need to represent a single row,  or even an
 --   integral number of rows.  The net result of
 --   @putCopyData conn a >> putCopyData conn b@
 --   is the same as @putCopyData conn c@ whenever @c == BS.append a b@.
+--
+--   A connection must be in the @CopyIn@ state in order to call this
+--   function,  otherwise a 'SqlError' exception will result.  The
+--   connection remains in the @CopyIn@ state after this function
+--   is called.
 
 putCopyData :: Connection -> B.ByteString -> IO ()
 putCopyData conn dat = withConnection conn $ \pqconn -> do
@@ -148,10 +158,13 @@ putCopyData conn dat = withConnection conn $ \pqconn -> do
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyData"
 
 
--- | A connection must be in the @CopyIn@ state in order to call this
---   function,  via a @COPY FROM STDIN@ query.  Completes the COPY IN
---   operation,  changing the connection's state back to normal.
---   Returns the number of rows processed.
+-- | Completes a @COPY FROM STDIN@ query.  Returns the number of rows
+--   processed.
+--
+--   A connection must be in the @CopyIn@ state in order to call this
+--   function,  otherwise a 'SqlError' exception will result.  The
+--   connection's state changes back to normal after this function
+--   is called.
 
 putCopyEnd :: Connection -> IO Int64
 putCopyEnd conn = withConnection conn $ \pqconn -> do
@@ -160,9 +173,15 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyEnd"
 
--- | A connection must be in the @CopyIn@ state in order to call this
---   function,  via a @COPY FROM STDIN@ query.  Aborts the COPY IN
---   operation,  changing the connection's state back to normal.
+
+-- | Aborts a @COPY FROM STDIN@ query.  The string parameter is simply
+--   an arbitrary error message that may show up in the PostgreSQL
+--   server's log.
+--
+--   A connection must be in the @CopyIn@ state in order to call this
+--   function,  otherwise a 'SqlError' exception will result.  The
+--   connection's state changes back to normal after this function
+--   is called.
 
 putCopyError :: Connection -> B.ByteString -> IO ()
 putCopyError conn err = withConnection conn $ \pqconn -> do
