@@ -23,10 +23,12 @@ module Database.PostgreSQL.Simple.FromRow
      , numFieldsRemaining
      ) where
 
-import Control.Applicative (Applicative(..), (<$>))
-import Control.Monad (replicateM)
-import Data.ByteString (ByteString)
+import           Control.Applicative (Applicative(..), (<$>))
+import           Control.Monad (replicateM)
+import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
@@ -168,6 +170,11 @@ instance FromField a => FromRow [a] where
     fromRow = do
       n <- numFieldsRemaining
       replicateM n field
+
+instance FromField a => FromRow (Vector a) where
+    fromRow = do
+      n <- numFieldsRemaining
+      V.replicateM n field
 
 instance (FromRow a, FromRow b) => FromRow (a :. b) where
     fromRow = (:.) <$> fromRow <*> fromRow
