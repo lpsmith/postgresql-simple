@@ -67,7 +67,7 @@ data TypeInfo = TypeInfo
 
 instance FromRow TypeInfo where
     fromRow = TypeInfo <$> field <*> charF <*> charF <*> field <*> field
-      where charF = fieldWith (\_f dat -> Ok (B.head (unJust dat)))
+      where charF = fieldWith (\_f dat -> return (B.head (unJust dat)))
             unJust (Just x) = x
 
 type NameMap   = Map.Map B.ByteString TypeInfo
