@@ -128,6 +128,7 @@ refcursor
 record
 void
 uuid
+json
 |]
 
 instance IsString Blaze.Builder where
