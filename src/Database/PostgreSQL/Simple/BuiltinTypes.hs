@@ -72,6 +72,7 @@ data BuiltinType
    | Record
    | Void
    | UUID
+   | JSON
      deriving (Eq, Ord, Enum, Bounded, Read, Show, Typeable)
 
 builtin2oid :: BuiltinType -> PQ.Oid
@@ -122,6 +123,7 @@ builtin2oid typ = PQ.Oid $ case typ of
   Record      -> 2249
   Void        -> 2278
   UUID        -> 2950
+  JSON        ->  114
 
 oid2builtin :: PQ.Oid -> Maybe BuiltinType
 oid2builtin (PQ.Oid x) = case x of
@@ -171,6 +173,7 @@ oid2builtin (PQ.Oid x) = case x of
   2249 -> Just Record
   2278 -> Just Void
   2950 -> Just UUID
+  114  -> Just JSON
   _    -> Nothing
 
 builtin2typname :: BuiltinType -> ByteString
@@ -221,6 +224,7 @@ builtin2typname typ = case typ of
   Record      -> record
   Void        -> void
   UUID        -> uuid
+  JSON        -> json
 
 oid2typname :: PQ.Oid -> Maybe ByteString
 oid2typname (PQ.Oid x) = case x of
@@ -270,6 +274,7 @@ oid2typname (PQ.Oid x) = case x of
   2249 -> Just record
   2278 -> Just void
   2950 -> Just uuid
+  114  -> Just json
   _ -> Nothing
 
 bool :: ByteString
@@ -409,3 +414,6 @@ void = "void"
 
 uuid :: ByteString
 uuid = "uuid"
+
+json :: ByteString
+json = "json"
