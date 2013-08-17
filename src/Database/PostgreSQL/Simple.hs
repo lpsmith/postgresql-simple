@@ -626,7 +626,7 @@ fmtError msg q xs = throw FormatError {
 -- >
 -- > hello = do
 -- >   conn <- connect defaultConnectInfo
--- >   query conn "select 2 + 2"
+-- >   query_ conn "select 2 + 2"
 --
 -- A 'Query' value does not represent the actual query that will be
 -- executed, but is a template for constructing the final query.
