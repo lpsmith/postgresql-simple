@@ -102,7 +102,6 @@ import           Data.Typeable (Typeable, typeOf)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Database.PostgreSQL.Simple.Internal
--- import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
@@ -434,22 +433,10 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
 
 type Compat = PQ.Oid -> Bool
 
-{-
-mkCompats :: [BuiltinType] -> Compat
-mkCompats = foldl' f (Compat 0) . map mkCompat
-  where f (Compat a) (Compat b) = Compat (a .|. b)
-
-mkCompat :: BuiltinType -> Compat
-mkCompat = Compat . shiftL 1 . fromEnum
-
-compat :: Compat -> Compat -> Bool
-compat (Compat a) (Compat b) = a .&. b /= 0
--}
-
 okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
 okText   = $( mkCompats [ TI.name, TI.text, TI.char,
                           TI.bpchar, TI.varchar ] )
-okText'  = $( mkCompats [ TI.name, TI.text, TI.char, 
+okText'  = $( mkCompats [ TI.name, TI.text, TI.char,
                           TI.bpchar, TI.varchar, TI.unknown ] )
 okBinary = $( mkCompat TI.bytea )
 ok16 = $( mkCompat TI.int2 )
