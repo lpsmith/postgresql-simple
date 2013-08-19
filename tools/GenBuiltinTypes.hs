@@ -137,6 +137,7 @@ renderFile oidmap builtins = ([longstring|
 -- not be edited directly
 
 module Database.PostgreSQL.Simple.BuiltinTypes
+     {-# DEPRECATED "Use TypeInfo instead" #-}
      ( BuiltinType (..)
      , builtin2oid
      , oid2builtin
