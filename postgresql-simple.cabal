@@ -38,6 +38,7 @@ Library
      Database.PostgreSQL.Simple.ToRow
      Database.PostgreSQL.Simple.Transaction
      Database.PostgreSQL.Simple.TypeInfo
+     Database.PostgreSQL.Simple.TypeInfo.Macro
      Database.PostgreSQL.Simple.TypeInfo.Static
      Database.PostgreSQL.Simple.Types
      Database.PostgreSQL.Simple.Errors

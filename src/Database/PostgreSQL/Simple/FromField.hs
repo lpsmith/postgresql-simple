@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE PatternGuards, ScopedTypeVariables      #-}
-{-# LANGUAGE RecordWildCards                         #-}
+{-# LANGUAGE RecordWildCards, TemplateHaskell        #-}
 
 {- |
 Module:      Database.PostgreSQL.Simple.FromField
@@ -93,24 +93,22 @@ import           Control.Applicative
                    ( Applicative, (<|>), (<$>), pure )
 import           Control.Exception (Exception)
 import           Data.Attoparsec.Char8 hiding (Result)
-import           Data.Bits ((.&.), (.|.), shiftL)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
-import           Data.List (foldl')
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Data.Word (Word64)
 import           Database.PostgreSQL.Simple.Internal
-import           Database.PostgreSQL.Simple.BuiltinTypes
+-- import           Database.PostgreSQL.Simple.BuiltinTypes
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
-import           Database.PostgreSQL.Simple.TypeInfo as TypeInfo
-import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TypeInfo
+import           Database.PostgreSQL.Simple.TypeInfo as TI
+import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
+import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays as Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -243,7 +241,7 @@ instance FromField Null where
 -- | bool
 instance FromField Bool where
     fromField f bs
-      | typeOid f /= typoid (TypeInfo.bool) = returnError Incompatible f ""
+      | typeOid f /= typoid (TI.bool) = returnError Incompatible f ""
       | bs == Nothing                 = returnError UnexpectedNull f ""
       | bs == Just "t"                = pure True
       | bs == Just "f"                = pure False
@@ -252,7 +250,7 @@ instance FromField Bool where
 -- | \"char\"
 instance FromField Char where
     fromField f bs =
-        if typeOid f /= typoid (TypeInfo.char)
+        if typeOid f /= typoid (TI.char)
         then returnError Incompatible f ""
         else case bs of
                Nothing -> returnError UnexpectedNull f ""
@@ -289,30 +287,30 @@ instance FromField Integer where
 -- | int2, float4
 instance FromField Float where
     fromField = atto ok (realToFrac <$> double)
-        where ok = mkCompats [Float4,Int2]
+      where ok = $(mkCompats [TI.float4,TI.int2])
 
 -- | int2, int4, float4, float8
 instance FromField Double where
     fromField = atto ok double
-        where ok = mkCompats [Float4,Float8,Int2,Int4]
+      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4])
 
 -- | int2, int4, float4, float8, numeric
 instance FromField (Ratio Integer) where
     fromField = atto ok rational
-        where ok = mkCompats [Float4,Float8,Int2,Int4,Numeric]
+      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
 
 unBinary :: Binary t -> t
 unBinary (Binary x) = x
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField SB.ByteString where
-    fromField f dat = if typeOid f == typoid TypeInfo.bytea
+    fromField f dat = if typeOid f == typoid TI.bytea
                       then unBinary <$> fromField f dat
                       else doFromField f okText' (pure . B.copy) dat
 
 -- | oid
 instance FromField PQ.Oid where
-    fromField f dat = PQ.Oid <$> atto (mkCompat Oid) decimal f dat
+    fromField f dat = PQ.Oid <$> atto $(mkCompat TI.oid) decimal f dat
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField LB.ByteString where
@@ -349,39 +347,39 @@ instance FromField [Char] where
 
 -- | timestamptz
 instance FromField UTCTime where
-  fromField = ff TypeInfo.timestamptz "UTCTime" parseUTCTime
+  fromField = ff TI.timestamptz "UTCTime" parseUTCTime
 
 -- | timestamptz
 instance FromField ZonedTime where
-  fromField = ff TypeInfo.timestamptz "ZonedTime" parseZonedTime
+  fromField = ff TI.timestamptz "ZonedTime" parseZonedTime
 
 -- | timestamp
 instance FromField LocalTime where
-  fromField = ff TypeInfo.timestamp "LocalTime" parseLocalTime
+  fromField = ff TI.timestamp "LocalTime" parseLocalTime
 
 -- | date
 instance FromField Day where
-  fromField = ff TypeInfo.date "Day" parseDay
+  fromField = ff TI.date "Day" parseDay
 
 -- | time
 instance FromField TimeOfDay where
-  fromField = ff TypeInfo.time "TimeOfDay" parseTimeOfDay
+  fromField = ff TI.time "TimeOfDay" parseTimeOfDay
 
 -- | timestamptz
 instance FromField UTCTimestamp where
-  fromField = ff TypeInfo.timestamptz "UTCTimestamp" parseUTCTimestamp
+  fromField = ff TI.timestamptz "UTCTimestamp" parseUTCTimestamp
 
 -- | timestamptz
 instance FromField ZonedTimestamp where
-  fromField = ff TypeInfo.timestamptz "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff TI.timestamptz "ZonedTimestamp" parseZonedTimestamp
 
 -- | timestamp
 instance FromField LocalTimestamp where
-  fromField = ff TypeInfo.timestamp "LocalTimestamp" parseLocalTimestamp
+  fromField = ff TI.timestamp "LocalTimestamp" parseLocalTimestamp
 
 -- | date
 instance FromField Date where
-  fromField = ff TypeInfo.date "Date" parseDate
+  fromField = ff TI.date "Date" parseDate
 
 ff :: TypeInfo -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
@@ -415,7 +413,7 @@ instance (FromField a, Typeable a) => FromField (Vector a) where
     fromField f mdat = do
         info <- typeInfo f
         case info of
-          TypeInfo.Array{} ->
+          TI.Array{} ->
               case mdat of
                 Nothing  -> returnError UnexpectedNull f ""
                 Just dat -> do
@@ -434,8 +432,9 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
       where f' | Arrays.Array _ <- item = f
                | otherwise              = fElem
 
-newtype Compat = Compat Word64
+type Compat = PQ.Oid -> Bool
 
+{-
 mkCompats :: [BuiltinType] -> Compat
 mkCompats = foldl' f (Compat 0) . map mkCompat
   where f (Compat a) (Compat b) = Compat (a .|. b)
@@ -445,14 +444,17 @@ mkCompat = Compat . shiftL 1 . fromEnum
 
 compat :: Compat -> Compat -> Bool
 compat (Compat a) (Compat b) = a .&. b /= 0
+-}
 
 okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
-okText   = mkCompats [Name,Text,Char,BpChar,VarChar]
-okText'  = mkCompats [Name,Text,Char,BpChar,VarChar,Unknown]
-okBinary = mkCompats [ByteA]
-ok16 = mkCompats [Int2]
-ok32 = mkCompats [Int2,Int4]
-ok64 = mkCompats [Int2,Int4,Int8]
+okText   = $( mkCompats [ TI.name, TI.text, TI.char,
+                          TI.bpchar, TI.varchar ] )
+okText'  = $( mkCompats [ TI.name, TI.text, TI.char, 
+                          TI.bpchar, TI.varchar, TI.unknown ] )
+okBinary = $( mkCompat TI.bytea )
+ok16 = $( mkCompat TI.int2 )
+ok32 = $( mkCompats [TI.int2,TI.int4] )
+ok64 = $( mkCompats [TI.int2,TI.int4,TI.int8] )
 #if WORD_SIZE_IN_BITS < 64
 okInt = ok32
 #else
@@ -462,9 +464,8 @@ okInt = ok64
 doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Conversion a)
           -> Maybe ByteString -> Conversion a
-doFromField f types cvt (Just bs)
-    | Just typ <- oid2builtin (typeOid f)
-    , mkCompat typ `compat` types = cvt bs
+doFromField f isCompat cvt (Just bs)
+    | isCompat (typeOid f) = cvt bs
     | otherwise = returnError Incompatible f "types incompatible"
 doFromField f _ _ _ = returnError UnexpectedNull f ""
 
