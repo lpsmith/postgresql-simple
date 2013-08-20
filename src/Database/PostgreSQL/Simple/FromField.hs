@@ -242,7 +242,7 @@ instance FromField Null where
 -- | bool
 instance FromField Bool where
     fromField f bs
-      | typeOid f /= typoid (TI.bool) = returnError Incompatible f ""
+      | typeOid f /= $(inlineTypoid TI.bool) = returnError Incompatible f ""
       | bs == Nothing                 = returnError UnexpectedNull f ""
       | bs == Just "t"                = pure True
       | bs == Just "f"                = pure False
@@ -251,7 +251,7 @@ instance FromField Bool where
 -- | \"char\"
 instance FromField Char where
     fromField f bs =
-        if typeOid f /= typoid (TI.char)
+        if typeOid f /= $(inlineTypoid TI.char)
         then returnError Incompatible f ""
         else case bs of
                Nothing -> returnError UnexpectedNull f ""
@@ -305,13 +305,13 @@ unBinary (Binary x) = x
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField SB.ByteString where
-    fromField f dat = if typeOid f == typoid TI.bytea
+    fromField f dat = if typeOid f == $(inlineTypoid TI.bytea)
                       then unBinary <$> fromField f dat
                       else doFromField f okText' (pure . B.copy) dat
 
 -- | oid
 instance FromField PQ.Oid where
-    fromField f dat = PQ.Oid <$> atto $(mkCompat TI.oid) decimal f dat
+    fromField f dat = PQ.Oid <$> atto (== $(inlineTypoid TI.oid)) decimal f dat
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField LB.ByteString where
@@ -348,44 +348,44 @@ instance FromField [Char] where
 
 -- | timestamptz
 instance FromField UTCTime where
-  fromField = ff TI.timestamptz "UTCTime" parseUTCTime
+  fromField = ff $(inlineTypoid TI.timestamptz) "UTCTime" parseUTCTime
 
 -- | timestamptz
 instance FromField ZonedTime where
-  fromField = ff TI.timestamptz "ZonedTime" parseZonedTime
+  fromField = ff $(inlineTypoid TI.timestamptz) "ZonedTime" parseZonedTime
 
 -- | timestamp
 instance FromField LocalTime where
-  fromField = ff TI.timestamp "LocalTime" parseLocalTime
+  fromField = ff $(inlineTypoid TI.timestamp) "LocalTime" parseLocalTime
 
 -- | date
 instance FromField Day where
-  fromField = ff TI.date "Day" parseDay
+  fromField = ff $(inlineTypoid TI.date) "Day" parseDay
 
 -- | time
 instance FromField TimeOfDay where
-  fromField = ff TI.time "TimeOfDay" parseTimeOfDay
+  fromField = ff $(inlineTypoid TI.time) "TimeOfDay" parseTimeOfDay
 
 -- | timestamptz
 instance FromField UTCTimestamp where
-  fromField = ff TI.timestamptz "UTCTimestamp" parseUTCTimestamp
+  fromField = ff $(inlineTypoid TI.timestamptz) "UTCTimestamp" parseUTCTimestamp
 
 -- | timestamptz
 instance FromField ZonedTimestamp where
-  fromField = ff TI.timestamptz "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff $(inlineTypoid TI.timestamptz) "ZonedTimestamp" parseZonedTimestamp
 
 -- | timestamp
 instance FromField LocalTimestamp where
-  fromField = ff TI.timestamp "LocalTimestamp" parseLocalTimestamp
+  fromField = ff $(inlineTypoid TI.timestamp) "LocalTimestamp" parseLocalTimestamp
 
 -- | date
 instance FromField Date where
-  fromField = ff TI.date "Date" parseDate
+  fromField = ff $(inlineTypoid TI.date) "Date" parseDate
 
-ff :: TypeInfo -> String -> (B8.ByteString -> Either String a)
+ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
-ff pgType hsType parse f mstr =
-  if typeOid f /= typoid pgType
+ff compatOid hsType parse f mstr =
+  if typeOid f /= compatOid
   then err Incompatible ""
   else case mstr of
          Nothing -> err UnexpectedNull ""
@@ -440,8 +440,8 @@ okText   = $( mkCompats [ TI.name, TI.text, TI.char,
                           TI.bpchar, TI.varchar ] )
 okText'  = $( mkCompats [ TI.name, TI.text, TI.char,
                           TI.bpchar, TI.varchar, TI.unknown ] )
-okBinary = $( mkCompat TI.bytea )
-ok16 = $( mkCompat TI.int2 )
+okBinary = (== $( inlineTypoid TI.bytea ))
+ok16 = (== $( inlineTypoid TI.int2 ))
 ok32 = $( mkCompats [TI.int2,TI.int4] )
 ok64 = $( mkCompats [TI.int2,TI.int4,TI.int8] )
 #if WORD_SIZE_IN_BITS < 64
