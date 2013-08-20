@@ -1,6 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings  #-}
-
+------------------------------------------------------------------------------
+-- |
+-- Module:      Database.PostgreSQL.Simple.Errors
+-- Copyright:   (c) 2012-2013 Leonid Onokhov, Joey Adams
+-- License:     BSD3
+-- Maintainer:  Leon P Smith <leon@melding-monads.com>
+-- Stability:   experimental
+--
 -- | Module for parsing errors from postgresql error messages.
 --  Currently only parses integrity violation errors (class 23).
 --
