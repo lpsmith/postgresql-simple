@@ -210,8 +210,9 @@ renderFile byOid byName names = ([longstring|
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
 --
--- Note that this module is semi-internal,  and you probably want to use
--- Database.PostgreSQL.Simple.TypeInfo instead.
+-- This module contains portions of the @pg_type@ table that are relevant
+-- to postgresql-simple and are believed to not change between PostgreSQL
+-- versions.
 --
 ------------------------------------------------------------------------------
 

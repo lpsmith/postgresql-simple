@@ -6,7 +6,7 @@
 {- |
 Module:      Database.PostgreSQL.Simple.FromField
 Copyright:   (c) 2011 MailRank, Inc.
-             (c) 2011-2012 Leon P Smith
+             (c) 2011-2013 Leon P Smith
 License:     BSD3
 Maintainer:  Leon P Smith <leon@melding-monads.com>
 Stability:   experimental
@@ -31,13 +31,14 @@ might look like for a UUID type that implements the @Read@ class:
 
 @
 import Data.UUID ( UUID )
-import Database.PostgreSQL.Simple.BuiltinTypes
-                 ( BuiltinType(UUID), builtin2oid )
+import Database.PostgreSQL.Simple.FromField
+         ( typeOid, returnError, ResultError(..) )
+import Database.PostgreSQL.Simple.TypeInfo.Static (typoid, uuid)
 import qualified Data.ByteString as B
 
 instance FromField UUID where
    fromField f mdata =
-      if typeOid f /= builtin2oid UUID
+      if typeOid f /= typoid uuid
         then returnError Incompatible f \"\"
         else case B.unpack \`fmap\` mdata of
                Nothing  -> returnError UnexpectedNull f \"\"
@@ -49,8 +50,9 @@ instance FromField UUID where
 
 Note that because PostgreSQL's @uuid@ type is built into postgres and is
 not provided by an extension,  the 'typeOid' of @uuid@ does not change and
-thus we can examine it directly.   Here,  we simply pull the type oid out
-of the static table provided by postgresql-simple.
+thus we can examine it directly.  One could hard-code the type oid,  or
+obtain it by other means, but in this case we simply pull it out of the
+static table provided by postgresql-simple.
 
 On the other hand if the type is provided by an extension,  such as
 @PostGIS@ or @hstore@,  then the 'typeOid' is not stable and can vary from
@@ -175,9 +177,9 @@ class FromField a where
 --
 --   More concretely,  it returns the @typname@ column associated with the
 --   type oid in the @pg_type@ table.  First, postgresql-simple will check
---   built-in, static table.   If the type oid is not there, postgresql-simple
---   will check a per-connection cache,  and then finally query the database's
---   meta-schema.
+--   the built-in, static table.   If the type oid is not there,
+--   postgresql-simple will check a per-connection cache,  and then
+--   finally query the database's meta-schema.
 
 typename :: Field -> Conversion ByteString
 typename field = typname <$> typeInfo field
