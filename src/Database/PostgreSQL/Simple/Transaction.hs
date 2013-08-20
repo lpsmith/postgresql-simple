@@ -40,6 +40,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
+import Database.PostgreSQL.Simple.Errors
 import Database.PostgreSQL.Simple.Compat (mask, (<>))
 
 
@@ -244,20 +245,3 @@ rollbackToAndReleaseSavepoint conn (Savepoint name) =
     execute_ conn sql >> return ()
   where
     sql = "ROLLBACK TO SAVEPOINT " <> name <> "; RELEASE SAVEPOINT " <> name
-
-------------------------------------------------------------------------
--- Error predicates
---
--- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
-
-isSerializationError :: SqlError -> Bool
-isSerializationError = isSqlState "40001"
-
-isNoActiveTransactionError :: SqlError -> Bool
-isNoActiveTransactionError = isSqlState "25P01"
-
-isFailedTransactionError :: SqlError -> Bool
-isFailedTransactionError = isSqlState "25P02"
-
-isSqlState :: ByteString -> SqlError -> Bool
-isSqlState s SqlError{..} = sqlState == s

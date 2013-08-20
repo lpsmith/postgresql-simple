@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings  #-}
 
--- | Module for parsing errors from posgresql error messages.
---  Currently in only parses integrity violation errors (class 23).
+-- | Module for parsing errors from postgresql error messages.
+--  Currently only parses integrity violation errors (class 23).
 --
 -- /Note: Success of parsing may depend on language settings./
 ----------------------------------------------------------
@@ -11,6 +11,9 @@ module Database.PostgreSQL.Simple.Errors
        , constraintViolation
        , constraintViolationE
        , catchViolation
+       , isSerializationError
+       , isNoActiveTransactionError
+       , isFailedTransactionError
        )
        where
 
@@ -106,3 +109,20 @@ parseQ2 = (,) <$> parseQ1 <*> parseQ1
 
 parseMaybe :: Parser a -> ByteString -> Maybe a
 parseMaybe p b = either (const Nothing) Just $ parseOnly p b
+
+------------------------------------------------------------------------
+-- Error predicates
+--
+-- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+
+isSerializationError :: SqlError -> Bool
+isSerializationError = isSqlState "40001"
+
+isNoActiveTransactionError :: SqlError -> Bool
+isNoActiveTransactionError = isSqlState "25P01"
+
+isFailedTransactionError :: SqlError -> Bool
+isFailedTransactionError = isSqlState "25P02"
+
+isSqlState :: ByteString -> SqlError -> Bool
+isSqlState s SqlError{..} = sqlState == s
