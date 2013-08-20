@@ -53,7 +53,7 @@ import           Database.PostgreSQL.Simple.Internal
 
 -- | Issue a @COPY FROM STDIN@ or @COPY TO STDOUT@ query.   In the former
 --   case, the connection's state will change to @CopyIn@;  in the latter,
---   @CopyOut@.  The connection must be in the normal state in order
+--   @CopyOut@.  The connection must be in the ready state in order
 --   to call this function.  Performs parameter subsitution.
 
 copy :: ( ToRow params ) => Connection -> Query -> params -> IO ()
@@ -64,7 +64,7 @@ copy conn template qs = do
 
 -- | Issue a @COPY FROM STDIN@ or @COPY TO STDOUT@ query.   In the former
 --   case, the connection's state will change to @CopyIn@;  in the latter,
---   @CopyOut@.  The connection must be in the normal state in order
+--   @CopyOut@.  The connection must be in the ready state in order
 --   to call this function.  Does not perform parameter subsitution.
 
 copy_ :: Connection -> Query -> IO ()
@@ -163,7 +163,7 @@ putCopyData conn dat = withConnection conn $ \pqconn -> do
 --
 --   A connection must be in the @CopyIn@ state in order to call this
 --   function,  otherwise a 'SqlError' exception will result.  The
---   connection's state changes back to normal after this function
+--   connection's state changes back to ready after this function
 --   is called.
 
 putCopyEnd :: Connection -> IO Int64
@@ -180,7 +180,7 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
 --
 --   A connection must be in the @CopyIn@ state in order to call this
 --   function,  otherwise a 'SqlError' exception will result.  The
---   connection's state changes back to normal after this function
+--   connection's state changes back to ready after this function
 --   is called.
 
 putCopyError :: Connection -> B.ByteString -> IO ()

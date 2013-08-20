@@ -59,8 +59,9 @@ import Control.Monad.Trans.Class
 -- exception will be thrown.
 --
 -- Note that 'field' evaluates it's result to WHNF, so the caveats listed in
--- previous versions of postgresql-simple no longer apply.  Instead, look
--- at the caveats associated with user-defined implementations of 'fromRow'.
+-- mysql-simple and very early versions of postgresql-simple no longer apply.
+-- Instead, look at the caveats associated with user-defined implementations
+-- of 'fromField'.
 
 class FromRow a where
     fromRow :: RowParser a

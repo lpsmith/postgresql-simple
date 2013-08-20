@@ -34,9 +34,9 @@ mkCompats tys = [| \(Oid x) -> $(caseE [| x |] (map alt tys ++ [catchAll])) |]
      catchAll :: MatchQ
      catchAll = match wildP (normalB [| False |]) []
 
--- | Literally substitute the value of a TypeInfo expression.  Returns
---   an expression of type 'Oid'.  Useful because GHC tends not to
---   fold constants.
+-- | Literally substitute the 'typoid' of a 'TypeInfo' expression.
+--   Returns an expression of type 'Oid'.  Useful because GHC tends
+--   not to fold constants.
 inlineTypoid :: TypeInfo -> ExpQ
 inlineTypoid ty = [| Oid $(litE (getTypoid ty)) |]
 
