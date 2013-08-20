@@ -1,3 +1,14 @@
+Version 0.3.6.0 (2013-08-19)
+  * Added the json type to BuiltinTypes and TypeInfo.Static, courtesy of
+    Manuel Gómez.
+
+  * Removed the remaining internal dependencies on BuiltinTypes from
+    FromField.   Added the TypeInfo.Macro module as a result.
+
+  * Deprecated the BuiltinTypes module,  which will be removed several
+    months from now.  Fixed the example code in FromField to reflect
+    this change.
+
 Version 0.3.5.0 (2013-08-09)
   * Added an FromRow instance for Vector,  semantically identical to the
     existing FromRow instance for [],  courtesy of Doug Beardsley
