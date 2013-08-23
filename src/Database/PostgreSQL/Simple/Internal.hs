@@ -44,6 +44,7 @@ import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.Class
 import           GHC.IO.Exception
 
 -- | A Field represents metadata about a particular field
@@ -297,7 +298,7 @@ newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Conversion) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
 liftRowParser :: IO a -> RowParser a
-liftRowParser = lift . lift
+liftRowParser = RP . lift . lift . liftConversion
 
 newtype Conversion a = Conversion { runConversion :: Connection -> IO (Ok a) }
 
