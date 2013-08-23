@@ -296,7 +296,13 @@ data Row = Row {
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Conversion) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
+liftRowParser :: IO a -> RowParser a
+liftRowParser = lift . lift
+
 newtype Conversion a = Conversion { runConversion :: Connection -> IO (Ok a) }
+
+liftConversion :: IO a -> Conversion a
+liftConversion m = Conversion (\_ -> Ok <$> m)
 
 instance Functor Conversion where
    fmap f m = Conversion $ \conn -> (fmap . fmap) f (runConversion m conn)
