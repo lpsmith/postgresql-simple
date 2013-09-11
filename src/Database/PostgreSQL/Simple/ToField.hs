@@ -18,12 +18,14 @@ module Database.PostgreSQL.Simple.ToField
     (
       Action(..)
     , ToField(..)
+    , toJSONField
     , inQuotes
     ) where
 
 import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromChar)
 import Blaze.Text (integral, double, float)
+import qualified Data.Aeson as JSON
 import Data.ByteString (ByteString)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
@@ -229,6 +231,18 @@ instance (ToField a) => ToField (Vector a) where
         [Plain (fromChar ']')]
         -- Because the ARRAY[...] input syntax is being used, it is possible
         -- that the use of type-specific separator characters is unnecessary.
+
+instance ToField JSON.Value where
+    toField = toField . JSON.encode
+
+-- | Convert a Haskell value to a JSON 'JSON.Value' using
+-- 'JSON.toJSON' and convert that to a field using 'toField'.
+--
+-- This can be used as the default implementation for the 'toField'
+-- method for Haskell types that have a JSON representation in
+-- PostgreSQL.
+toJSONField :: JSON.ToJSON a => a -> Action
+toJSONField = toField . JSON.toJSON
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --

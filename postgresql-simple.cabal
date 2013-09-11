@@ -52,11 +52,12 @@ Library
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
+    aeson >= 0.6,
     attoparsec >= 0.10.3,
     base < 5,
     blaze-builder,
     blaze-textual,
-    bytestring >= 0.9,
+    bytestring >= 0.10,
     containers,
     postgresql-libpq >= 0.6.2,
     template-haskell,
