@@ -228,6 +228,12 @@ tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result col
 format :: Field -> PQ.Format
 format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
 
+-- | void
+instance FromField () where
+  fromField f _bs
+     | typeOid f /= $(inlineTypoid TI.void) = returnError Incompatible f ""
+     | otherwise = pure ()
+
 -- | For dealing with null values.  Compatible with any postgresql type
 --   compatible with type @a@.  Note that the type is not checked if
 --   the value is null, although it is inadvisable to rely on this
