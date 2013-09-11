@@ -94,6 +94,7 @@ module Database.PostgreSQL.Simple.FromField
 import           Control.Applicative
                    ( Applicative, (<|>), (<$>), pure )
 import           Control.Exception (Exception)
+import qualified Data.Aeson as JSON
 import           Data.Attoparsec.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -440,6 +441,17 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
     parseIt item = (fromField f' . Just . fmt delim) item
       where f' | Arrays.Array _ <- item = f
                | otherwise              = fElem
+
+-- | json
+instance FromField JSON.Value where
+    fromField f Nothing = returnError UnexpectedNull f ""
+    fromField f (Just bs)
+        | typeOid f /= $(inlineTypoid TI.json) =
+            returnError Incompatible f ""
+        | otherwise =
+            case JSON.eitherDecode' $ LB.fromStrict bs of
+                Left  err -> returnError ConversionFailed f err
+                Right val -> pure val
 
 type Compat = PQ.Oid -> Bool
 

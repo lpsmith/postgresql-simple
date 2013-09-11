@@ -24,6 +24,7 @@ module Database.PostgreSQL.Simple.ToField
 import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
 import Blaze.ByteString.Builder.Char8 (fromChar)
 import Blaze.Text (integral, double, float)
+import qualified Data.Aeson as JSON
 import Data.ByteString (ByteString)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
@@ -229,6 +230,9 @@ instance (ToField a) => ToField (Vector a) where
         [Plain (fromChar ']')]
         -- Because the ARRAY[...] input syntax is being used, it is possible
         -- that the use of type-specific separator characters is unnecessary.
+
+instance ToField JSON.Value where
+    toField = toField . JSON.encode
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --
