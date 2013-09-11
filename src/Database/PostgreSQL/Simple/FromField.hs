@@ -446,14 +446,15 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
 
 -- | json
 instance FromField JSON.Value where
-    fromField f Nothing = returnError UnexpectedNull f ""
-    fromField f (Just bs)
-        | typeOid f /= $(inlineTypoid TI.json) =
-            returnError Incompatible f ""
-        | otherwise =
-            case JSON.eitherDecode' $ LB.fromStrict bs of
-                Left  err -> returnError ConversionFailed f err
-                Right val -> pure val
+    fromField f mbs =
+      if typeOid f /= $(inlineTypoid TI.json)
+      then returnError Incompatible f ""
+      else case mbs of
+             Nothing -> returnError UnexpectedNull f ""
+             Just bs ->
+                 case JSON.eitherDecode' $ LB.fromStrict bs of
+                   Left  err -> returnError ConversionFailed f err
+                   Right val -> pure val
 
 -- | Parse a field to a JSON 'JSON.Value' and convert that into a
 -- Haskell value using 'JSON.fromJSON'.
