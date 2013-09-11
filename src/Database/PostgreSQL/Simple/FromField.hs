@@ -87,6 +87,8 @@ module Database.PostgreSQL.Simple.FromField
     , typeOid
     , PQ.Oid(..)
     , PQ.Format(..)
+
+    , fromJSONField
     ) where
 
 #include "MachDeps.h"
@@ -452,6 +454,23 @@ instance FromField JSON.Value where
             case JSON.eitherDecode' $ LB.fromStrict bs of
                 Left  err -> returnError ConversionFailed f err
                 Right val -> pure val
+
+-- | Parse a field to a JSON 'JSON.Value' and convert that into a
+-- Haskell value using 'JSON.fromJSON'.
+--
+-- This can be used as the default implementation for the 'fromField'
+-- method for Haskell types that have a JSON representation in
+-- PostgreSQL.
+--
+-- The 'Typeable' constraint is required to show more informative
+-- error messages when parsing fails.
+fromJSONField :: (JSON.FromJSON a, Typeable a) => FieldParser a
+fromJSONField f mbBs = do
+    value <- fromField f mbBs
+    case JSON.fromJSON value of
+        JSON.Error err -> returnError ConversionFailed f $
+                            "JSON decoding error: " ++ err
+        JSON.Success x -> pure x
 
 type Compat = PQ.Oid -> Bool
 

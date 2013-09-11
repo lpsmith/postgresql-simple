@@ -18,6 +18,7 @@ module Database.PostgreSQL.Simple.ToField
     (
       Action(..)
     , ToField(..)
+    , toJSONField
     , inQuotes
     ) where
 
@@ -233,6 +234,15 @@ instance (ToField a) => ToField (Vector a) where
 
 instance ToField JSON.Value where
     toField = toField . JSON.encode
+
+-- | Convert a Haskell value to a JSON 'JSON.Value' using
+-- 'JSON.toJSON' and convert that to a field using 'toField'.
+--
+-- This can be used as the default implementation for the 'toField'
+-- method for Haskell types that have a JSON representation in
+-- PostgreSQL.
+toJSONField :: JSON.ToJSON a => a -> Action
+toJSONField = toField . JSON.toJSON
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --
