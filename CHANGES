@@ -1,3 +1,7 @@
+Version 0.3.7.1 (2013-09-12)
+  * Relaxed the dependency on bytestring-0.10 back to bytestring-0.9,
+    courtesy of Michael Snoyman
+
 Version 0.3.7.0 (2013-09-11)
   * Added `aeson` as a dependency.
 
