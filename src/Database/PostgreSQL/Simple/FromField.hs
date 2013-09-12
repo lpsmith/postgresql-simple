@@ -452,7 +452,7 @@ instance FromField JSON.Value where
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""
              Just bs ->
-                 case JSON.eitherDecode' $ LB.fromStrict bs of
+                 case JSON.eitherDecode' $ LB.fromChunks [bs] of
                    Left  err -> returnError ConversionFailed f err
                    Right val -> pure val
 
