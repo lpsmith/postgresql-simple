@@ -1,3 +1,19 @@
+Version 0.3.7.0 (2013-09-11)
+  * Added `aeson` as a dependency
+
+  * Added ToField and FromField instances for aeson's JSON.Value type,
+    courtesy of Bas van Dijk.
+
+  * Added toJSONField and fromJSONField helper functions for declaring
+    FromField/ToField JSON instances to other Haskell types, courtesy
+    of Bas van Dijk.
+
+  * Added a FromField instance for (), corresponding to postgresql's void
+    type.
+
+  * Added liftConversion and liftRowParser functions to the Internal
+    module, for lifting IO actions into the respective monads.
+
 Version 0.3.6.0 (2013-08-19)
   * Added the json type to BuiltinTypes and TypeInfo.Static, courtesy of
     Manuel Gómez.
