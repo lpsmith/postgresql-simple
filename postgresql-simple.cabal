@@ -57,7 +57,7 @@ Library
     base < 5,
     blaze-builder,
     blaze-textual,
-    bytestring >= 0.10,
+    bytestring >= 0.9,
     containers,
     postgresql-libpq >= 0.6.2,
     template-haskell,
