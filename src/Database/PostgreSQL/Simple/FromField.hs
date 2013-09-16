@@ -32,9 +32,9 @@ might look like for a UUID type that implements the @Read@ class:
 @
 import Data.UUID ( UUID )
 import Database.PostgreSQL.Simple.FromField
-         ( typeOid, returnError, ResultError(..) )
+       ( FromField (fromField) , typeOid, returnError, ResultError (..) )
 import Database.PostgreSQL.Simple.TypeInfo.Static (typoid, uuid)
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 
 instance FromField UUID where
    fromField f mdata =
@@ -45,7 +45,7 @@ instance FromField UUID where
                Just dat ->
                   case [ x | (x,t) <- reads dat, (\"\",\"\") <- lex t ] of
                     [x] -> return x
-                    _   -> returnError ConversionError f dat
+                    _   -> returnError ConversionFailed f dat
 @
 
 Note that because PostgreSQL's @uuid@ type is built into postgres and is
