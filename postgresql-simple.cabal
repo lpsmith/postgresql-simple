@@ -52,7 +52,7 @@ Library
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
-    aeson >= 0.6,
+    aeson >= 0.6.2,
     attoparsec >= 0.10.3,
     base < 5,
     blaze-builder,
