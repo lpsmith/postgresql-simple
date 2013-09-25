@@ -16,6 +16,8 @@
 module Database.PostgreSQL.Simple.TypeInfo.Macro
     ( mkCompats
     , inlineTypoid
+    , inlineTypoidP
+    , getTypoid
     ) where
 
 import Database.PostgreSQL.Simple.TypeInfo.Static
@@ -29,7 +31,7 @@ mkCompats :: [TypeInfo] -> ExpQ
 mkCompats tys = [| \(Oid x) -> $(caseE [| x |] (map alt tys ++ [catchAll])) |]
    where
      alt :: TypeInfo -> MatchQ
-     alt ty = match (litP (getTypoid ty)) (normalB [| True |]) []
+     alt ty = match (inlineTypoidP ty) (normalB [| True |]) []
 
      catchAll :: MatchQ
      catchAll = match wildP (normalB [| False |]) []
@@ -39,6 +41,9 @@ mkCompats tys = [| \(Oid x) -> $(caseE [| x |] (map alt tys ++ [catchAll])) |]
 --   not to fold constants.
 inlineTypoid :: TypeInfo -> ExpQ
 inlineTypoid ty = [| Oid $(litE (getTypoid ty)) |]
+
+inlineTypoidP :: TypeInfo -> PatQ
+inlineTypoidP ty = litP (getTypoid ty)
 
 getTypoid :: TypeInfo -> Lit
 getTypoid ty = let (Oid x) = typoid ty in integerL (fromIntegral x)
