@@ -16,8 +16,6 @@
 module Database.PostgreSQL.Simple.TypeInfo.Macro
     ( mkCompats
     , inlineTypoid
-    , inlineTypoidP
-    , getTypoid
     ) where
 
 import Database.PostgreSQL.Simple.TypeInfo.Static
