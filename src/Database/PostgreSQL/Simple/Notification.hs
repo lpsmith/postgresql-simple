@@ -32,6 +32,7 @@ module Database.PostgreSQL.Simple.Notification
      ( Notification(..)
      , getNotification
      , getNotificationNonBlocking
+     , getBackendPID
      ) where
 
 import           Control.Concurrent
@@ -101,3 +102,14 @@ getNotificationNonBlocking conn =
               case mmsg' of
                 Just msg -> return $! Just $! convertNotice msg
                 Nothing  -> return Nothing
+
+-- | Returns the process 'CPid' of the backend server process
+-- handling this connection.
+--
+-- The backend PID is useful for debugging purposes and for comparison
+-- to NOTIFY messages (which include the PID of the notifying backend
+-- process). Note that the PID belongs to a process executing on the
+-- database server host, not the local host!
+
+getBackendPID :: Connection -> IO CPid
+getBackendPID conn = withConnection conn PQ.backendPID
