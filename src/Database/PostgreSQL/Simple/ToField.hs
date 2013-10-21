@@ -235,7 +235,7 @@ instance (ToField a) => ToField (Vector a) where
         -- that the use of type-specific separator characters is unnecessary.
 
 instance ToField UUID where
-    toField = toField . UUID.toASCIIBytes
+    toField = Plain . inQuotes . fromByteString . UUID.toASCIIBytes
 
 instance ToField JSON.Value where
     toField = toField . JSON.encode
