@@ -112,7 +112,7 @@ instance ToField HStoreBuilder where
     toField  Empty    = toField (BS.empty)
     toField (Comma x) = toField (Blaze.toLazyByteString x)
 
-newtype HStoreList = HStoreList [(Text,Text)] deriving (Typeable, Show)
+newtype HStoreList = HStoreList {fromHStoreList :: [(Text,Text)]} deriving (Typeable, Show)
 
 -- | hstore
 instance ToHStore HStoreList where
@@ -139,7 +139,7 @@ instance FromField HStoreList where
                      Right (Right val) ->
                          return val
 
-newtype HStoreMap  = HStoreMap (Map Text Text) deriving (Eq, Ord, Typeable, Show)
+newtype HStoreMap  = HStoreMap {fromHStoreMap :: Map Text Text} deriving (Eq, Ord, Typeable, Show)
 
 instance ToHStore HStoreMap where
     toHStore (HStoreMap xs) = Map.foldrWithKey f mempty xs
