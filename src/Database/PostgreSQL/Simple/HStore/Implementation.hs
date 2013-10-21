@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, ViewPatterns, DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -23,6 +23,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as P (isSpace_w8)
 import qualified Data.ByteString as BS
 import           Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy          as BL
+#if !MIN_VERSION_bytestring(0,10,0)
+import qualified Data.ByteString.Lazy.Internal as BL (foldrChunks)
+#endif
 import           Data.Map(Map)
 import qualified Data.Map as Map
 import           Data.Text(Text)
