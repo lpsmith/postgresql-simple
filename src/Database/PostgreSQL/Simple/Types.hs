@@ -109,7 +109,7 @@ newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | Wrap binary data for use as a @bytea@ value.
-newtype Binary a = Binary a
+newtype Binary a = Binary {fromBinary :: a}
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without
