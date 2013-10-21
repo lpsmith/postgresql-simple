@@ -36,7 +36,6 @@ module Database.PostgreSQL.Simple.Transaction
     ) where
 
 import qualified Control.Exception as E
-import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
