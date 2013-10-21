@@ -122,6 +122,8 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import           Data.UUID   (UUID)
+import qualified Data.UUID as UUID
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -443,6 +445,18 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
     parseIt item = (fromField f' . Just . fmt delim) item
       where f' | Arrays.Array _ <- item = f
                | otherwise              = fElem
+
+-- | uuid
+instance FromField UUID where
+    fromField f mbs =
+      if typeOid f /= $(inlineTypoid TI.uuid)
+      then returnError Incompatible f ""
+      else case mbs of
+             Nothing -> returnError UnexpectedNull f ""
+             Just bs ->
+                 case UUID.fromASCIIBytes bs of
+                   Nothing -> returnError ConversionFailed f "Invalid UUID"
+                   Just uuid -> pure uuid
 
 -- | json
 instance FromField JSON.Value where
