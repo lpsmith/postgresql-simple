@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, FlexibleInstances #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -23,8 +23,9 @@ module Database.PostgreSQL.Simple.FromRow
      , numFieldsRemaining
      ) where
 
-import           Control.Applicative (Applicative(..), (<$>))
-import           Control.Monad (replicateM)
+import           Prelude hiding (null)
+import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>))
+import           Control.Monad (replicateM, replicateM_)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Vector (Vector)
@@ -35,7 +36,7 @@ import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Types ((:.)(..))
+import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
 
 import Control.Monad.Trans.State.Strict
@@ -120,22 +121,47 @@ numFieldsRemaining = RP $ do
     column <- lift get
     return $! (\(PQ.Col x) -> fromIntegral x) (nfields rowresult - column)
 
+null :: RowParser Null
+null =  field
+
 instance (FromField a) => FromRow (Only a) where
     fromRow = Only <$> field
+
+instance (FromField a) => FromRow (Maybe (Only a)) where
+    fromRow =  (null *> pure Nothing)
+           <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b) => FromRow (a,b) where
     fromRow = (,) <$> field <*> field
 
+instance (FromField a, FromField b) => FromRow (Maybe (a,b)) where
+    fromRow =  (null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
 instance (FromField a, FromField b, FromField c) => FromRow (a,b,c) where
     fromRow = (,,) <$> field <*> field <*> field
+
+instance (FromField a, FromField b, FromField c) => FromRow (Maybe (a,b,c)) where
+    fromRow =  (null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b, FromField c, FromField d) =>
     FromRow (a,b,c,d) where
     fromRow = (,,,) <$> field <*> field <*> field <*> field
 
+instance (FromField a, FromField b, FromField c, FromField d) =>
+    FromRow (Maybe (a,b,c,d)) where
+    fromRow =  (null *> null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
 instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
     FromRow (a,b,c,d,e) where
     fromRow = (,,,,) <$> field <*> field <*> field <*> field <*> field
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
+    FromRow (Maybe (a,b,c,d,e)) where
+    fromRow =  (null *> null *> null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f) =>
@@ -144,10 +170,24 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
                       <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f) =>
+    FromRow (Maybe (a,b,c,d,e,f)) where
+    fromRow =  (null *> null *> null *> null *> null *>
+                null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g) =>
     FromRow (a,b,c,d,e,f,g) where
     fromRow = (,,,,,,) <$> field <*> field <*> field <*> field <*> field
                        <*> field <*> field
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g) =>
+    FromRow (Maybe (a,b,c,d,e,f,g)) where
+    fromRow =  (null *> null *> null *> null *> null *>
+                null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h) =>
@@ -156,10 +196,24 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
                         <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h) =>
+    FromRow (Maybe (a,b,c,d,e,f,g,h)) where
+    fromRow =  (null *> null *> null *> null *> null *>
+                null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i) =>
     FromRow (a,b,c,d,e,f,g,h,i) where
     fromRow = (,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
                          <*> field <*> field <*> field <*> field
+
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i) =>
+    FromRow (Maybe (a,b,c,d,e,f,g,h,i)) where
+    fromRow =  (null *> null *> null *> null *> null *>
+                null *> null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i, FromField j) =>
@@ -167,15 +221,32 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
     fromRow = (,,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
                           <*> field <*> field <*> field <*> field <*> field
 
+instance (FromField a, FromField b, FromField c, FromField d, FromField e,
+          FromField f, FromField g, FromField h, FromField i, FromField j) =>
+    FromRow (Maybe (a,b,c,d,e,f,g,h,i,j)) where
+    fromRow =  (null *> null *> null *> null *> null *>
+                null *> null *> null *> null *> null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
 instance FromField a => FromRow [a] where
     fromRow = do
       n <- numFieldsRemaining
       replicateM n field
 
+instance FromField a => FromRow (Maybe [a]) where
+    fromRow = do
+      n <- numFieldsRemaining
+      (replicateM_ n null *> pure Nothing) <|> (Just <$> replicateM n field)
+
 instance FromField a => FromRow (Vector a) where
     fromRow = do
       n <- numFieldsRemaining
       V.replicateM n field
+
+instance FromField a => FromRow (Maybe (Vector a)) where
+    fromRow = do
+      n <- numFieldsRemaining
+      (replicateM_ n null *> pure Nothing) <|> (Just <$> V.replicateM n field)
 
 instance (FromRow a, FromRow b) => FromRow (a :. b) where
     fromRow = (:.) <$> fromRow <*> fromRow
