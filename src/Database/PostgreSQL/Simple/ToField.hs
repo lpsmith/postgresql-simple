@@ -40,6 +40,8 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import           Data.UUID   (UUID)
+import qualified Data.UUID as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -231,6 +233,9 @@ instance (ToField a) => ToField (Vector a) where
         [Plain (fromChar ']')]
         -- Because the ARRAY[...] input syntax is being used, it is possible
         -- that the use of type-specific separator characters is unnecessary.
+
+instance ToField UUID where
+    toField = Plain . inQuotes . fromByteString . UUID.toASCIIBytes
 
 instance ToField JSON.Value where
     toField = toField . JSON.encode
