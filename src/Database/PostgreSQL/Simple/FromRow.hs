@@ -12,7 +12,10 @@
 -- returned by a SQL query into a more useful Haskell representation.
 --
 -- Predefined instances are provided for tuples containing up to ten
--- elements.
+-- elements.  The instances for 'Maybe' types return 'Nothing' if all
+-- the columns that would have been otherwise consumed are null,  otherwise
+-- it attempts a regular conversion.
+--
 ------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.FromRow
@@ -26,11 +29,14 @@ module Database.PostgreSQL.Simple.FromRow
 import           Prelude hiding (null)
 import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>))
 import           Control.Monad (replicateM, replicateM_)
+import           Control.Monad.Trans.State.Strict
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.Class
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import Database.PostgreSQL.Simple.Types (Only(..))
+import           Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
@@ -38,10 +44,6 @@ import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
-
-import Control.Monad.Trans.State.Strict
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Class
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
