@@ -1,3 +1,13 @@
+Version 0.3.9.0 (2013-10-27)
+  * Added FromField and ToField instances for the `uuid` package,
+    courtesy of Bas van Dijk.
+
+  * Added instance FromRow (Maybe a) for most pre-packaged FromRow
+    instances.  See issue #64 for some discussion.
+
+  * Added the fromBinary, fromHStoreMap, and fromHStoreList newtype
+    unwrapper functions, courtesy of Bas van Dijk.
+
 Version 0.3.8.0 (2013-10-11)
   * Fixed the example code in `FromField`, thanks to Adam Bergmark.
 
