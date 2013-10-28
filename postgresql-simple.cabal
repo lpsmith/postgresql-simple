@@ -59,6 +59,8 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
+    -- hashable is only a workaround for incorrect lower version in uuid
+    hashable >= 1.2.1.0,   
     postgresql-libpq >= 0.6.2,
     template-haskell,
     text >= 0.11.1,
