@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.3.9.0
+Version:             0.3.9.1
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -59,8 +59,6 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    -- hashable is only a workaround for incorrect lower version in uuid
-    hashable >= 1.2.1.0,   
     postgresql-libpq >= 0.6.2,
     template-haskell,
     text >= 0.11.1,
@@ -81,7 +79,7 @@ source-repository head
 source-repository this
   type:     git
   location: http://github.com/lpsmith/postgresql-simple
-  tag:      v0.3.9.0
+  tag:      v0.3.9.1
 
 test-suite test
   type:           exitcode-stdio-1.0

@@ -1,3 +1,6 @@
+Version 0.3.9.1 (2013-10-28)
+  * Removed dependency on hashable
+
 Version 0.3.9.0 (2013-10-27)
   * Added FromField and ToField instances for the `uuid` package,
     courtesy of Bas van Dijk.
