@@ -79,6 +79,9 @@ module Database.PostgreSQL.Simple
     -- * Queries that return results
     , query
     , query_
+    -- ** Queries taking parser as argument
+    , queryWith
+    , queryWith_
     -- * Queries that stream results
     , FoldOptions(..)
     , FetchQuantity(..)
@@ -366,17 +369,24 @@ returning conn q qs = do
 --   using 'execute' instead of 'query').
 --
 -- * 'ResultError': result conversion failed.
-query :: (ToRow q, FromRow r)
-         => Connection -> Query -> q -> IO [r]
-query conn template qs = do
-  result <- exec conn =<< formatQuery conn template qs
-  finishQuery conn template result
+query :: (ToRow q, FromRow r) => Connection -> Query -> q -> IO [r]
+query = queryWith fromRow
 
 -- | A version of 'query' that does not perform query substitution.
 query_ :: (FromRow r) => Connection -> Query -> IO [r]
-query_ conn q@(Query que) = do
+query_ = queryWith_ fromRow
+
+-- | A version of 'query' taking parser as argument
+queryWith :: ToRow q => RowParser r -> Connection -> Query -> q -> IO [r]
+queryWith parser conn template qs = do
+  result <- exec conn =<< formatQuery conn template qs
+  finishQueryWith parser conn template result
+
+-- | A version of 'query_' taking parser as argument
+queryWith_ :: RowParser r -> Connection -> Query -> IO [r]
+queryWith_ parser conn q@(Query que) = do
   result <- exec conn que
-  finishQuery conn q result
+  finishQueryWith parser conn q result
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. Results are streamed incrementally from the server, and
@@ -541,8 +551,11 @@ forM' lo hi m = loop hi []
            a <- m n
            loop (n-1) (a:as)
 
-finishQuery :: (FromRow r) => Connection -> Query -> PQ.Result -> IO [r]
-finishQuery conn q result = do
+finishQuery :: FromRow r => Connection -> Query -> PQ.Result -> IO [r]
+finishQuery = finishQueryWith fromRow
+
+finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
+finishQueryWith parser conn q result = do
   status <- PQ.resultStatus result
   case status of
     PQ.EmptyQuery ->
@@ -555,7 +568,7 @@ finishQuery conn q result = do
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row -> do
            let rw = Row row result
-           okvc <- runConversion (runStateT (runReaderT (unRP fromRow) rw) 0) conn
+           okvc <- runConversion (runStateT (runReaderT (unRP parser) rw) 0) conn
            case okvc of
              Ok (val,col) | col == ncols -> return val
                           | otherwise -> do
