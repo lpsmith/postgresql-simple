@@ -12,11 +12,13 @@ import Data.ByteString (ByteString)
 import Data.IORef
 import Data.Typeable
 import qualified Data.ByteString as B
+import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text(Text)
 import System.Exit (exitFailure)
 import System.IO
 import qualified Data.Vector as V
+import Data.Aeson
 
 import Notify
 import Serializable
@@ -32,6 +34,7 @@ tests =
     , TestLabel "Time"          . testTime
     , TestLabel "Array"         . testArray
     , TestLabel "HStore"        . testHStore
+    , TestLabel "JSON"          . testJSON
     , TestLabel "Savepoint"     . testSavepoint
     ]
 
@@ -165,6 +168,19 @@ testHStore TestEnv{..} = TestCase $ do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+testJSON :: TestEnv -> Test
+testJSON TestEnv{..} = TestCase $ do
+    roundTrip (Map.fromList [] :: Map ByteString ByteString)
+    roundTrip (Map.fromList [("foo","bar"),("bar","baz"),("baz","hello")] :: Map ByteString ByteString )
+    roundTrip (Map.fromList [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")] :: Map ByteString ByteString)
+    roundTrip (V.fromList [1,2,3,4,5::Int])
+  where
+    roundTrip :: ToJSON a => a -> Assertion
+    roundTrip a = do
+      let js = Only (toJSON a)
+      js' <- query conn "SELECT ?::json" js
+      [js] @?= js'
 
 testSavepoint :: TestEnv -> Test
 testSavepoint TestEnv{..} = TestCase $ do

@@ -105,6 +105,7 @@ test-suite test
             , ScopedTypeVariables
 
   build-depends: base
+               , aeson
                , base16-bytestring
                , bytestring
                , containers
