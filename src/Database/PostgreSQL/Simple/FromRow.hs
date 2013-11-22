@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards, FlexibleInstances, TemplateHaskell #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -28,7 +28,7 @@ module Database.PostgreSQL.Simple.FromRow
 
 import           Prelude hiding (null)
 import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>))
-import           Control.Monad (replicateM, replicateM_)
+import           Control.Monad 
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
@@ -44,6 +44,7 @@ import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
+import qualified Database.PostgreSQL.Simple.FromRow.Boilerplate as Boilerplate
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
@@ -133,23 +134,13 @@ instance (FromField a) => FromRow (Maybe (Only a)) where
     fromRow =  (null *> pure Nothing)
            <|> (Just <$> fromRow)
 
-instance (FromField a, FromField b) => FromRow (a,b) where
-    fromRow = (,) <$> field <*> field
-
 instance (FromField a, FromField b) => FromRow (Maybe (a,b)) where
     fromRow =  (null *> null *> pure Nothing)
            <|> (Just <$> fromRow)
 
-instance (FromField a, FromField b, FromField c) => FromRow (a,b,c) where
-    fromRow = (,,) <$> field <*> field <*> field
-
 instance (FromField a, FromField b, FromField c) => FromRow (Maybe (a,b,c)) where
     fromRow =  (null *> null *> null *> pure Nothing)
            <|> (Just <$> fromRow)
-
-instance (FromField a, FromField b, FromField c, FromField d) =>
-    FromRow (a,b,c,d) where
-    fromRow = (,,,) <$> field <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d) =>
     FromRow (Maybe (a,b,c,d)) where
@@ -157,19 +148,9 @@ instance (FromField a, FromField b, FromField c, FromField d) =>
            <|> (Just <$> fromRow)
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
-    FromRow (a,b,c,d,e) where
-    fromRow = (,,,,) <$> field <*> field <*> field <*> field <*> field
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e) =>
     FromRow (Maybe (a,b,c,d,e)) where
     fromRow =  (null *> null *> null *> null *> null *> pure Nothing)
            <|> (Just <$> fromRow)
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e,
-          FromField f) =>
-    FromRow (a,b,c,d,e,f) where
-    fromRow = (,,,,,) <$> field <*> field <*> field <*> field <*> field
-                      <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f) =>
@@ -180,22 +161,10 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g) =>
-    FromRow (a,b,c,d,e,f,g) where
-    fromRow = (,,,,,,) <$> field <*> field <*> field <*> field <*> field
-                       <*> field <*> field
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e,
-          FromField f, FromField g) =>
     FromRow (Maybe (a,b,c,d,e,f,g)) where
     fromRow =  (null *> null *> null *> null *> null *>
                 null *> null *> pure Nothing)
            <|> (Just <$> fromRow)
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e,
-          FromField f, FromField g, FromField h) =>
-    FromRow (a,b,c,d,e,f,g,h) where
-    fromRow = (,,,,,,,) <$> field <*> field <*> field <*> field <*> field
-                        <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h) =>
@@ -206,22 +175,10 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i) =>
-    FromRow (a,b,c,d,e,f,g,h,i) where
-    fromRow = (,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
-                         <*> field <*> field <*> field <*> field
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e,
-          FromField f, FromField g, FromField h, FromField i) =>
     FromRow (Maybe (a,b,c,d,e,f,g,h,i)) where
     fromRow =  (null *> null *> null *> null *> null *>
                 null *> null *> null *> null *> pure Nothing)
            <|> (Just <$> fromRow)
-
-instance (FromField a, FromField b, FromField c, FromField d, FromField e,
-          FromField f, FromField g, FromField h, FromField i, FromField j) =>
-    FromRow (a,b,c,d,e,f,g,h,i,j) where
-    fromRow = (,,,,,,,,,) <$> field <*> field <*> field <*> field <*> field
-                          <*> field <*> field <*> field <*> field <*> field
 
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i, FromField j) =>
@@ -252,3 +209,5 @@ instance FromField a => FromRow (Maybe (Vector a)) where
 
 instance (FromRow a, FromRow b) => FromRow (a :. b) where
     fromRow = (:.) <$> fromRow <*> fromRow
+
+$(mapM Boilerplate.generateTupleInstance [2..30] >>= return . join)
