@@ -16,6 +16,7 @@
 module Database.PostgreSQL.Simple.Types
     (
       Null(..)
+    , Default(..)
     , Only(..)
     , In(..)
     , Binary(..)
@@ -42,6 +43,10 @@ data Null = Null
 instance Eq Null where
     _ == _ = False
     _ /= _ = False
+
+-- | A placeholder for the PostgreSQL @DEFAULT@ value.
+data Default = Default
+           deriving (Read, Show, Typeable)
 
 -- | A query string. This type is intended to make it difficult to
 -- construct a SQL query by concatenating string fragments, as that is

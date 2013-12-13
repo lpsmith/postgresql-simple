@@ -33,7 +33,7 @@ import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
-import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null)
+import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null, Default)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
@@ -97,6 +97,10 @@ renderNull = Plain (fromByteString "null")
 
 instance ToField Null where
     toField _ = renderNull
+    {-# INLINE toField #-}
+
+instance ToField Default where
+    toField _ = Plain (fromByteString "default")
     {-# INLINE toField #-}
 
 instance ToField Bool where
