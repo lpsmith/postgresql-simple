@@ -1,3 +1,8 @@
+Version 0.3.10.0 (2013-12-17)
+  * Added the queryWith function, courtesy of Leonid Onokhov
+
+  * Added the Default type,  for representing postgresql's default values
+
 Version 0.3.9.1 (2013-10-28)
   * Removed dependency on hashable
 
