@@ -169,6 +169,16 @@ class FromField a where
     -- Returns a list of exceptions if the conversion fails.  In the case of
     -- library instances,  this will usually be a single 'ResultError',  but
     -- may be a 'UnicodeException'.
+    --
+    -- Note that retaining any reference to the 'Field' argument causes
+    -- the entire @LibPQ.'PQ.Result'@ to be retained.  Thus, implementations
+    -- of 'fromField' should return results that do not refer to this value
+    -- after the result have been evaluated to WHNF.
+    --
+    -- Note that as of @postgresql-simple-0.4.0.0@,  the 'ByteString' value
+    -- has already been copied out of the @LibPQ.'PQ.Result'@ before it has
+    -- been passed to 'fromField'.  This is because for short strings, it's
+    -- cheaper to copy the string than to set up a finalizer.
 
 -- | Returns the data type name.  This is the preferred way of identifying
 --   types that do not have a stable type oid, such as types provided by

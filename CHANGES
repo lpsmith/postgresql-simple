@@ -3,16 +3,16 @@ Version 0.4.0.0 (2013-12-21)
     a copy of the raw data.  This should be a small but significant
     performance bump for most people most of the time;  however it
     may slow down retrieval of large values not converted directly
-    to ByteString,  such as json, hstore, and array values.
+    to ByteString,  such as large json, hstore, and array values.
     See commit 8635f8 for more information.
 
   * Added the PGArray type.  Thanks to Joey Adams for the suggestion
 
   * Fixed JSON decoding,  which was almost entirely broken up until now,
-    due to bugs in the version of aeson currently available on Hackage.  
+    due to bugs in the version of aeson currently available on Hackage.
     Thanks to Amit Levy for the report.
 
-  * Added FromField instances for IORefs, MVars, and IOArrays.
+  * Added FromField instances for IORef, MVar, and IOVector.
 
 Version 0.3.10.0 (2013-12-17)
   * Added the queryWith function, courtesy of Leonid Onokhov
