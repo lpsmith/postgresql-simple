@@ -24,6 +24,7 @@ module Database.PostgreSQL.Simple.Types
     , Oid(..)
     , (:.)(..)
     , Savepoint(..)
+    , PGArray(..)
     ) where
 
 import Blaze.ByteString.Builder (toByteString)
@@ -115,6 +116,11 @@ newtype In a = In a
 
 -- | Wrap binary data for use as a @bytea@ value.
 newtype Binary a = Binary {fromBinary :: a}
+    deriving (Eq, Ord, Read, Show, Typeable, Functor)
+
+
+-- | Wrap a list for use as a PostgreSQL array.
+newtype PGArray a = PGArray {fromPGArray :: [a]}
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | A composite type to parse your custom data structures without

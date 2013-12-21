@@ -111,7 +111,7 @@ import qualified Data.Vector as V
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Types (Binary(..), Null(..))
+import           Database.PostgreSQL.Simple.Types
 import           Database.PostgreSQL.Simple.TypeInfo as TI
 import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
 import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
@@ -414,7 +414,7 @@ instance (FromField a, FromField b) => FromField (Either a b) where
                     <|> (Left  <$> fromField f dat)
 
 -- | any postgresql array whose elements are compatible with type @a@
-instance (FromField a, Typeable a) => FromField (Vector a) where
+instance (FromField a, Typeable a) => FromField (PGArray a) where
     fromField f mdat = do
         info <- typeInfo f
         case info of
@@ -424,7 +424,7 @@ instance (FromField a, Typeable a) => FromField (Vector a) where
                 Just dat -> do
                    case parseOnly (fromArray info f) dat of
                      Left  err  -> returnError ConversionFailed f err
-                     Right conv -> V.fromList <$> conv
+                     Right conv -> PGArray <$> conv
           _ -> returnError Incompatible f ""
 
 fromArray :: (FromField a)
@@ -436,6 +436,9 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
     parseIt item = (fromField f' . Just . fmt delim) item
       where f' | Arrays.Array _ <- item = f
                | otherwise              = fElem
+
+instance (FromField a, Typeable a) => FromField (Vector a) where
+    fromField f v = V.fromList . fromPGArray <$> fromField f v
 
 -- | uuid
 instance FromField UUID where

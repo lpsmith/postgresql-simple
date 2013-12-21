@@ -33,7 +33,7 @@ import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
-import Database.PostgreSQL.Simple.Types (Binary(..), In(..), Null, Default)
+import Database.PostgreSQL.Simple.Types
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
@@ -230,13 +230,16 @@ instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
     {-# INLINE toField #-}
 
-instance (ToField a) => ToField (Vector a) where
+instance (ToField a) => ToField (PGArray a) where
     toField xs = Many $
         Plain (fromByteString "ARRAY[") :
-        (intersperse (Plain (fromChar ',')) . map toField $ V.toList xs) ++
+        (intersperse (Plain (fromChar ',')) . map toField $ fromPGArray xs) ++
         [Plain (fromChar ']')]
         -- Because the ARRAY[...] input syntax is being used, it is possible
         -- that the use of type-specific separator characters is unnecessary.
+
+instance (ToField a) => ToField (Vector a) where
+    toField = toField . PGArray . V.toList
 
 instance ToField UUID where
     toField = Plain . inQuotes . fromByteString . UUID.toASCIIBytes
