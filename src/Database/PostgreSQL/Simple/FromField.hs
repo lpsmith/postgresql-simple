@@ -166,17 +166,6 @@ class FromField a where
     -- Returns a list of exceptions if the conversion fails.  In the case of
     -- library instances,  this will usually be a single 'ResultError',  but
     -- may be a 'UnicodeException'.
-    --
-    -- Note that retaining any reference to the 'Field' or 'ByteString'
-    -- arguments causes the entire @LibPQ.'PQ.Result'@ to be retained.
-    -- Thus, as a rule of thumb, implementations of 'fromField' should
-    -- not refer to these values after the result has been evaluated
-    -- to WHNF.  But it can be profitable to break this rule when you
-    -- know it won't cause memory management problems.
-    --
-    -- The instances included with postgresql-simple follow this rule
-    -- of thumb (modulo bugs).   For example, the instance for 'ByteString'
-    -- uses 'B.copy' to avoid such a reference.
 
 -- | Returns the data type name.  This is the preferred way of identifying
 --   types that do not have a stable type oid, such as types provided by
@@ -320,7 +309,7 @@ unBinary (Binary x) = x
 instance FromField SB.ByteString where
     fromField f dat = if typeOid f == $(inlineTypoid TI.bytea)
                       then unBinary <$> fromField f dat
-                      else doFromField f okText' (pure . B.copy) dat
+                      else doFromField f okText' pure dat
 
 -- | oid
 instance FromField PQ.Oid where
@@ -340,7 +329,7 @@ unescapeBytea f str = case unsafeDupablePerformIO (PQ.unescapeBytea str) of
 instance FromField (Binary SB.ByteString) where
     fromField f dat = case format f of
       PQ.Text   -> doFromField f okBinary (unescapeBytea f) dat
-      PQ.Binary -> doFromField f okBinary (pure . Binary . B.copy) dat
+      PQ.Binary -> doFromField f okBinary (pure . Binary) dat
 
 -- | bytea
 instance FromField (Binary LB.ByteString) where
