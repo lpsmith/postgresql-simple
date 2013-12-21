@@ -95,12 +95,14 @@ module Database.PostgreSQL.Simple.FromField
 
 import           Control.Applicative
                    ( Applicative, (<|>), (<$>), pure )
+import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
 import           Data.Attoparsec.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
+import           Data.IORef (IORef, newIORef)
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
@@ -475,6 +477,19 @@ fromJSONField f mbBs = do
         JSON.Error err -> returnError ConversionFailed f $
                             "JSON decoding error: " ++ err
         JSON.Success x -> pure x
+
+
+-- | Compatible with the same set of types as @a@.  Note that
+--   modifying the 'IORef' does not have any effects outside
+--   the local process on the local machine.
+instance FromField a => FromField (IORef a) where
+    fromField f v = liftConversion . newIORef =<< fromField f v
+
+-- | Compatible with the same set of types as @a@.  Note that
+--   modifying the 'MVar' does not have any effects outside
+--   the local process on the local machine.
+instance FromField a => FromField (MVar a) where
+    fromField f v = liftConversion . newMVar =<< fromField f v
 
 type Compat = PQ.Oid -> Bool
 
