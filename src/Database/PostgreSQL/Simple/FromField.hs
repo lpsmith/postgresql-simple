@@ -107,6 +107,7 @@ import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Vector (Vector)
+import           Data.Vector.Mutable (IOVector)
 import qualified Data.Vector as V
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
@@ -439,6 +440,9 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
 
 instance (FromField a, Typeable a) => FromField (Vector a) where
     fromField f v = V.fromList . fromPGArray <$> fromField f v
+
+instance (FromField a, Typeable a) => FromField (IOVector a) where
+    fromField f v = liftConversion . V.unsafeThaw =<< fromField f v
 
 -- | uuid
 instance FromField UUID where
