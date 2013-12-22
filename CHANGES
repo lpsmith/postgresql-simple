@@ -1,3 +1,8 @@
+Version 0.4.0.1 (2013-12-21)
+  * Relaxed dependency on aeson to >= 0.6
+
+  * Update the documentation of `fromField`
+
 Version 0.4.0.0 (2013-12-21)
   * Changed the calling code of `fromField` so that it always sends
     a copy of the raw data.  This should be a small but significant
