@@ -1,3 +1,8 @@
+Version 0.4.0.2 (2014-01-12)
+  * Tweaked C preprocessor directive to be more portable
+
+  * Tweaked testsuite for compatibility with aeson-0.7
+
 Version 0.4.0.1 (2013-12-21)
   * Relaxed dependency on aeson to >= 0.6
 
