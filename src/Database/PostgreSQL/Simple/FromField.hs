@@ -476,7 +476,7 @@ instance FromField JSON.Value where
              Just bs ->
 #if MIN_VERSION_aeson(0,6,3)
                  case JSON.eitherDecodeStrict' bs of
-#elsif MIN_VERSION_bytestring(0,10,0)
+#elif MIN_VERSION_bytestring(0,10,0)
                  case JSON.eitherDecode' $ LB.fromStrict bs of
 #else
                  case JSON.eitherDecode' $ LB.fromChunks [bs] of
