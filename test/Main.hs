@@ -171,9 +171,9 @@ testHStore TestEnv{..} = TestCase $ do
 
 testJSON :: TestEnv -> Test
 testJSON TestEnv{..} = TestCase $ do
-    roundTrip (Map.fromList [] :: Map ByteString ByteString)
-    roundTrip (Map.fromList [("foo","bar"),("bar","baz"),("baz","hello")] :: Map ByteString ByteString )
-    roundTrip (Map.fromList [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")] :: Map ByteString ByteString)
+    roundTrip (Map.fromList [] :: Map Text Text)
+    roundTrip (Map.fromList [("foo","bar"),("bar","baz"),("baz","hello")] :: Map Text Text)
+    roundTrip (Map.fromList [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")] :: Map Text Text)
     roundTrip (V.fromList [1,2,3,4,5::Int])
   where
     roundTrip :: ToJSON a => a -> Assertion
