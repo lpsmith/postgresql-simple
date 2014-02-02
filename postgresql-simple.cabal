@@ -59,7 +59,7 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    postgresql-libpq >= 0.6.2,
+    postgresql-libpq >= 0.8,
     template-haskell,
     text >= 0.11.1,
     time,
