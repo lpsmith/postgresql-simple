@@ -350,7 +350,7 @@ instance FromField (Binary LB.ByteString) where
 
 -- | name, text, \"char\", bpchar, varchar
 instance FromField ST.Text where
-    fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')
+    fromField f = doFromField f okText (either left pure . ST.decodeUtf8')
     -- FIXME:  check character encoding
 
 -- | name, text, \"char\", bpchar, varchar
