@@ -142,7 +142,7 @@ connectPostgreSQL connstr = do
     case stat of
       PQ.ConnectionOk -> do
           connectionHandle  <- newMVar conn
-          connectionObjects <- newMVar (IntMap.empty)
+          connectionObjects <- newMVar IntMap.empty
           connectionTempNameCounter <- newIORef 0
           let wconn = Connection{..}
           version <- PQ.serverVersion conn

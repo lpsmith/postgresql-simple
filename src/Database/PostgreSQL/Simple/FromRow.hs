@@ -91,7 +91,7 @@ fieldWith fieldP = RP $ do
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
-    if (column >= ncols)
+    if column >= ncols
     then lift $ lift $ do
         vals <- mapM (getTypenameByCol r) [0..ncols-1]
         let err = ConversionFailed

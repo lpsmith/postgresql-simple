@@ -199,7 +199,7 @@ typeInfo Field{..} = Conversion $ \conn ->
 
 typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
 typeInfoByOid oid = Conversion $ \conn ->
-                      Ok <$> (getTypeInfo conn oid)
+                      Ok <$> getTypeInfo conn oid
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
@@ -272,7 +272,7 @@ instance FromField Char where
                Nothing -> returnError UnexpectedNull f ""
                Just bs -> if B.length bs /= 1
                           then returnError ConversionFailed f "length not 1"
-                          else return $! (B.head bs)
+                          else return $! B.head bs
 
 -- | int2
 instance FromField Int16 where

@@ -210,7 +210,7 @@ localTimeToBuilder :: LocalTime -> Builder
 localTimeToBuilder (LocalTime day tod) =
     dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder tod
 
-unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
+unboundedToBuilder :: (a -> Builder) -> Unbounded a -> Builder
 unboundedToBuilder finiteToBuilder unbounded
     = case unbounded of
         NegInfinity -> fromByteString "-infinity"

@@ -111,7 +111,7 @@ hstore (toHStoreText -> (HStoreText key)) (toHStoreText -> (HStoreText val)) =
               `mappend` val `mappend` fromChar '"')
 
 instance ToField HStoreBuilder where
-    toField  Empty    = toField (BS.empty)
+    toField  Empty    = toField BS.empty
     toField (Comma x) = toField (Blaze.toLazyByteString x)
 
 newtype HStoreList = HStoreList {fromHStoreList :: [(Text,Text)]} deriving (Typeable, Show)
