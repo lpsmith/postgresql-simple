@@ -1,5 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
-
 module Database.PostgreSQL.Simple.Transaction
     (
     -- * Transaction handling
