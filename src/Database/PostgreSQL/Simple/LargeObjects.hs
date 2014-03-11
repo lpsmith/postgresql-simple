@@ -43,6 +43,7 @@ module Database.PostgreSQL.Simple.LargeObjects
 import           Control.Applicative ((<$>))
 import           Control.Exception (throwIO)
 import qualified Data.ByteString as B
+import           Data.Maybe (fromMaybe)
 import           Database.PostgreSQL.LibPQ (Oid(..),LoFd(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
@@ -53,7 +54,7 @@ liftPQ str conn m = withConnection conn $ \c -> do
     res <- m c
     case res of
       Nothing -> do
-          msg <- maybe str id <$> PQ.errorMessage c
+          msg <- fromMaybe str <$> PQ.errorMessage c
           throwIO $ fatalError msg
       Just  x -> return x
 

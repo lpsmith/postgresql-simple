@@ -121,6 +121,7 @@ import           Data.ByteString (ByteString)
 import           Data.Char (isAsciiUpper, isAsciiLower, isDigit)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid (mconcat)
 import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.Compat ( (<>) )
@@ -299,7 +300,7 @@ escapeByteaConn conn s =
 
 checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
 checkError _ (Just x) = return $ Right x
-checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
+checkError c Nothing  = Left . fromMaybe "" <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs

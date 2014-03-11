@@ -44,6 +44,7 @@ import           Control.Exception  ( throwIO )
 import qualified Data.Attoparsec.ByteString.Char8 as P
 import           Data.Typeable(Typeable)
 import           Data.Int(Int64)
+import           Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple
@@ -134,7 +135,7 @@ getCopyData conn = withConnection conn loop
             throwIO SqlError {
                           sqlState       = "",
                           sqlExecStatus  = FatalError,
-                          sqlErrorMsg    = maybe "" id mmsg,
+                          sqlErrorMsg    = fromMaybe "" mmsg,
                           sqlErrorDetail = "",
                           sqlErrorHint   = funcName
                         }
@@ -203,7 +204,7 @@ doCopyIn funcName action = loop
             throwIO SqlError {
                       sqlState = "",
                       sqlExecStatus  = FatalError,
-                      sqlErrorMsg    = maybe "" id mmsg,
+                      sqlErrorMsg    = fromMaybe "" mmsg,
                       sqlErrorDetail = "",
                       sqlErrorHint   = funcName
                     }

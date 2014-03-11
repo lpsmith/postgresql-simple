@@ -153,7 +153,7 @@ connectPostgreSQL connstr = do
           _ <- execute_ wconn settings
           return wconn
       _ -> do
-          msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
+          msg <- fromMaybe "connectPostgreSQL error" <$> PQ.errorMessage conn
           throwIO $ fatalError msg
 
 -- | Turns a 'ConnectInfo' data structure into a libpq connection string.
@@ -202,7 +202,7 @@ exec conn sql =
         mres <- PQ.exec h sql
         case mres of
           Nothing -> do
-            msg <- maybe "execute error" id <$> PQ.errorMessage h
+            msg <- fromMaybe "execute error" <$> PQ.errorMessage h
             throwIO $ fatalError msg
           Just res ->
             return res
@@ -255,7 +255,7 @@ throwResultError _ result status = do
                  PQ.resultErrorField result PQ.DiagMessageDetail
     hint      <- fromMaybe "" <$>
                  PQ.resultErrorField result PQ.DiagMessageHint
-    state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+    state     <- fromMaybe "" <$> PQ.resultErrorField result PQ.DiagSqlstate
     throwIO $ SqlError { sqlState = state
                        , sqlExecStatus = status
                        , sqlErrorMsg = errormsg
