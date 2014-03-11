@@ -16,7 +16,7 @@ import Prelude hiding (take, (++))
 import Blaze.ByteString.Builder(Builder, fromByteString)
 import Blaze.ByteString.Builder.Char8(fromChar)
 import Blaze.Text.Int(integral)
-import Control.Arrow((***))
+import Control.Arrow(first)
 import Control.Applicative
 import Control.Monad(when)
 import Data.Bits((.&.))
@@ -51,7 +51,7 @@ instance Read a => Read (Unbounded a) where
   readsPrec prec = readParen False $ \str -> case str of
     ('-':'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(NegInfinity,xs)]
     (    'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(PosInfinity,xs)]
-    xs -> map (Finite *** id) (readsPrec prec xs)
+    xs -> map (first Finite) (readsPrec prec xs)
 
 type LocalTimestamp = Unbounded LocalTime
 type UTCTimestamp   = Unbounded UTCTime
