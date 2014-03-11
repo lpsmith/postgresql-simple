@@ -14,7 +14,7 @@
 -- database transaction,  so if you are interested in using anything beyond
 -- 'loCreat', 'loCreate', and 'loUnlink',  you will need to run the entire
 -- sequence of functions in a transaction.   As 'loImport' and 'loExport'
--- are simply C functions that call 'loCreat', 'loOpen', 'loRead', and 
+-- are simply C functions that call 'loCreat', 'loOpen', 'loRead', and
 -- 'loWrite',  and do not perform any transaction handling themselves,
 -- they also need to be wrapped in an explicit transaction.
 --
