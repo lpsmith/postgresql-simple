@@ -36,9 +36,8 @@ import           Data.Maybe(fromMaybe)
 import           Data.String
 import           Data.Typeable
 import           Data.Word
-import           Database.PostgreSQL.LibPQ(Oid(..))
+import           Database.PostgreSQL.LibPQ(ExecStatus(..), Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           Database.PostgreSQL.LibPQ(ExecStatus(..))
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)

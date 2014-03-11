@@ -36,13 +36,12 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
+import           Database.PostgreSQL.Simple.Types ((:.)(..), Only (..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
 
 -- | A collection type that can be converted from a sequence of fields.
