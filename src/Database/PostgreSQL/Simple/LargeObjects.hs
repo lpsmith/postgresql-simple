@@ -59,13 +59,13 @@ liftPQ str conn m = withConnection conn $ \c -> do
       Just  x -> return x
 
 loCreat :: Connection -> IO Oid
-loCreat conn = liftPQ "loCreat" conn (\c -> PQ.loCreat c)
+loCreat conn = liftPQ "loCreat" conn PQ.loCreat
 
 loCreate :: Connection -> Oid -> IO Oid
-loCreate conn oid = liftPQ "loCreate" conn (\c -> PQ.loCreate c oid)
+loCreate conn oid = liftPQ "loCreate" conn (flip PQ.loCreate oid)
 
 loImport :: Connection -> FilePath -> IO Oid
-loImport conn path = liftPQ "loImport" conn (\c -> PQ.loImport c path)
+loImport conn path = liftPQ "loImport" conn (flip PQ.loImport path)
 
 loImportWithOid :: Connection -> FilePath -> Oid -> IO Oid
 loImportWithOid conn path oid = liftPQ "loImportWithOid" conn (\c -> PQ.loImportWithOid c path oid)
@@ -86,13 +86,13 @@ loSeek :: Connection -> LoFd -> SeekMode -> Int -> IO Int
 loSeek conn fd seekmode offset = liftPQ "loSeek" conn (\c -> PQ.loSeek c fd seekmode offset)
 
 loTell :: Connection -> LoFd -> IO Int
-loTell conn fd = liftPQ "loTell" conn (\c -> PQ.loTell c fd)
+loTell conn fd = liftPQ "loTell" conn (flip PQ.loTell fd)
 
 loTruncate :: Connection -> LoFd -> Int -> IO ()
 loTruncate conn fd len = liftPQ "loTruncate" conn (\c -> PQ.loTruncate c fd len)
 
 loClose :: Connection -> LoFd -> IO ()
-loClose conn fd = liftPQ "loClose" conn (\c -> PQ.loClose c fd)
+loClose conn fd = liftPQ "loClose" conn (flip PQ.loClose fd)
 
 loUnlink :: Connection -> Oid -> IO ()
-loUnlink conn oid = liftPQ "loUnlink" conn (\c -> PQ.loUnlink c oid)
+loUnlink conn oid = liftPQ "loUnlink" conn (flip PQ.loUnlink oid)

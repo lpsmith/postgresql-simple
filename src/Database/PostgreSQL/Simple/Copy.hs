@@ -153,8 +153,8 @@ getCopyData conn = withConnection conn loop
 --   is called.
 
 putCopyData :: Connection -> B.ByteString -> IO ()
-putCopyData conn dat = withConnection conn $ \pqconn ->
-    doCopyIn funcName (\c -> PQ.putCopyData c dat) pqconn
+putCopyData conn dat = withConnection conn $
+    doCopyIn funcName (flip PQ.putCopyData dat)
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyData"
 
@@ -169,7 +169,7 @@ putCopyData conn dat = withConnection conn $ \pqconn ->
 
 putCopyEnd :: Connection -> IO Int64
 putCopyEnd conn = withConnection conn $ \pqconn -> do
-    doCopyIn funcName (\c -> PQ.putCopyEnd c Nothing) pqconn
+    doCopyIn funcName (flip PQ.putCopyEnd Nothing) pqconn
     getCopyCommandTag funcName pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyEnd"

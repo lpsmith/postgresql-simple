@@ -558,7 +558,7 @@ returnError mkErr f msg = do
 atto :: forall a. (Typeable a)
      => Compat -> Parser a -> Field -> Maybe ByteString
      -> Conversion a
-atto types p0 f dat = doFromField f types (go p0) dat
+atto types p0 f = doFromField f types (go p0)
   where
     go :: Parser a -> ByteString -> Conversion a
     go p s =

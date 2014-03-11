@@ -463,7 +463,7 @@ foldWithOptions_ :: (FromRow r) =>
                  -> a                 -- ^ Initial state for result consumer.
                  -> (a -> r -> IO a)  -- ^ Result consumer.
                  -> IO a
-foldWithOptions_ opts conn query a f = doFold opts conn query query a f
+foldWithOptions_ opts conn query = doFold opts conn query query
 
 
 doFold :: ( FromRow row )
