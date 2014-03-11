@@ -118,6 +118,7 @@ import           Control.Applicative ((<$>), pure)
 import           Control.Exception as E
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
+import           Data.Char (isAsciiUpper, isAsciiLower, isDigit)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
@@ -269,14 +270,14 @@ parseTemplate template =
         (s1, source')  = B.splitAt (B.length source - B.length p1) source
         (s2, source'') = B.splitAt (B.length p1     - B.length p2) source'
 
-    toUpper_ascii c | c >= 'a' && c <= 'z' = toEnum (fromEnum c - 32)
+    toUpper_ascii c | isAsciiLower c = toEnum (fromEnum c - 32)
                     | otherwise            = c
 
     -- Based on the definition of {ident_cont} in src/backend/parser/scan.l
     -- in the PostgreSQL source.  No need to check [a-z], since we converted
     -- the whole string to uppercase.
-    isIdent c = (c >= '0'    && c <= '9')
-             || (c >= 'A'    && c <= 'Z')
+    isIdent c = isDigit c
+             || isAsciiUpper c
              || (c >= '\x80' && c <= '\xFF')
              || c == '_'
              || c == '$'
