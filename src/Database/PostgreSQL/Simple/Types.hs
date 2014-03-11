@@ -20,6 +20,8 @@ module Database.PostgreSQL.Simple.Types
     , Only(..)
     , In(..)
     , Binary(..)
+    , Identifier(..)
+    , QualifiedIdentifier(..)
     , Query(..)
     , Oid(..)
     , (:.)(..)
@@ -118,6 +120,17 @@ newtype In a = In a
 newtype Binary a = Binary {fromBinary :: a}
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
+-- | Wrap text for use as sql identifier, i.e. a table or column name.
+newtype Identifier = Identifier {fromIdentifier :: ByteString}
+    deriving (Eq, Ord, Read, Show, Typeable)
+
+instance IsString Identifier where
+    fromString = Identifier . toByteString . Utf8.fromString
+
+-- | Wrap text for use as (maybe) qualified identifier, i.e. a table
+-- with schema, or column with table.
+data QualifiedIdentifier = QualifiedIdentifier (Maybe ByteString) ByteString
+    deriving (Eq, Ord, Read, Show, Typeable)
 
 -- | Wrap a list for use as a PostgreSQL array.
 newtype PGArray a = PGArray {fromPGArray :: [a]}

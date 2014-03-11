@@ -287,14 +287,21 @@ parseTemplate template =
     skipSpace = B.dropWhile isSpace_ascii
 
 escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeStringConn conn s =
-    withConnection conn $ \c ->
-    PQ.escapeStringConn c s >>= checkError c
+escapeStringConn = escapeWrap PQ.escapeStringConn
+
+escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeIdentifier = escapeWrap PQ.escapeIdentifier
 
 escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeByteaConn conn s =
+escapeByteaConn = escapeWrap PQ.escapeByteaConn
+
+escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
+                 -> Connection
+                 -> ByteString
+                 -> IO (Either ByteString ByteString)
+escapeWrap f conn s =
     withConnection conn $ \c ->
-    PQ.escapeByteaConn c s >>= checkError c
+    f c s >>= checkError c
 
 checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
 checkError _ (Just x) = return $ Right x
@@ -302,13 +309,15 @@ checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
-  where quote = either (\msg -> fmtError (utf8ToString msg) q xs)
-                       (inQuotes . fromByteString)
+  where err' msg = fmtError (utf8ToString msg) q xs
+        quote = either err' (inQuotes . fromByteString)
         utf8ToString = T.unpack . TE.decodeUtf8
-        sub (Plain  b)      = pure b
-        sub (Escape s)      = quote <$> escapeStringConn conn s
-        sub (EscapeByteA s) = quote <$> escapeByteaConn conn s
-        sub (Many  ys)      = mconcat <$> mapM sub ys
+        sub (Plain  b)           = pure b
+        sub (Escape s)           = quote <$> escapeStringConn conn s
+        sub (EscapeByteA s)      = quote <$> escapeByteaConn conn s
+        sub (EscapeIdentifier s) = either err' fromByteString <$>
+                                       escapeIdentifier conn s
+        sub (Many  ys)           = mconcat <$> mapM sub ys
         split s = fromByteString h : if B.null t then [] else split (B.tail t)
             where (h,t) = B.break (=='?') s
         zipParams (t:ts) (p:ps) = t <> p <> zipParams ts ps
@@ -606,10 +615,11 @@ fmtError msg q xs = throw FormatError {
                     , fmtQuery = q
                     , fmtParams = map twiddle xs
                     }
-  where twiddle (Plain b)       = toByteString b
-        twiddle (Escape s)      = s
-        twiddle (EscapeByteA s) = s
-        twiddle (Many ys)       = B.concat (map twiddle ys)
+  where twiddle (Plain b)            = toByteString b
+        twiddle (Escape s)           = s
+        twiddle (EscapeByteA s)      = s
+        twiddle (EscapeIdentifier s) = s
+        twiddle (Many ys)            = B.concat (map twiddle ys)
 
 -- $use
 --
