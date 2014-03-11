@@ -194,11 +194,11 @@ typename :: Field -> Conversion ByteString
 typename field = typname <$> typeInfo field
 
 typeInfo :: Field -> Conversion TypeInfo
-typeInfo Field{..} = Conversion $ \conn -> do
+typeInfo Field{..} = Conversion $ \conn ->
                        Ok <$> (getTypeInfo conn =<< PQ.ftype result column)
 
 typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
-typeInfoByOid oid = Conversion $ \conn -> do
+typeInfoByOid oid = Conversion $ \conn ->
                       Ok <$> (getTypeInfo conn oid)
 
 -- | Returns the name of the column.  This is often determined by a table
@@ -432,7 +432,7 @@ instance (FromField a, Typeable a) => FromField (PGArray a) where
           TI.Array{} ->
               case mdat of
                 Nothing  -> returnError UnexpectedNull f ""
-                Just dat -> do
+                Just dat ->
                    case parseOnly (fromArray info f) dat of
                      Left  err  -> returnError ConversionFailed f err
                      Right conv -> PGArray <$> conv

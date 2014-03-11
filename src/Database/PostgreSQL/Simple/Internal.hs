@@ -204,7 +204,7 @@ exec conn sql =
           Nothing -> do
             msg <- maybe "execute error" id <$> PQ.errorMessage h
             throwIO $ fatalError msg
-          Just res -> do
+          Just res ->
             return res
 
 -- | A version of 'execute' that does not perform query substitution.
@@ -267,8 +267,8 @@ disconnectedError = fatalError "connection disconnected"
 
 -- | Atomically perform an action with the database handle, if there is one.
 withConnection :: Connection -> (PQ.Connection -> IO a) -> IO a
-withConnection Connection{..} m = do
-    withMVar connectionHandle $ \conn -> do
+withConnection Connection{..} m =
+    withMVar connectionHandle $ \conn ->
         if PQ.isNullConnection conn
           then throwIO disconnectedError
           else m conn

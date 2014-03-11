@@ -182,7 +182,7 @@ formatQuery conn q@(Query template) qs
 -- correctly.
 formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
-formatMany conn q@(Query template) qs = do
+formatMany conn q@(Query template) qs =
   case parseTemplate template of
     Just (before, qbits, after) -> do
       bs <- mapM (buildQuery conn q qbits . toRow) qs
@@ -560,7 +560,7 @@ finishQueryWith parser conn q result = do
   case status of
     PQ.EmptyQuery ->
         throwIO $ QueryError "query: Empty query" q
-    PQ.CommandOk -> do
+    PQ.CommandOk ->
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
         let unCol (PQ.Col x) = fromIntegral x :: Int

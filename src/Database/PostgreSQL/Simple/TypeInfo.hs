@@ -68,7 +68,7 @@ getTypeInfo' conn oid oidmap =
       (oidmap', typeInfo) <-
           case names of
             []  -> return $ throw (fatalError "invalid type oid")
-            [(typoid, typcategory, typdelim, typname, typelem_, typrelid)] -> do
+            [(typoid, typcategory, typdelim, typname, typelem_, typrelid)] ->
                case typcategory of
                  'A' -> do
                    (oidmap', typelem) <- getTypeInfo' conn typelem_ oidmap

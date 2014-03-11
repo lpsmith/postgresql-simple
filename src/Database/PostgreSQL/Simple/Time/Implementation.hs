@@ -181,11 +181,11 @@ digits msg = do
 {-# INLINE digits #-}
 
 dayToBuilder :: Day -> Builder
-dayToBuilder (toGregorian -> (y,m,d)) = do
+dayToBuilder (toGregorian -> (y,m,d)) =
     pad4 y ++ fromChar '-' ++ pad2 m ++ fromChar '-' ++ pad2 d
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
-timeOfDayToBuilder (TimeOfDay h m s) = do
+timeOfDayToBuilder (TimeOfDay h m s) =
     pad2 h ++ fromChar ':' ++ pad2 m ++ fromChar ':' ++ showSeconds s
 
 timeZoneToBuilder :: TimeZone -> Builder

@@ -68,7 +68,7 @@ copy conn template qs = do
 --   to call this function.  Does not perform parameter subsitution.
 
 copy_ :: Connection -> Query -> IO ()
-copy_ conn (Query q) = do
+copy_ conn (Query q) =
     doCopy "Database.PostgreSQL.Simple.Copy.copy_" conn (Query q) q
 
 doCopy :: B.ByteString -> Connection -> Query -> B.ByteString -> IO ()
@@ -152,7 +152,7 @@ getCopyData conn = withConnection conn loop
 --   is called.
 
 putCopyData :: Connection -> B.ByteString -> IO ()
-putCopyData conn dat = withConnection conn $ \pqconn -> do
+putCopyData conn dat = withConnection conn $ \pqconn ->
     doCopyIn funcName (\c -> PQ.putCopyData c dat) pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyData"
@@ -184,7 +184,7 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
 --   is called.
 
 putCopyError :: Connection -> B.ByteString -> IO ()
-putCopyError conn err = withConnection conn $ \pqconn -> do
+putCopyError conn err = withConnection conn $ \pqconn ->
     doCopyIn funcName (\c -> PQ.putCopyEnd c (Just err)) pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyError"
