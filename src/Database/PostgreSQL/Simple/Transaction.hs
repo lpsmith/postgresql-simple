@@ -36,6 +36,7 @@ module Database.PostgreSQL.Simple.Transaction
     ) where
 
 import qualified Control.Exception as E
+import           Control.Monad (void)
 import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
@@ -166,11 +167,11 @@ withTransactionModeRetry mode shouldRetry conn act =
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
-rollback conn = execute_ conn "ABORT" >> return ()
+rollback conn = void $ execute_ conn "ABORT"
 
 -- | Commit a transaction.
 commit :: Connection -> IO ()
-commit conn = execute_ conn "COMMIT" >> return ()
+commit conn = void $ execute_ conn "COMMIT"
 
 -- | Begin a transaction.
 begin :: Connection -> IO ()
@@ -182,9 +183,8 @@ beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 
 -- | Begin a transaction with a given transaction mode
 beginMode :: TransactionMode -> Connection -> IO ()
-beginMode mode conn = do
-    _ <- execute_ conn $! Query (B.concat ["BEGIN", isolevel, readmode])
-    return ()
+beginMode mode conn =
+    void $ execute_ conn $! Query (B.concat ["BEGIN", isolevel, readmode])
   where
     isolevel = case isolationLevel mode of
                  DefaultIsolationLevel -> ""
@@ -229,18 +229,18 @@ newSavepoint conn = do
 -- roll back.
 releaseSavepoint :: Connection -> Savepoint -> IO ()
 releaseSavepoint conn (Savepoint name) =
-    execute_ conn ("RELEASE SAVEPOINT " <> name) >> return ()
+    void $ execute_ conn ("RELEASE SAVEPOINT " <> name)
 
 -- | Roll back to a savepoint.  This will not release the savepoint.
 rollbackToSavepoint :: Connection -> Savepoint -> IO ()
 rollbackToSavepoint conn (Savepoint name) =
-    execute_ conn ("ROLLBACK TO SAVEPOINT " <> name) >> return ()
+    void $ execute_ conn ("ROLLBACK TO SAVEPOINT " <> name)
 
 -- | Roll back to a savepoint and release it.  This is like calling
 -- 'rollbackToSavepoint' followed by 'releaseSavepoint', but avoids a
 -- round trip to the database server.
 rollbackToAndReleaseSavepoint :: Connection -> Savepoint -> IO ()
 rollbackToAndReleaseSavepoint conn (Savepoint name) =
-    execute_ conn sql >> return ()
+    void $ execute_ conn sql
   where
     sql = "ROLLBACK TO SAVEPOINT " <> name <> "; RELEASE SAVEPOINT " <> name

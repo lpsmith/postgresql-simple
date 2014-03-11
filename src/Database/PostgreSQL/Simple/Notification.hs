@@ -36,7 +36,7 @@ module Database.PostgreSQL.Simple.Notification
      ) where
 
 import           Control.Concurrent
-import           Control.Monad ( when )
+import           Control.Monad ( void, when )
 import           Control.Exception ( throwIO )
 import qualified Data.ByteString as B
 import           Database.PostgreSQL.Simple.Internal
@@ -64,7 +64,7 @@ getNotification conn = loop False
     funcName = "Database.PostgreSQL.Simple.Notification.getNotification"
     loop doConsume = do
         res <- withConnection conn $ \c -> do
-                         when doConsume (PQ.consumeInput c >> return ())
+                         when doConsume (void $ PQ.consumeInput c)
                          mmsg <- PQ.notifies c
                          case mmsg of
                            Nothing -> do

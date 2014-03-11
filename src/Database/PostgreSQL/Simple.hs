@@ -116,7 +116,7 @@ import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text ( integral )
 import           Control.Applicative ((<$>), pure)
 import           Control.Exception as E
-import           Control.Monad (foldM)
+import           Control.Monad (foldM, unless, void)
 import           Data.ByteString (ByteString)
 import           Data.Char (isAsciiUpper, isAsciiLower, isDigit)
 import           Data.Int (Int64)
@@ -504,10 +504,10 @@ doFold FoldOptions{..} conn _template q a0 f = do
                              <> fromByteString name
                             ))
     close name =
-        (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
+        void (execute_ conn ("CLOSE " <> name)) `E.catch` \ex ->
             -- Don't throw exception if CLOSE failed because the transaction is
             -- aborted.  Otherwise, it will throw away the original error.
-            if isFailedTransactionError ex then return () else throwIO ex
+            unless (isFailedTransactionError ex) $ throwIO ex
 
     go = bracket declare close $ \name ->
          let loop a = do
