@@ -116,10 +116,12 @@ import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text ( integral )
 import           Control.Applicative ((<$>), pure)
 import           Control.Exception as E
-import           Control.Monad (foldM)
+import           Control.Monad (foldM, unless, void)
 import           Data.ByteString (ByteString)
+import           Data.Char (isAsciiUpper, isAsciiLower, isDigit)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid (mconcat)
 import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.Compat ( (<>) )
@@ -182,7 +184,7 @@ formatQuery conn q@(Query template) qs
 -- correctly.
 formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
-formatMany conn q@(Query template) qs = do
+formatMany conn q@(Query template) qs =
   case parseTemplate template of
     Just (before, qbits, after) -> do
       bs <- mapM (buildQuery conn q qbits . toRow) qs
@@ -269,14 +271,14 @@ parseTemplate template =
         (s1, source')  = B.splitAt (B.length source - B.length p1) source
         (s2, source'') = B.splitAt (B.length p1     - B.length p2) source'
 
-    toUpper_ascii c | c >= 'a' && c <= 'z' = toEnum (fromEnum c - 32)
+    toUpper_ascii c | isAsciiLower c = toEnum (fromEnum c - 32)
                     | otherwise            = c
 
     -- Based on the definition of {ident_cont} in src/backend/parser/scan.l
     -- in the PostgreSQL source.  No need to check [a-z], since we converted
     -- the whole string to uppercase.
-    isIdent c = (c >= '0'    && c <= '9')
-             || (c >= 'A'    && c <= 'Z')
+    isIdent c = isDigit c
+             || isAsciiUpper c
              || (c >= '\x80' && c <= '\xFF')
              || c == '_'
              || c == '$'
@@ -298,7 +300,7 @@ escapeByteaConn conn s =
 
 checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
 checkError _ (Just x) = return $ Right x
-checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
+checkError c Nothing  = Left . fromMaybe "" <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
@@ -461,7 +463,7 @@ foldWithOptions_ :: (FromRow r) =>
                  -> a                 -- ^ Initial state for result consumer.
                  -> (a -> r -> IO a)  -- ^ Result consumer.
                  -> IO a
-foldWithOptions_ opts conn query a f = doFold opts conn query query a f
+foldWithOptions_ opts conn query = doFold opts conn query query
 
 
 doFold :: ( FromRow row )
@@ -502,10 +504,10 @@ doFold FoldOptions{..} conn _template q a0 f = do
                              <> fromByteString name
                             ))
     close name =
-        (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
+        void (execute_ conn ("CLOSE " <> name)) `E.catch` \ex ->
             -- Don't throw exception if CLOSE failed because the transaction is
             -- aborted.  Otherwise, it will throw away the original error.
-            if isFailedTransactionError ex then return () else throwIO ex
+            unless (isFailedTransactionError ex) $ throwIO ex
 
     go = bracket declare close $ \name ->
          let loop a = do
@@ -560,7 +562,7 @@ finishQueryWith parser conn q result = do
   case status of
     PQ.EmptyQuery ->
         throwIO $ QueryError "query: Empty query" q
-    PQ.CommandOk -> do
+    PQ.CommandOk ->
         throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
         let unCol (PQ.Col x) = fromIntegral x :: Int

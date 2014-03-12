@@ -36,9 +36,8 @@ import           Data.Maybe(fromMaybe)
 import           Data.String
 import           Data.Typeable
 import           Data.Word
-import           Database.PostgreSQL.LibPQ(Oid(..))
+import           Database.PostgreSQL.LibPQ(ExecStatus(..), Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
-import           Database.PostgreSQL.LibPQ(ExecStatus(..))
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
@@ -142,7 +141,7 @@ connectPostgreSQL connstr = do
     case stat of
       PQ.ConnectionOk -> do
           connectionHandle  <- newMVar conn
-          connectionObjects <- newMVar (IntMap.empty)
+          connectionObjects <- newMVar IntMap.empty
           connectionTempNameCounter <- newIORef 0
           let wconn = Connection{..}
           version <- PQ.serverVersion conn
@@ -153,7 +152,7 @@ connectPostgreSQL connstr = do
           _ <- execute_ wconn settings
           return wconn
       _ -> do
-          msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
+          msg <- fromMaybe "connectPostgreSQL error" <$> PQ.errorMessage conn
           throwIO $ fatalError msg
 
 -- | Turns a 'ConnectInfo' data structure into a libpq connection string.
@@ -202,9 +201,9 @@ exec conn sql =
         mres <- PQ.exec h sql
         case mres of
           Nothing -> do
-            msg <- maybe "execute error" id <$> PQ.errorMessage h
+            msg <- fromMaybe "execute error" <$> PQ.errorMessage h
             throwIO $ fatalError msg
-          Just res -> do
+          Just res ->
             return res
 
 -- | A version of 'execute' that does not perform query substitution.
@@ -255,7 +254,7 @@ throwResultError _ result status = do
                  PQ.resultErrorField result PQ.DiagMessageDetail
     hint      <- fromMaybe "" <$>
                  PQ.resultErrorField result PQ.DiagMessageHint
-    state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+    state     <- fromMaybe "" <$> PQ.resultErrorField result PQ.DiagSqlstate
     throwIO $ SqlError { sqlState = state
                        , sqlExecStatus = status
                        , sqlErrorMsg = errormsg
@@ -267,8 +266,8 @@ disconnectedError = fatalError "connection disconnected"
 
 -- | Atomically perform an action with the database handle, if there is one.
 withConnection :: Connection -> (PQ.Connection -> IO a) -> IO a
-withConnection Connection{..} m = do
-    withMVar connectionHandle $ \conn -> do
+withConnection Connection{..} m =
+    withMVar connectionHandle $ \conn ->
         if PQ.isNullConnection conn
           then throwIO disconnectedError
           else m conn

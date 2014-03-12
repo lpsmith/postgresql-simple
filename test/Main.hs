@@ -100,7 +100,7 @@ testFold TestEnv{..} = TestCase $ do
                   True <- expectError isSyntaxError $
                           execute_ conn "asdf"
                   True <- expectError ST.isFailedTransactionError $
-                          (query_ conn "SELECT 1" :: IO [(Only Int)])
+                          (query_ conn "SELECT 1" :: IO [Only Int])
                   throwIO TestException
                 else do
                   xs <- readIORef ref

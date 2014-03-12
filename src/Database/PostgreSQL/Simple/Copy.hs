@@ -44,6 +44,7 @@ import           Control.Exception  ( throwIO )
 import qualified Data.Attoparsec.ByteString.Char8 as P
 import           Data.Typeable(Typeable)
 import           Data.Int(Int64)
+import           Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple
@@ -68,7 +69,7 @@ copy conn template qs = do
 --   to call this function.  Does not perform parameter subsitution.
 
 copy_ :: Connection -> Query -> IO ()
-copy_ conn (Query q) = do
+copy_ conn (Query q) =
     doCopy "Database.PostgreSQL.Simple.Copy.copy_" conn (Query q) q
 
 doCopy :: B.ByteString -> Connection -> Query -> B.ByteString -> IO ()
@@ -134,7 +135,7 @@ getCopyData conn = withConnection conn loop
             throwIO SqlError {
                           sqlState       = "",
                           sqlExecStatus  = FatalError,
-                          sqlErrorMsg    = maybe "" id mmsg,
+                          sqlErrorMsg    = fromMaybe "" mmsg,
                           sqlErrorDetail = "",
                           sqlErrorHint   = funcName
                         }
@@ -152,8 +153,8 @@ getCopyData conn = withConnection conn loop
 --   is called.
 
 putCopyData :: Connection -> B.ByteString -> IO ()
-putCopyData conn dat = withConnection conn $ \pqconn -> do
-    doCopyIn funcName (\c -> PQ.putCopyData c dat) pqconn
+putCopyData conn dat = withConnection conn $
+    doCopyIn funcName (flip PQ.putCopyData dat)
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyData"
 
@@ -168,7 +169,7 @@ putCopyData conn dat = withConnection conn $ \pqconn -> do
 
 putCopyEnd :: Connection -> IO Int64
 putCopyEnd conn = withConnection conn $ \pqconn -> do
-    doCopyIn funcName (\c -> PQ.putCopyEnd c Nothing) pqconn
+    doCopyIn funcName (flip PQ.putCopyEnd Nothing) pqconn
     getCopyCommandTag funcName pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyEnd"
@@ -184,7 +185,7 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
 --   is called.
 
 putCopyError :: Connection -> B.ByteString -> IO ()
-putCopyError conn err = withConnection conn $ \pqconn -> do
+putCopyError conn err = withConnection conn $ \pqconn ->
     doCopyIn funcName (\c -> PQ.putCopyEnd c (Just err)) pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyError"
@@ -203,7 +204,7 @@ doCopyIn funcName action = loop
             throwIO SqlError {
                       sqlState = "",
                       sqlExecStatus  = FatalError,
-                      sqlErrorMsg    = maybe "" id mmsg,
+                      sqlErrorMsg    = fromMaybe "" mmsg,
                       sqlErrorDetail = "",
                       sqlErrorHint   = funcName
                     }

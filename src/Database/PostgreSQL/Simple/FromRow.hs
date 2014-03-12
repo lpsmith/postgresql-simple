@@ -36,13 +36,12 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
-import           Database.PostgreSQL.Simple.Types (Only(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
+import           Database.PostgreSQL.Simple.Types ((:.)(..), Only (..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
 
 -- | A collection type that can be converted from a sequence of fields.
@@ -91,7 +90,7 @@ fieldWith fieldP = RP $ do
     column <- lift get
     lift (put (column + 1))
     let ncols = nfields rowresult
-    if (column >= ncols)
+    if column >= ncols
     then lift $ lift $ do
         vals <- mapM (getTypenameByCol r) [0..ncols-1]
         let err = ConversionFailed

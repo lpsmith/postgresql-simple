@@ -16,7 +16,7 @@ import Prelude hiding (take, (++))
 import Blaze.ByteString.Builder(Builder, fromByteString)
 import Blaze.ByteString.Builder.Char8(fromChar)
 import Blaze.Text.Int(integral)
-import Control.Arrow((***))
+import Control.Arrow(first)
 import Control.Applicative
 import Control.Monad(when)
 import Data.Bits((.&.))
@@ -51,7 +51,7 @@ instance Read a => Read (Unbounded a) where
   readsPrec prec = readParen False $ \str -> case str of
     ('-':'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(NegInfinity,xs)]
     (    'i':'n':'f':'i':'n':'i':'t':'y':xs)  -> [(PosInfinity,xs)]
-    xs -> map (Finite *** id) (readsPrec prec xs)
+    xs -> map (first Finite) (readsPrec prec xs)
 
 type LocalTimestamp = Unbounded LocalTime
 type UTCTimestamp   = Unbounded UTCTime
@@ -181,11 +181,11 @@ digits msg = do
 {-# INLINE digits #-}
 
 dayToBuilder :: Day -> Builder
-dayToBuilder (toGregorian -> (y,m,d)) = do
+dayToBuilder (toGregorian -> (y,m,d)) =
     pad4 y ++ fromChar '-' ++ pad2 m ++ fromChar '-' ++ pad2 d
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
-timeOfDayToBuilder (TimeOfDay h m s) = do
+timeOfDayToBuilder (TimeOfDay h m s) =
     pad2 h ++ fromChar ':' ++ pad2 m ++ fromChar ':' ++ showSeconds s
 
 timeZoneToBuilder :: TimeZone -> Builder
@@ -210,7 +210,7 @@ localTimeToBuilder :: LocalTime -> Builder
 localTimeToBuilder (LocalTime day tod) =
     dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder tod
 
-unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
+unboundedToBuilder :: (a -> Builder) -> Unbounded a -> Builder
 unboundedToBuilder finiteToBuilder unbounded
     = case unbounded of
         NegInfinity -> fromByteString "-infinity"

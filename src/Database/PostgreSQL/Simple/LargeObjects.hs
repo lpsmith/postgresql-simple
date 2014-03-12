@@ -14,7 +14,7 @@
 -- database transaction,  so if you are interested in using anything beyond
 -- 'loCreat', 'loCreate', and 'loUnlink',  you will need to run the entire
 -- sequence of functions in a transaction.   As 'loImport' and 'loExport'
--- are simply C functions that call 'loCreat', 'loOpen', 'loRead', and 
+-- are simply C functions that call 'loCreat', 'loOpen', 'loRead', and
 -- 'loWrite',  and do not perform any transaction handling themselves,
 -- they also need to be wrapped in an explicit transaction.
 --
@@ -43,6 +43,7 @@ module Database.PostgreSQL.Simple.LargeObjects
 import           Control.Applicative ((<$>))
 import           Control.Exception (throwIO)
 import qualified Data.ByteString as B
+import           Data.Maybe (fromMaybe)
 import           Database.PostgreSQL.LibPQ (Oid(..),LoFd(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Internal
@@ -53,18 +54,18 @@ liftPQ str conn m = withConnection conn $ \c -> do
     res <- m c
     case res of
       Nothing -> do
-          msg <- maybe str id <$> PQ.errorMessage c
+          msg <- fromMaybe str <$> PQ.errorMessage c
           throwIO $ fatalError msg
       Just  x -> return x
 
 loCreat :: Connection -> IO Oid
-loCreat conn = liftPQ "loCreat" conn (\c -> PQ.loCreat c)
+loCreat conn = liftPQ "loCreat" conn PQ.loCreat
 
 loCreate :: Connection -> Oid -> IO Oid
-loCreate conn oid = liftPQ "loCreate" conn (\c -> PQ.loCreate c oid)
+loCreate conn oid = liftPQ "loCreate" conn (flip PQ.loCreate oid)
 
 loImport :: Connection -> FilePath -> IO Oid
-loImport conn path = liftPQ "loImport" conn (\c -> PQ.loImport c path)
+loImport conn path = liftPQ "loImport" conn (flip PQ.loImport path)
 
 loImportWithOid :: Connection -> FilePath -> Oid -> IO Oid
 loImportWithOid conn path oid = liftPQ "loImportWithOid" conn (\c -> PQ.loImportWithOid c path oid)
@@ -85,13 +86,13 @@ loSeek :: Connection -> LoFd -> SeekMode -> Int -> IO Int
 loSeek conn fd seekmode offset = liftPQ "loSeek" conn (\c -> PQ.loSeek c fd seekmode offset)
 
 loTell :: Connection -> LoFd -> IO Int
-loTell conn fd = liftPQ "loTell" conn (\c -> PQ.loTell c fd)
+loTell conn fd = liftPQ "loTell" conn (flip PQ.loTell fd)
 
 loTruncate :: Connection -> LoFd -> Int -> IO ()
 loTruncate conn fd len = liftPQ "loTruncate" conn (\c -> PQ.loTruncate c fd len)
 
 loClose :: Connection -> LoFd -> IO ()
-loClose conn fd = liftPQ "loClose" conn (\c -> PQ.loClose c fd)
+loClose conn fd = liftPQ "loClose" conn (flip PQ.loClose fd)
 
 loUnlink :: Connection -> Oid -> IO ()
-loUnlink conn oid = liftPQ "loUnlink" conn (\c -> PQ.loUnlink c oid)
+loUnlink conn oid = liftPQ "loUnlink" conn (flip PQ.loUnlink oid)
