@@ -444,9 +444,13 @@ fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
     delim = typdelim (typelem typeInfo)
     fElem = f{ typeOid = typoid (typelem typeInfo) }
-    parseIt item = (fromField f' . Just . fmt delim) item
-      where f' | Arrays.Array _ <- item = f
-               | otherwise              = fElem
+
+    parseIt item =
+        fromField f' $ if item' == "NULL" then Nothing else Just item'
+      where
+        item' = fmt delim item
+        f' | Arrays.Array _ <- item = f
+           | otherwise              = fElem
 
 instance (FromField a, Typeable a) => FromField (Vector a) where
     fromField f v = V.fromList . fromPGArray <$> fromField f v
