@@ -32,6 +32,7 @@ module Database.PostgreSQL.Simple.Types
 import Blaze.ByteString.Builder (toByteString)
 import Control.Arrow (first)
 import Data.ByteString (ByteString)
+import Data.Hashable (Hashable(hashWithSalt))
 import Data.Monoid (Monoid(..))
 import Data.String (IsString(..))
 import Data.Typeable (Typeable)
@@ -127,10 +128,16 @@ newtype Identifier = Identifier {fromIdentifier :: ByteString}
 instance IsString Identifier where
     fromString = Identifier . toByteString . Utf8.fromString
 
+instance Hashable Identifier where
+    hashWithSalt i (Identifier t) = hashWithSalt i t
+
 -- | Wrap text for use as (maybe) qualified identifier, i.e. a table
 -- with schema, or column with table.
 data QualifiedIdentifier = QualifiedIdentifier (Maybe ByteString) ByteString
     deriving (Eq, Ord, Read, Show, Typeable)
+
+instance Hashable QualifiedIdentifier where
+    hashWithSalt i (QualifiedIdentifier q t) = hashWithSalt i (q, t)
 
 -- | Wrap a list for use as a PostgreSQL array.
 newtype PGArray a = PGArray {fromPGArray :: [a]}
