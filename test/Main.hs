@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
+import Database.PostgreSQL.Simple.Types(Query(..))
 import Database.PostgreSQL.Simple.HStore
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 import Control.Applicative
@@ -13,8 +14,10 @@ import Data.IORef
 import Data.Typeable
 import qualified Data.ByteString as B
 import Data.Map (Map)
+import Data.List (sort)
 import qualified Data.Map as Map
 import Data.Text(Text)
+import qualified Data.Text.Encoding as T
 import System.Exit (exitFailure)
 import System.IO
 import qualified Data.Vector as V
@@ -36,6 +39,7 @@ tests =
     , TestLabel "HStore"        . testHStore
     , TestLabel "JSON"          . testJSON
     , TestLabel "Savepoint"     . testSavepoint
+    , TestLabel "Unicode"       . testUnicode
     ]
 
 testBytea :: TestEnv -> Test
@@ -242,6 +246,15 @@ testSavepoint TestEnv{..} = TestCase $ do
     [1,2,3] <- getRows
 
     return ()
+
+testUnicode :: TestEnv -> Test
+testUnicode TestEnv{..} = TestCase $ do
+    let q = Query . T.encodeUtf8
+    let messages = map Only ["привет","мир"] :: [Only Text]
+    execute_ conn (q "CREATE TEMPORARY TABLE ру́сский (сообщение TEXT)")
+    executeMany conn "INSERT INTO ру́сский (сообщение) VALUES (?)" messages
+    messages' <- query_ conn "SELECT сообщение FROM ру́сский"
+    sort messages @?= sort messages'
 
 data TestException
   = TestException
