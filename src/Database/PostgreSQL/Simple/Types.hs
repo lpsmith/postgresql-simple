@@ -139,6 +139,14 @@ data QualifiedIdentifier = QualifiedIdentifier (Maybe ByteString) ByteString
 instance Hashable QualifiedIdentifier where
     hashWithSalt i (QualifiedIdentifier q t) = hashWithSalt i (q, t)
 
+instance IsString QualifiedIdentifier where
+    fromString str = let (x,y) = B.break (== 46)
+                               . toByteString
+                               . Utf8.fromString $ str
+                      in if B.null y
+                         then QualifiedIdentifier Nothing x
+                         else QualifiedIdentifier (Just x) (B.tail y)
+
 -- | Wrap a list for use as a PostgreSQL array.
 newtype PGArray a = PGArray {fromPGArray :: [a]}
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
