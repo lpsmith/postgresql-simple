@@ -61,15 +61,20 @@ data Action =
   | EscapeByteA ByteString
     -- ^ Escape binary data for use as a @bytea@ literal.  Include surrounding
     -- quotes.  This is used by the 'Binary' newtype wrapper.
+  | EscapeIdentifier ByteString
+    -- ^ Escape before substituting. Use for all sql identifiers like
+    -- table, column names, etc. This is used by the 'Identifier' newtype
+    -- wrapper.
   | Many [Action]
     -- ^ Concatenate a series of rendering actions.
     deriving (Typeable)
 
 instance Show Action where
-    show (Plain b)       = "Plain " ++ show (toByteString b)
-    show (Escape b)      = "Escape " ++ show b
-    show (EscapeByteA b) = "EscapeByteA " ++ show b
-    show (Many b)        = "Many " ++ show b
+    show (Plain b)            = "Plain " ++ show (toByteString b)
+    show (Escape b)           = "Escape " ++ show b
+    show (EscapeByteA b)      = "EscapeByteA " ++ show b
+    show (EscapeIdentifier b) = "EscapeIdentifier " ++ show b
+    show (Many b)             = "Many " ++ show b
 
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
@@ -172,6 +177,18 @@ instance ToField (Binary SB.ByteString) where
 
 instance ToField (Binary LB.ByteString) where
     toField (Binary bs) = (EscapeByteA . SB.concat . LB.toChunks) bs
+    {-# INLINE toField #-}
+
+instance ToField Identifier where
+    toField (Identifier bs) = EscapeIdentifier bs
+    {-# INLINE toField #-}
+
+instance ToField QualifiedIdentifier where
+    toField (QualifiedIdentifier (Just s) t) = Many [ EscapeIdentifier s
+                                                    , Plain (fromChar '.')
+                                                    , EscapeIdentifier t
+                                                    ]
+    toField (QualifiedIdentifier Nothing  t) = EscapeIdentifier t
     {-# INLINE toField #-}
 
 instance ToField SB.ByteString where

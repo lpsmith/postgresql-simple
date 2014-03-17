@@ -1,5 +1,5 @@
 Name:                postgresql-simple
-Version:             0.4.0.2
+Version:             0.4.0.3
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
     Mid-Level PostgreSQL client library, forked from mysql-simple.
@@ -59,7 +59,8 @@ Library
     blaze-textual,
     bytestring >= 0.9,
     containers,
-    postgresql-libpq >= 0.8,
+    hashable,
+    postgresql-libpq >= 0.9,
     template-haskell,
     text >= 0.11.1,
     time,
