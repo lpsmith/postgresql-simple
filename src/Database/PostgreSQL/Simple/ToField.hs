@@ -181,15 +181,17 @@ instance ToField (Binary LB.ByteString) where
     {-# INLINE toField #-}
 
 instance ToField Identifier where
-    toField (Identifier bs) = EscapeIdentifier bs
+    toField (Identifier bs) = EscapeIdentifier (ST.encodeUtf8 bs)
     {-# INLINE toField #-}
 
 instance ToField QualifiedIdentifier where
-    toField (QualifiedIdentifier (Just s) t) = Many [ EscapeIdentifier s
-                                                    , Plain (fromChar '.')
-                                                    , EscapeIdentifier t
-                                                    ]
-    toField (QualifiedIdentifier Nothing  t) = EscapeIdentifier t
+    toField (QualifiedIdentifier (Just s) t) =
+        Many [ EscapeIdentifier (ST.encodeUtf8 s)
+             , Plain (fromChar '.')
+             , EscapeIdentifier (ST.encodeUtf8 t)
+             ]
+    toField (QualifiedIdentifier Nothing  t) =
+               EscapeIdentifier (ST.encodeUtf8 t)
     {-# INLINE toField #-}
 
 instance ToField SB.ByteString where

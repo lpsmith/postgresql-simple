@@ -30,16 +30,18 @@ module Database.PostgreSQL.Simple.Types
     , Values(..)
     ) where
 
-import Blaze.ByteString.Builder (toByteString)
-import Control.Arrow (first)
-import Data.ByteString (ByteString)
-import Data.Hashable (Hashable(hashWithSalt))
-import Data.Monoid (Monoid(..))
-import Data.String (IsString(..))
-import Data.Typeable (Typeable)
+import           Blaze.ByteString.Builder (toByteString)
+import           Control.Arrow (first)
+import           Data.ByteString (ByteString)
+import           Data.Hashable (Hashable(hashWithSalt))
+import           Data.Monoid (Monoid(..))
+import           Data.String (IsString(..))
+import           Data.Typeable (Typeable)
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as B
-import Database.PostgreSQL.LibPQ (Oid(..))
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           Database.PostgreSQL.LibPQ (Oid(..))
 
 -- | A placeholder for the SQL @NULL@ value.
 data Null = Null
@@ -123,30 +125,25 @@ newtype Binary a = Binary {fromBinary :: a}
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | Wrap text for use as sql identifier, i.e. a table or column name.
-newtype Identifier = Identifier {fromIdentifier :: ByteString}
-    deriving (Eq, Ord, Read, Show, Typeable)
-
-instance IsString Identifier where
-    fromString = Identifier . toByteString . Utf8.fromString
+newtype Identifier = Identifier {fromIdentifier :: Text}
+    deriving (Eq, Ord, Read, Show, Typeable, IsString)
 
 instance Hashable Identifier where
     hashWithSalt i (Identifier t) = hashWithSalt i t
 
 -- | Wrap text for use as (maybe) qualified identifier, i.e. a table
 -- with schema, or column with table.
-data QualifiedIdentifier = QualifiedIdentifier (Maybe ByteString) ByteString
+data QualifiedIdentifier = QualifiedIdentifier (Maybe Text) Text
     deriving (Eq, Ord, Read, Show, Typeable)
 
 instance Hashable QualifiedIdentifier where
     hashWithSalt i (QualifiedIdentifier q t) = hashWithSalt i (q, t)
 
 instance IsString QualifiedIdentifier where
-    fromString str = let (x,y) = B.break (== 46)
-                               . toByteString
-                               . Utf8.fromString $ str
-                      in if B.null y
+    fromString str = let (x,y) = T.break (== '.') (fromString str)
+                      in if T.null y
                          then QualifiedIdentifier Nothing x
-                         else QualifiedIdentifier (Just x) (B.tail y)
+                         else QualifiedIdentifier (Just x) (T.tail y)
 
 -- | Wrap a list for use as a PostgreSQL array.
 newtype PGArray a = PGArray {fromPGArray :: [a]}
