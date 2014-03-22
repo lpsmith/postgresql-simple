@@ -27,6 +27,7 @@ module Database.PostgreSQL.Simple.Types
     , (:.)(..)
     , Savepoint(..)
     , PGArray(..)
+    , Values(..)
     ) where
 
 import Blaze.ByteString.Builder (toByteString)
@@ -172,4 +173,45 @@ data h :. t = h :. t deriving (Eq,Ord,Show,Read,Typeable)
 infixr 3 :.
 
 newtype Savepoint = Savepoint Query
+    deriving (Eq, Ord, Show, Read, Typeable)
+
+-- | Represents a @VALUES@ table literal,  usable as an alternative
+--   to @executeMany@ and @returning@.  For example:
+--
+-- > execute c "INSERT INTO table (key,val) ?"
+-- >      (Only (Values ["int4","text"]
+-- >                    [(1,"hello"),(2,"world")]))
+--
+--   Issues the following query:
+--
+-- > INSERT INTO table (key,val) (VALUES (1::"int4",'hello'::"text"),(2,'world'))
+--
+--   When the list of values is empty,  the following query will be issued:
+--
+-- > INSERT INTO table (key,val) (VALUES (null::"int4",null::"text") LIMIT 0)
+--
+--   By contrast, @executeMany@ and @returning@ don't issue the query
+--   in the empty case, and simply return @0@ and @[]@ respectively.
+--
+--   The advantage over @executeMany@ is in cases when you want to
+--   parameterize table literals in addition to other parameters,  as can
+--   occur with writable common table expressions, for example.
+--
+--   The first argument is a list of postgresql type names.  Because this
+--   is turned into a properly quoted identifier,  the type name is case
+--   sensitive and must be as it appears in the @pg_type@ table.   Thus,
+--   you must write @timestamptz@ instead of @timestamp with time zone@,
+--   @int4@ instead of @integer@, @_int8@ instead of @bigint[]@, etcetera.
+--
+--   You may omit the type names,  however,  if you do so the list
+--   of values must be non-empty,  and postgresql must be able to infer
+--   the types of the columns from the surrounding context.   If these
+--   conditions are not met,  postgresql-simple will throw an exception
+--   without issuing the query in the former case,  and in the latter
+--   the postgres server will return an error which will be turned into
+--   a @SqlError@ exception.
+--
+--   See <http://www.postgresql.org/docs/9.3/static/sql-values.html> for
+--   more information.
+data Values a = Values [QualifiedIdentifier] [a]
     deriving (Eq, Ord, Show, Read, Typeable)

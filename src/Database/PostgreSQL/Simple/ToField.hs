@@ -33,6 +33,7 @@ import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
+import {-# SOURCE #-} Database.PostgreSQL.Simple.ToRow
 import Database.PostgreSQL.Simple.Types
 import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
 import qualified Data.ByteString as SB
@@ -279,3 +280,59 @@ toJSONField = toField . JSON.toJSON
 inQuotes :: Builder -> Builder
 inQuotes b = quote `mappend` b `mappend` quote
   where quote = Utf8.fromChar '\''
+
+interleaveFoldr :: (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
+interleaveFoldr f b bs as = foldr (\a bs -> b : f a bs) bs as
+{-# INLINE interleaveFoldr #-}
+
+instance ToRow a => ToField (Values a) where
+    toField (Values types rows) =
+        case rows of
+          []    -> case types of
+                     []    -> error err
+                     (_:_) -> values $ typedRow (repeat (lit "null"))
+                                                types
+                                                [lit " LIMIT 0)"]
+          (_:_) -> case types of
+                     []    -> values $ untypedRows rows [litC ')']
+                     (_:_) -> values $ typedRows rows types [litC ')']
+      where
+        err  = "Database.PostgreSQL.Simple.toField :: Values -> Action  either values or types must be non-empty"
+        lit  = Plain . fromByteString
+        litC = Plain . fromChar
+        values x = Many (lit "(VALUES ": x)
+
+        typedField :: (Action, QualifiedIdentifier) -> [Action] -> [Action]
+        typedField (val,typ) rest = val : lit "::" : toField typ : rest
+
+        typedRow :: [Action] -> [QualifiedIdentifier] -> [Action] -> [Action]
+        typedRow (val:vals) (typ:typs) rest =
+            litC '(' :
+              typedField (val,typ) ( interleaveFoldr
+                                        typedField
+                                        (litC ',')
+                                        (litC ')' : rest)
+                                        (zip vals typs)   )
+
+        untypedRow :: [Action] -> [Action] -> [Action]
+        untypedRow (val:vals) rest =
+            litC '(' : val :
+            interleaveFoldr
+                 (:)
+                 (litC ',')
+                 (litC ')' : rest)
+                 vals
+
+        typedRows :: ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
+        typedRows (val:vals) types rest =
+            typedRow (toRow val) types (litC ',' : untypedRows vals rest)
+
+        untypedRows :: ToRow a => [a] -> [Action] -> [Action]
+        untypedRows [] rest = rest
+        untypedRows (val:vals) rest =
+            untypedRow (toRow val) $
+              interleaveFoldr
+                  (untypedRow . toRow)
+                  (litC ',')
+                  rest
+                  vals
