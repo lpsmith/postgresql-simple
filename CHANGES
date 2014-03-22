@@ -1,3 +1,15 @@
+Version 0.4.1.0 (2014-03-22)
+  * Fixed the parsing of arrays containing null values, courtesy of
+    Francesco Mazzoli
+
+  * Added support for properly escaped identifiers,  courtesy of
+    Tobias Florek.   See the new Identifier and QualifiedIdentifier
+    types inside Database.PostgreSQL.Simple.Types.
+
+  * Added support for parameterized VALUES expressions.   This is
+    more general than executeMany and returning.   See the
+    Database.PostgreSQL.Simple.Types.Values data type.
+
 Version 0.4.0.2 (2014-01-12)
   * Tweaked C preprocessor directive to be more portable
 
