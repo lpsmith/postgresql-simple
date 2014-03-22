@@ -46,6 +46,7 @@ Library
      Database.PostgreSQL.Simple.Internal
 
   Other-modules:
+     Database.PostgreSQL.Simple.FromRow.Boilerplate
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.HStore.Implementation
      Database.PostgreSQL.Simple.Time.Implementation
