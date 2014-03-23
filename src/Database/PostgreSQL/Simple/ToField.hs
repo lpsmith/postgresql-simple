@@ -291,7 +291,7 @@ instance ToRow a => ToField (Values a) where
     toField (Values types rows) =
         case rows of
           []    -> case types of
-                     []    -> error err
+                     []    -> error norows
                      (_:_) -> values $ typedRow (repeat (lit "null"))
                                                 types
                                                 [lit " LIMIT 0)"]
@@ -299,7 +299,9 @@ instance ToRow a => ToField (Values a) where
                      []    -> values $ untypedRows rows [litC ')']
                      (_:_) -> values $ typedRows rows types [litC ')']
       where
-        err  = "Database.PostgreSQL.Simple.toField :: Values -> Action  either values or types must be non-empty"
+        funcname = "Database.PostgreSQL.Simple.toField :: Values a -> Action"
+        norows   = funcname ++ "  either values or types must be non-empty"
+        emptyrow = funcname ++ "  each row must contain at least one column"
         lit  = Plain . fromByteString
         litC = Plain . fromChar
         values x = Many (lit "(VALUES ": x)
@@ -315,6 +317,7 @@ instance ToRow a => ToField (Values a) where
                                         (litC ',')
                                         (litC ')' : rest)
                                         (zip vals typs)   )
+        typedRow _ _ _ = error emptyrow
 
         untypedRow :: [Action] -> [Action] -> [Action]
         untypedRow (val:vals) rest =
@@ -324,8 +327,10 @@ instance ToRow a => ToField (Values a) where
                  (litC ',')
                  (litC ')' : rest)
                  vals
+        untypedRow _ _ = error emptyrow
 
         typedRows :: ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
+        typedRows [] _ _ = error funcname
         typedRows (val:vals) types rest =
             typedRow (toRow val) types (litC ',' : untypedRows vals rest)
 
