@@ -1,3 +1,13 @@
+Version 0.4.2.0 (2014-03-22)
+  * Added ToField and FromField instances for the scientific package
+
+  * Changed the Identifier and QualifiedIdentifier to use Text in
+    order to avoid encoding errors.  Technically this requires a
+    major verson bump, but let's pretend 0.4.1.0 didn't happen.
+
+  * Removed non-exhaustive cases in the FromField instance for Values,
+    and tweaked error messages.
+
 Version 0.4.1.0 (2014-03-22)
   * Fixed the parsing of arrays containing null values, courtesy of
     Francesco Mazzoli
