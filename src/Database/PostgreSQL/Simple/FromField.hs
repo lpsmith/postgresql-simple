@@ -127,6 +127,7 @@ import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import           Data.UUID   (UUID)
 import qualified Data.UUID as UUID
+import           Data.Scientific (Scientific)
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -313,6 +314,11 @@ instance FromField Double where
 -- | int2, int4, float4, float8, numeric
 instance FromField (Ratio Integer) where
     fromField = atto ok rational
+      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
+
+-- | int2, int4, float4, float8, numeric
+instance FromField Scientific where
+     fromField = atto ok rational
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
 
 unBinary :: Binary t -> t

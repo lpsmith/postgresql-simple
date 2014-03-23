@@ -41,12 +41,14 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Builder as LT
 import           Data.UUID   (UUID)
 import qualified Data.UUID as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Time
+import           Data.Scientific (Scientific, scientificBuilder)
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -170,6 +172,10 @@ instance ToField Float where
 instance ToField Double where
     toField v | isNaN v || isInfinite v = Plain (inQuotes (double v))
               | otherwise               = Plain (double v)
+    {-# INLINE toField #-}
+
+instance ToField Scientific where
+    toField x = toField (LT.toLazyText (scientificBuilder x))
     {-# INLINE toField #-}
 
 instance ToField (Binary SB.ByteString) where
