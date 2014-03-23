@@ -202,11 +202,10 @@ newtype Savepoint = Savepoint Query
 --
 --   You may omit the type names,  however,  if you do so the list
 --   of values must be non-empty,  and postgresql must be able to infer
---   the types of the columns from the surrounding context.   If these
---   conditions are not met,  postgresql-simple will throw an exception
---   without issuing the query in the former case,  and in the latter
---   the postgres server will return an error which will be turned into
---   a @SqlError@ exception.
+--   the types of the columns from the surrounding context.   If the first
+--   condition is not met,  postgresql-simple will throw an exception
+--   without issuing the query.   In the second case,  the postgres server
+--   will return an error which will be turned into a @SqlError@ exception.
 --
 --   See <http://www.postgresql.org/docs/9.3/static/sql-values.html> for
 --   more information.
