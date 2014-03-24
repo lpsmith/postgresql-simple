@@ -338,14 +338,16 @@ instance ToRow a => ToField (Values a) where
         typedRows :: ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
         typedRows [] _ _ = error funcname
         typedRows (val:vals) types rest =
-            typedRow (toRow val) types (litC ',' : untypedRows vals rest)
+            typedRow (toRow val) types (multiRows vals rest)
 
         untypedRows :: ToRow a => [a] -> [Action] -> [Action]
-        untypedRows [] rest = rest
+        untypedRows [] _ = error funcname
         untypedRows (val:vals) rest =
-            untypedRow (toRow val) $
-              interleaveFoldr
-                  (untypedRow . toRow)
-                  (litC ',')
-                  rest
-                  vals
+            untypedRow (toRow val) (multiRows vals rest)
+
+        multiRows :: ToRow a => [a] -> [Action] -> [Action]
+        multiRows vals rest = interleaveFoldr
+                                (untypedRow . toRow)
+                                (litC ',')
+                                rest
+                                vals
