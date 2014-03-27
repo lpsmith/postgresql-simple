@@ -23,6 +23,14 @@ the Haskell 'Double' type is compatible with the PostgreSQL's 32-bit
 since a 'Double' might lose precision if representing PostgreSQL's 64-bit
 @bigint@, the two are /not/ considered compatible.
 
+Note that the 'Float' and 'Double' instances use attoparsec's 'double'
+conversion routine,  which sacrifices some accuracy for speed.   If you
+need accuracy,  consider first converting data to a 'Scientific' or 'Rational'
+type,  and then converting to a floating-point type.   If you are defining
+your own 'ToRow' instances,  this can be acheived simply by
+@'fromRational' '<$>' 'field'@,  although this idiom additionally compatible
+with PostgreSQL's @numeric@ type.
+
 Because 'FromField' is a typeclass,  one may provide conversions to
 additional Haskell types without modifying postgresql-simple.  This is
 particularly useful for supporting PostgreSQL types that postgresql-simple
@@ -301,12 +309,14 @@ instance FromField Int64 where
 instance FromField Integer where
     fromField = atto ok64 $ signed decimal
 
--- | int2, float4
+-- | int2, float4    (Uses attoparsec's 'double' routine,  for
+--   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Float where
     fromField = atto ok (realToFrac <$> double)
       where ok = $(mkCompats [TI.float4,TI.int2])
 
--- | int2, int4, float4, float8
+-- | int2, int4, float4, float8  (Uses attoparsec's 'double' routine,  for
+--   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Double where
     fromField = atto ok double
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4])
