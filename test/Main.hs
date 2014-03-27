@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
-import Database.PostgreSQL.Simple.Types(Query(..))
+import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 import Control.Applicative
@@ -40,6 +40,7 @@ tests =
     , TestLabel "JSON"          . testJSON
     , TestLabel "Savepoint"     . testSavepoint
     , TestLabel "Unicode"       . testUnicode
+    , TestLabel "Values"        . testValues
     ]
 
 testBytea :: TestEnv -> Test
@@ -249,12 +250,30 @@ testSavepoint TestEnv{..} = TestCase $ do
 
 testUnicode :: TestEnv -> Test
 testUnicode TestEnv{..} = TestCase $ do
-    let q = Query . T.encodeUtf8
+    let q = Query . T.encodeUtf8  -- Handle encoding ourselves to ensure
+                                  -- the table gets created correctly.
     let messages = map Only ["привет","мир"] :: [Only Text]
     execute_ conn (q "CREATE TEMPORARY TABLE ру́сский (сообщение TEXT)")
     executeMany conn "INSERT INTO ру́сский (сообщение) VALUES (?)" messages
     messages' <- query_ conn "SELECT сообщение FROM ру́сский"
     sort messages @?= sort messages'
+
+testValues :: TestEnv -> Test
+testValues TestEnv{..} = TestCase $ do
+    execute_ conn "CREATE TEMPORARY TABLE values_test (x int, y text)"
+    test (Values ["int4","text"] [])
+    test (Values ["int4","text"] [(1,"hello")])
+    test (Values ["int4","text"] [(1,"hello"),(2,"world")])
+    test (Values ["int4","text"] [(1,"hello"),(2,"world"),(3,"goodbye")])
+    test (Values [] [(1,"hello")])
+    test (Values [] [(1,"hello"),(2,"world")])
+    test (Values [] [(1,"hello"),(2,"world"),(3,"goodbye")])
+  where
+    test :: Values (Int, Text) -> Assertion
+    test table@(Values _ vals) = do
+      execute conn "INSERT INTO values_test ?" (Only table)
+      vals' <- query_  conn "DELETE FROM values_test RETURNING *"
+      sort vals @?= sort vals'
 
 data TestException
   = TestException
