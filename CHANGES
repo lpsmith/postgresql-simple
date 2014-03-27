@@ -1,3 +1,11 @@
+Version 0.4.2.1 (2014-03-27)
+  * Fixed bug in Values syntax generation
+
+  * Improved documentation,  including examples of multi-row update,
+    a better example for Values,  documenting the inaccuracies in reading
+    floating point numbers from the database,  and the IsString instance
+    for QualifiedIdentifier.
+
 Version 0.4.2.0 (2014-03-22)
   * Added ToField and FromField instances for the scientific package
 
