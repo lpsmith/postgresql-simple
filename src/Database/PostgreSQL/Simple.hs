@@ -343,6 +343,27 @@ execute conn template qs = do
 -- Returns the number of rows affected.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
+--
+-- For example,  here's a command that inserts two rows into a table
+-- with two columns:
+--
+-- @
+-- executeMany c [sql|
+--     INSERT INTO sometable VALUES (?,?)
+--  |] [(1, \"hello\"),(2, \"world\")]
+-- @
+--
+-- Here's an canonical example of a multi-row update command:
+--
+-- @
+-- executeMany c [sql|
+--     UPDATE sometable
+--        SET sometable.y = upd.y
+--       FROM (VALUES (?,?)) as upd(x,y)
+--      WHERE sometable.x = upd.x
+--  |] [(1, \"hello\"),(2, \"world\")
+-- @
+
 executeMany :: (ToRow q) => Connection -> Query -> [q] -> IO Int64
 executeMany _ _ [] = return 0
 executeMany conn q qs = do
