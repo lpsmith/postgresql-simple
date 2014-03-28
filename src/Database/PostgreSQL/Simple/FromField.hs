@@ -27,9 +27,12 @@ Note that the 'Float' and 'Double' instances use attoparsec's 'double'
 conversion routine,  which sacrifices some accuracy for speed.   If you
 need accuracy,  consider first converting data to a 'Scientific' or 'Rational'
 type,  and then converting to a floating-point type.   If you are defining
-your own 'ToRow' instances,  this can be acheived simply by
-@'fromRational' '<$>' 'field'@,  although this idiom additionally compatible
-with PostgreSQL's @numeric@ type.
+your own 'Database.PostgreSQL.Simple.FromRow.FromRow' instances,  this can be 
+acheived simply by 
+@'fromRational' '<$>' 'Database.PostgreSQL.Simple.FromRow.field'@,  although 
+this idiom is additionally compatible with PostgreSQL's @numeric@ type.
+If this is unacceptable,  you may find 
+'Database.PostgreSQL.Simple.FromRow.fieldWith' useful.
 
 Because 'FromField' is a typeclass,  one may provide conversions to
 additional Haskell types without modifying postgresql-simple.  This is
