@@ -13,7 +13,7 @@ Version 0.4.2.0 (2014-03-22)
     order to avoid encoding errors.  Technically this requires a
     major verson bump, but let's pretend 0.4.1.0 didn't happen.
 
-  * Removed non-exhaustive cases in the FromField instance for Values,
+  * Removed non-exhaustive cases in the ToField instance for Values,
     and tweaked error messages.
 
 Version 0.4.1.0 (2014-03-22)
