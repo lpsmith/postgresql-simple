@@ -331,7 +331,8 @@ buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
 --
 -- Returns the number of rows affected.
 --
--- Throws 'FormatError' if the query could not be formatted correctly.
+-- Throws 'FormatError' if the query could not be formatted correctly, or
+-- a 'SqlError' exception if the backend returns an error.
 execute :: (ToRow q) => Connection -> Query -> q -> IO Int64
 execute conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
@@ -342,7 +343,8 @@ execute conn template qs = do
 --
 -- Returns the number of rows affected.
 --
--- Throws 'FormatError' if the query could not be formatted correctly.
+-- Throws 'FormatError' if the query could not be formatted correctly, or
+-- a 'SqlError' exception if the backend returns an error.
 --
 -- For example,  here's a command that inserts two rows into a table
 -- with two columns:
@@ -399,6 +401,9 @@ returning conn q qs = do
 --   using 'execute' instead of 'query').
 --
 -- * 'ResultError': result conversion failed.
+--
+-- * 'SqlError':  the postgresql backend returned an error,  e.g.
+--   a syntax or type error,  or an incorrect table or column name.
 query :: (ToRow q, FromRow r) => Connection -> Query -> q -> IO [r]
 query = queryWith fromRow
 
@@ -428,6 +433,12 @@ queryWith_ parser conn q@(Query que) = do
 -- This fold is /not/ strict. The stream consumer is responsible for
 -- forcing the evaluation of its result to avoid space leaks.
 --
+-- This is implemented using a database cursor.    As such,  this requires
+-- a transaction.   This function will detect whether or not there is a
+-- transaction in progress,  and will create a 'ReadCommitted' 'ReadOnly'
+-- transaction if needed.   The cursor is given a unique temporary name,
+-- so the consumer may itself call fold.
+--
 -- Exceptions that may be thrown:
 --
 -- * 'FormatError': the query string could not be formatted correctly.
@@ -436,7 +447,9 @@ queryWith_ parser conn q@(Query que) = do
 --   using 'execute' instead of 'query').
 --
 -- * 'ResultError': result conversion failed.
-
+--
+-- * 'SqlError':  the postgresql backend returned an error,  e.g.
+--   a syntax or type error,  or an incorrect table or column name.
 fold            :: ( FromRow row, ToRow params )
                 => Connection
                 -> Query
@@ -446,6 +459,9 @@ fold            :: ( FromRow row, ToRow params )
                 -> IO a
 fold = foldWithOptions defaultFoldOptions
 
+-- | Number of rows to fetch at a time.   'Automatic' currently defaults
+--   to 256 rows,  although it might be nice to make this more intelligent
+--   based on e.g. the average size of the rows.
 data FetchQuantity
    = Automatic
    | Fixed !Int
@@ -456,12 +472,19 @@ data FoldOptions
        transactionMode :: !TransactionMode
      }
 
+-- | defaults to 'Automatic',  and 'TransactionMode' 'ReadCommitted' 'ReadOnly'
 defaultFoldOptions :: FoldOptions
 defaultFoldOptions = FoldOptions {
       fetchQuantity   = Automatic,
       transactionMode = TransactionMode ReadCommitted ReadOnly
     }
 
+-- | The same as 'fold',  but this provides a bit more control over
+--   lower-level details.  Currently,  the number of rows fetched per
+--   round-trip to the server and the transaction mode may be adjusted
+--   accordingly.    If the connection is already in a transaction,
+--   then the existing transaction is used and thus the 'transactionMode'
+--   option is ignored.
 foldWithOptions :: ( FromRow row, ToRow params )
                 => FoldOptions
                 -> Connection
