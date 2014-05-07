@@ -140,7 +140,7 @@ import qualified Data.Text.Encoding as TE
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
--- | Exception thronw if a 'Query' could not be formatted correctly.
+-- | Exception thrown if a 'Query' could not be formatted correctly.
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
 data FormatError = FormatError {
