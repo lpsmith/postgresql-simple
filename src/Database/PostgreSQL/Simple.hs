@@ -140,7 +140,7 @@ import qualified Data.Text.Encoding as TE
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
--- | Exception thrown if a 'Query' could not be formatted correctly.
+-- | Exception thronw if a 'Query' could not be formatted correctly.
 -- This may occur if the number of \'@?@\' characters in the query
 -- string does not match the number of parameters provided.
 data FormatError = FormatError {
@@ -341,7 +341,9 @@ execute conn template qs = do
 -- | Execute a multi-row @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
 --
--- Returns the number of rows affected.
+-- Returns the number of rows affected.   If the list of parameters is empty,
+-- this function will simply return 0 without issuing the query to the backend.
+-- If this is not desired, consider using the 'Values' constructor instead.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly, or
 -- a 'SqlError' exception if the backend returns an error.
@@ -378,6 +380,10 @@ executeMany conn q qs = do
 --    @'query' conn "INSERT ... RETURNING ..." ...@
 -- in cases where you are only inserting a single row,  and do not need
 -- functionality analogous to 'executeMany'.
+--
+-- If the list of parameters is empty,  this function will simply return @[]@
+-- without issuing the query to the backend.   If this is not desired,
+-- consider using the 'Values' constructor instead.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
