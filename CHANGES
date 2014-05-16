@@ -1,3 +1,9 @@
+Version 0.4.2.2 (2014-05-15)
+  * Fixed compatibility with scientific-0.3.*,  thanks to Adam Bergmark
+
+  * Improved documentation of the FromField module, as well as the fold,
+    foldWithOptions, executeMany,  and returning operators.
+
 Version 0.4.2.1 (2014-03-27)
   * Fixed bug in Values syntax generation
 
