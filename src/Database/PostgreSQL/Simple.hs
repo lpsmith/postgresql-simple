@@ -697,9 +697,10 @@ fmtError msg q xs = throw FormatError {
 -- >
 -- > import Database.PostgreSQL.Simple
 -- >
+-- > hello :: IO [Only Int]
 -- > hello = do
--- >   conn <- connect defaultConnectInfo
--- >   query_ conn "select 2 + 2" :: IO [Only Int]
+-- >   conn <- connectPostgreSQL ""
+-- >   query_ conn "select 2 + 2"
 --
 -- A 'Query' value does not represent the actual query that will be
 -- executed, but is a template for constructing the final query.
