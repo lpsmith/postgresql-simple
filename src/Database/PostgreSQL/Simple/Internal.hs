@@ -157,7 +157,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   This attempts to connect to database named @postgres@ with
 --   user @postgres@ and password @secret \' \\ pw@.  Backslash
 --   characters will have to be double-quoted in literal Haskell strings,
---   of course.  Omitting @dbname@ and @user@ with both default to the
+--   of course.  Omitting @dbname@ and @user@ will both default to the
 --   system username that the client process is running as.
 --
 --   Omitting @password@ will default to an appropriate password found
@@ -175,7 +175,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   database user, and database sharing a common name,  with permissions
 --   granted to the user on the database.
 --
---   On Windows,  in addition you will either need the @pg_hba.conf@
+--   On Windows,  in addition you will either need @pg_hba.conf@
 --   to specify the use the @trust@ authentication method for the
 --   the connection,  which may not be appropriate for multiuser
 --   or production machines, or you will need to use a @pgpass@ file

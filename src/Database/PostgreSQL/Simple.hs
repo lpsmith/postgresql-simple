@@ -55,8 +55,7 @@ module Database.PostgreSQL.Simple
     -- $types
 
     -- * Types
-      Base.ConnectInfo(..)
-    , Connection
+      Connection
     , Query
     , ToRow
     , FromRow
@@ -71,11 +70,12 @@ module Database.PostgreSQL.Simple
     , QueryError(qeMessage, qeQuery)
     , ResultError(errSQLType, errHaskellType, errMessage)
     -- * Connection management
-    , Base.connect
     , Base.connectPostgreSQL
-    , Base.postgreSQLConnectionString
-    , Base.defaultConnectInfo
     , Base.close
+    , Base.connect
+    , Base.ConnectInfo(..)
+    , Base.defaultConnectInfo
+    , Base.postgreSQLConnectionString
     -- * Queries that return results
     , query
     , query_
