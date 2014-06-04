@@ -1,3 +1,14 @@
+Version 0.4.2.3 (2014-06-04)
+  * This is strictly a documentation release,  with no code changes.
+
+  * Fixed several documentation typos,  thanks to Chris Allen and remdezx.
+
+  * Expanded the documentation of connectPostgreSQL,  including a short
+    overview of common use cases and two new links to the official Postgres
+    documentation about the authentication process.
+
+  * De-emphasized connect and ConnectInfo in favor of connectPostgreSQL.
+
 Version 0.4.2.2 (2014-05-15)
   * Fixed compatibility with scientific-0.3.*,  thanks to Adam Bergmark
 
