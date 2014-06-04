@@ -797,7 +797,7 @@ fmtError msg q xs = throw FormatError {
 -- Here's an example:
 --
 -- > query conn "select * from users where first_name in ?" $
--- >       In ["Anna", "Boris", "Carla"]
+-- >       Only $ In ["Anna", "Boris", "Carla"]
 --
 -- If your 'In'-wrapped list is empty, the string @\"(null)\"@ will be
 -- substituted instead, to ensure that your clause remains
