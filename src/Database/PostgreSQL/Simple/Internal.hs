@@ -132,8 +132,57 @@ connect :: ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
 
 -- | Attempt to make a connection based on a libpq connection string.
---   See <http://www.postgresql.org/docs/9.1/static/libpq-connect.html>
---   for more information.
+--   See <http://www.postgresql.org/docs/9.3/static/libpq-connect.html>
+--   for more information.  Here is an example with some
+--   of the most commonly used parameters:
+--
+-- > host='db.somedomain.com' port=5432 ...
+--
+--   This attempts to connect to @db.somedomain.com:5432@.  Omitting the port
+--   will normally default to 5432.
+--
+--   On systems that provide unix domain sockets,  omitting the host parameter
+--   will cause libpq to attempt to connect via unix domain sockets.
+--   The default path to the socket is constructed from the port number
+--   and the @DEFAULT_PGSOCKET_DIR@ constant defined in the
+--   @pg_config_manual.h@ header file.  Connecting via unix sockets tends
+--   to use the @peer@ authentication method, which is very secure and
+--   does not require a password.
+--
+--   On Windows and other systems without unix domain sockets, omitting
+--   the host will default to @localhost@.
+--
+-- > ... dbname='postgres' user='postgres' password='secret \' \\ pw'
+--
+--   This attempts to connect to database named @postgres@ with
+--   user @postgres@ and password @secret \' \\ pw@.  Backslash
+--   characters will have to be double-quoted in literal Haskell strings,
+--   of course.  Omitting @dbname@ and @user@ with both default to the
+--   system username that the client process is running as.
+--
+--   Omitting @password@ will default to an appropriate password found
+--   in the @pgpass@ file,  or no password at all if a matching line is
+--   not found.   See
+--   <http://www.postgresql.org/docs/9.3/static/libpq-pgpass.html> for
+--   more information regarding this file.
+--
+--   As all parameters are optional and the defaults are sensible,  the
+--   empty connection string can be useful for development and
+--   exploratory use,  assuming your system is set up appropriately.
+--
+--   On Unix,  such a setup would typically consist of a local
+--   postgresql server listening on port 5432,  as well as a system user,
+--   database user, and database sharing a common name,  with permissions
+--   granted to the user on the database.
+--
+--   On Windows,  in addition you will either need the @pg_hba.conf@
+--   to specify the use the @trust@ authentication method for the
+--   the connection,  which may not be appropriate for multiuser
+--   or production machines, or you will need to use a @pgpass@ file
+--   with the @password@ or @md5@ authentication methods.
+--
+--   See <http://www.postgresql.org/docs/9.3/static/client-authentication.html>
+--   for more information regarding the authentication process.
 
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
