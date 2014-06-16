@@ -143,8 +143,8 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --
 --   On systems that provide unix domain sockets,  omitting the host parameter
 --   will cause libpq to attempt to connect via unix domain sockets.
---   The default path to the socket is constructed from the port number
---   and the @DEFAULT_PGSOCKET_DIR@ constant defined in the
+--   The default filesystem path to the socket is constructed from the
+--   port number and the @DEFAULT_PGSOCKET_DIR@ constant defined in the
 --   @pg_config_manual.h@ header file.  Connecting via unix sockets tends
 --   to use the @peer@ authentication method, which is very secure and
 --   does not require a password.
@@ -154,7 +154,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --
 -- > ... dbname='postgres' user='postgres' password='secret \' \\ pw'
 --
---   This attempts to connect to database named @postgres@ with
+--   This attempts to connect to a database named @postgres@ with
 --   user @postgres@ and password @secret \' \\ pw@.  Backslash
 --   characters will have to be double-quoted in literal Haskell strings,
 --   of course.  Omitting @dbname@ and @user@ will both default to the
@@ -176,7 +176,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   granted to the user on the database.
 --
 --   On Windows,  in addition you will either need @pg_hba.conf@
---   to specify the use the @trust@ authentication method for the
+--   to specify the use of the @trust@ authentication method for
 --   the connection,  which may not be appropriate for multiuser
 --   or production machines, or you will need to use a @pgpass@ file
 --   with the @password@ or @md5@ authentication methods.
