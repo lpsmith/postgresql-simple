@@ -45,7 +45,7 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
 import           GHC.IO.Exception
 #if !defined(mingw32_HOST_OS)
-import           Control.Concurrent(threadWaitRead)
+import           Control.Concurrent(threadWaitRead, threadWaitWrite)
 #endif
 
 -- | A Field represents metadata about a particular field
@@ -187,7 +187,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
-    conn <- PQ.connectdb connstr
+    conn <- connectdb connstr
     stat <- PQ.status conn
     case stat of
       PQ.ConnectionOk -> do
@@ -204,6 +204,37 @@ connectPostgreSQL connstr = do
       _ -> do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
           throwIO $ fatalError msg
+
+connectdb :: ByteString -> IO PQ.Connection
+#if defined(mingw32_HOST_OS)
+connectdb = PQ.connectdb
+#else
+connectdb conninfo = do
+    conn <- PQ.connectStart conninfo
+    loop conn
+  where
+    funcName = "Database.PostgreSQL.Simple.connectPostgreSQL"
+    loop conn = do
+      status <- PQ.connectPoll conn
+      case status of
+        PQ.PollingFailed  -> throwLibPQError conn "connection failed"
+        PQ.PollingReading -> do
+                                mfd <- PQ.socket conn
+                                case mfd of
+                                  Nothing -> throwIO $! fdError funcName
+                                  Just fd -> do
+                                      threadWaitRead fd
+                                      loop conn
+        PQ.PollingWriting -> do
+                                mfd <- PQ.socket conn
+                                case mfd of
+                                  Nothing -> throwIO $! fdError funcName
+                                  Just fd -> do
+                                      threadWaitWrite fd
+                                      loop conn
+        PQ.PollingOk      -> return conn
+
+#endif
 
 -- | Turns a 'ConnectInfo' data structure into a libpq connection string.
 
