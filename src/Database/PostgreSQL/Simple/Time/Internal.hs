@@ -19,6 +19,7 @@ module Database.PostgreSQL.Simple.Time.Internal
      , getZonedTimestamp
      , getUTCTime
      , getUTCTimestamp
+     , getInterval
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation

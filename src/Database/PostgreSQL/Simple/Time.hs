@@ -64,6 +64,7 @@ module Database.PostgreSQL.Simple.Time
      , parseUTCTimestamp
      , parseZonedTimestamp
      , parseLocalTimestamp
+     , parseInterval
      , dayToBuilder
      , utcTimeToBuilder
      , zonedTimeToBuilder
@@ -71,6 +72,7 @@ module Database.PostgreSQL.Simple.Time
      , timeOfDayToBuilder
      , timeZoneToBuilder
      , dateToBuilder
+     , diffTimeToBuilder
      , utcTimestampToBuilder
      , zonedTimestampToBuilder
      , localTimestampToBuilder

@@ -14,8 +14,9 @@ module Database.PostgreSQL.Simple.Time.Implementation where
 
 import Prelude hiding (take, (++))
 import Blaze.ByteString.Builder(Builder, fromByteString)
-import Blaze.ByteString.Builder.Char8(fromChar)
+import Blaze.ByteString.Builder.Char8(fromChar, fromString)
 import Blaze.Text.Int(integral)
+import Text.Printf (printf)
 import Control.Arrow((***))
 import Control.Applicative
 import Control.Monad(when)
@@ -84,6 +85,9 @@ parseLocalTimestamp = A.parseOnly (getLocalTimestamp <* A.endOfInput)
 
 parseDate :: B.ByteString -> Either String Date
 parseDate = A.parseOnly (getDate <* A.endOfInput)
+
+parseInterval :: B.ByteString -> Either String DiffTime
+parseInterval = A.parseOnly (getInterval <* A.endOfInput)
 
 getUnbounded :: A.Parser a -> A.Parser (Unbounded a)
 getUnbounded getFinite
@@ -163,6 +167,33 @@ getUTCTime = do
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
+getTimeInterval :: A.Parser DiffTime
+getTimeInterval = do
+  h <- A.decimal
+  _ <- A.char ':'
+  m <- A.decimal
+  _ <- A.char ':'
+  s <- A.decimal
+  subsec <- A.option 0 (A.char '.' *> (A.decimal))
+  return $ secondsToDiffTime (h*3600 + m*60 + s) + picosecondsToDiffTime (subsec * 100000000000)
+
+getDayInterval :: A.Parser DiffTime
+getDayInterval = do
+  n <- A.signed A.decimal
+  factor <- A.choice [ A.string " year" *> pure (12*30*86400)
+                     , A.string " mon"  *> pure (   30*86400)
+                     , A.string " day"  *> pure (      86400)
+                     ]
+  _ <- A.string "s " <|> A.string " "
+  return (secondsToDiffTime (n*factor))
+
+getInterval :: A.Parser DiffTime
+getInterval = do
+  ds <- many getDayInterval
+  timesign <- A.option 1 (A.char '+' *> pure 1 <|> A.char '-' *> pure (-1))
+  time <- getTimeInterval
+  return (sum ds + time*timesign)
+
 toNum :: Num n => B.ByteString -> n
 toNum = B.foldl' (\a c -> 10*a + digit c) 0
 {-# INLINE toNum #-}
@@ -228,6 +259,11 @@ localTimestampToBuilder = unboundedToBuilder localTimeToBuilder
 
 dateToBuilder  :: Date -> Builder
 dateToBuilder  = unboundedToBuilder dayToBuilder
+
+-- Using printf here because Blaze.ByteString.Builder.double will emit
+-- in scientific notation, which Postgres doesn't like.
+diffTimeToBuilder :: DiffTime -> Builder
+diffTimeToBuilder = fromString . printf "%f S" . (fromRational :: Rational -> Double) . toRational
 
 showSeconds :: Pico -> Builder
 showSeconds xyz
