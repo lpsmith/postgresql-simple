@@ -1,3 +1,17 @@
+Version 0.4.3.0 (2014-07-10)
+  * connect and exec now use libpq asynchronously on non-Windows platforms.
+    This means we are using threadWaitRead and threadWaitWrite to
+    have GHC's IO manager schedule non-blocking C calls to libpq,
+    instead of using blocking C calls and having the OS kernel do the
+    scheduling.  Among other things, this now means that System.Timeout
+    will work with connect and exec on unix platforms.
+
+  * connect and exec now throw IOErrors instead of SQLErrors in
+    some cases.   The intention is for SQLErrors to represent
+    an error returned by the server,  and to use IOErrors for errors
+    that originate from client-side code.    However,  this goal
+    isn't perfectly achieved as of yet.
+
 Version 0.4.2.3 (2014-06-04)
   * This is strictly a documentation release,  with no code changes.
 
