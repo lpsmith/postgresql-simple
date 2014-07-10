@@ -1,7 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE  CPP, BangPatterns, DoAndIfThenElse, RecordWildCards  #-}
+{-# LANGUAGE  DeriveDataTypeable, GeneralizedNewtypeDeriving       #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -46,6 +44,9 @@ import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
 import           GHC.IO.Exception
+#if !defined(mingw32_HOST_OS)
+import           Control.Concurrent(threadWaitRead)
+#endif
 
 -- | A Field represents metadata about a particular field
 --
@@ -197,8 +198,7 @@ connectPostgreSQL connstr = do
           version <- PQ.serverVersion conn
           let settings
                 | version < 80200 = "SET datestyle TO ISO"
-                | otherwise       = "SET standard_conforming_strings TO on;\
-                                    \SET datestyle TO ISO"
+                | otherwise       = "SET standard_conforming_strings TO on;SET datestyle TO ISO"
           _ <- execute_ wconn settings
           return wconn
       _ -> do
@@ -246,15 +246,42 @@ oid2int (Oid x) = fromIntegral x
 exec :: Connection
      -> ByteString
      -> IO PQ.Result
+#if defined(mingw32_HOST_OS)
 exec conn sql =
     withConnection conn $ \h -> do
         mres <- PQ.exec h sql
         case mres of
-          Nothing -> do
-            msg <- maybe "execute error" id <$> PQ.errorMessage h
-            throwIO $ fatalError msg
-          Just res -> do
-            return res
+          Nothing  -> throwLibPQError h "PQexec returned no results"
+          Just res -> return res
+#else
+exec conn sql =
+    withConnection conn $ \h -> do
+        success <- PQ.sendQuery h sql
+        if success
+        then awaitResult h Nothing
+        else throwLibPQError h "PQsendQuery failed"
+  where
+    awaitResult h mres = do
+        mfd <- PQ.socket h
+        case mfd of
+          Nothing -> throwIO $! fdError "Database.PostgreSQL.Simple.Internal.exec"
+          Just fd -> do
+             threadWaitRead fd
+             _ <- PQ.consumeInput h  -- FIXME?
+             getResult h mres
+
+    getResult h mres = do
+        isBusy <- PQ.isBusy h
+        if isBusy
+        then awaitResult h mres
+        else do
+          mres' <- PQ.getResult h
+          case mres' of
+            Nothing -> case mres of
+                         Nothing  -> throwLibPQError h "PQgetResult returned no results"
+                         Just res -> return res
+            Just _  -> getResult h mres'
+#endif
 
 -- | A version of 'execute' that does not perform query substitution.
 execute_ :: Connection -> Query -> IO Int64
@@ -407,3 +434,19 @@ fdError funcName = IOError {
                      ioe_errno       = Nothing,
                      ioe_filename    = Nothing
                    }
+
+
+libPQError :: ByteString -> IOError
+libPQError desc = IOError {
+                    ioe_handle      = Nothing,
+                    ioe_type        = OtherError,
+                    ioe_location    = "libpq",
+                    ioe_description = B8.unpack desc,
+                    ioe_errno       = Nothing,
+                    ioe_filename    = Nothing
+                  }
+
+throwLibPQError :: PQ.Connection -> ByteString -> IO a
+throwLibPQError conn default_desc = do
+  msg <- maybe default_desc id <$> PQ.errorMessage conn
+  throwIO $! libPQError msg
