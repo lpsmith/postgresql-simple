@@ -115,7 +115,7 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
 import           Data.IORef (IORef, newIORef)
 import           Data.Ratio (Ratio)
-import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
+import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay, DiffTime )
 import           Data.Typeable (Typeable, typeOf)
 import           Data.Vector (Vector)
 import           Data.Vector.Mutable (IOVector)
@@ -415,6 +415,10 @@ instance FromField LocalTimestamp where
 -- | date
 instance FromField Date where
   fromField = ff $(inlineTypoid TI.date) "Date" parseDate
+
+-- | interval
+instance FromField DiffTime where
+  fromField = ff $(inlineTypoid TI.interval) "DiffTime" parseInterval
 
 ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a

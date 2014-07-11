@@ -30,7 +30,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
 import Data.Monoid (mappend)
-import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime)
+import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime, DiffTime)
 import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import {-# SOURCE #-} Database.PostgreSQL.Simple.ToRow
@@ -259,6 +259,10 @@ instance ToField LocalTimestamp where
 
 instance ToField Date where
     toField = Plain . inQuotes . dateToBuilder
+    {-# INLINE toField #-}
+
+instance ToField DiffTime where
+    toField = Plain . inQuotes . diffTimeToBuilder
     {-# INLINE toField #-}
 
 instance (ToField a) => ToField (PGArray a) where
