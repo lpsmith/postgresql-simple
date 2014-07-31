@@ -26,7 +26,7 @@ import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
 -- | A collection type that can be turned into a list of rendering
 -- 'Action's.
 --
--- Instances should use the 'render' method of the 'Param' class
+-- Instances should use the 'toField' method of the 'ToField' class
 -- to perform conversion of each element of the collection.
 class ToRow a where
     toRow :: a -> [Action]
