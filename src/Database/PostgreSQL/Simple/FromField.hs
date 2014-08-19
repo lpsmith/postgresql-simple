@@ -492,7 +492,7 @@ instance FromField UUID where
 -- | json
 instance FromField JSON.Value where
     fromField f mbs =
-      if typeOid f /= $(inlineTypoid TI.json)
+      if typeOid f /= $(inlineTypoid TI.json) && typeOid f /= $(inlineTypoid TI.jsonb)
       then returnError Incompatible f ""
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""

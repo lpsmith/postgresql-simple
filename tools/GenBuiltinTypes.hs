@@ -85,6 +85,7 @@ record
 void
 uuid        UUID
 json        JSON
+jsonb       JSONB
 |]
 
 instance IsString Blaze.Builder where
