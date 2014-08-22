@@ -27,11 +27,11 @@ Note that the 'Float' and 'Double' instances use attoparsec's 'double'
 conversion routine,  which sacrifices some accuracy for speed.   If you
 need accuracy,  consider first converting data to a 'Scientific' or 'Rational'
 type,  and then converting to a floating-point type.   If you are defining
-your own 'Database.PostgreSQL.Simple.FromRow.FromRow' instances,  this can be 
-acheived simply by 
-@'fromRational' '<$>' 'Database.PostgreSQL.Simple.FromRow.field'@,  although 
+your own 'Database.PostgreSQL.Simple.FromRow.FromRow' instances,  this can be
+acheived simply by
+@'fromRational' '<$>' 'Database.PostgreSQL.Simple.FromRow.field'@,  although
 this idiom is additionally compatible with PostgreSQL's @numeric@ type.
-If this is unacceptable,  you may find 
+If this is unacceptable,  you may find
 'Database.PostgreSQL.Simple.FromRow.fieldWith' useful.
 
 Because 'FromField' is a typeclass,  one may provide conversions to
@@ -104,12 +104,11 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative
-                   ( Applicative, (<|>), (<$>), pure )
+import           Control.Applicative ( (<|>), (<$>), pure )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
-import           Data.Attoparsec.Char8 hiding (Result)
+import           Data.Attoparsec.ByteString.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Int (Int16, Int32, Int64)
