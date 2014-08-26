@@ -65,6 +65,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , void
      , uuid
      , json
+     , jsonb
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
@@ -119,6 +120,7 @@ staticTypeInfo (Oid x) = case x of
     2278 -> Just void
     2950 -> Just uuid
     114  -> Just json
+    3802 -> Just jsonb
     _ -> Nothing
 
 bool :: TypeInfo
@@ -495,4 +497,12 @@ json =  Basic {
     typcategory = 'U',
     typdelim    = ',',
     typname     = "json"
+  }
+
+jsonb :: TypeInfo
+jsonb =  Basic {
+    typoid      = Oid 3802,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "jsonb"
   }
