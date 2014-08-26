@@ -1,3 +1,12 @@
+Version 0.4.4.0 (2014-08-26)
+  * Added the jsonb type debuting in PostgreSQL 9.4 to the TypeInfo.Static
+    and Builtin tables, and extended the out-of-box json instances to
+    be compatible with the new type.   Thanks to Tobias Florek for the
+    patch.
+
+  * Ported some expanded documentation from mysql-simple,  and fixed
+    a documentation typo.
+
 Version 0.4.3.0 (2014-07-10)
   * connect and exec now use libpq asynchronously on non-Windows platforms.
     This means we are using threadWaitRead and threadWaitWrite to
