@@ -310,8 +310,17 @@ exec conn sql =
           case mres' of
             Nothing -> case mres of
                          Nothing  -> throwLibPQError h "PQgetResult returned no results"
-                         Just res -> return res
-            Just _  -> getResult h mres'
+            Just res -> do
+                status <- PQ.resultStatus res
+                case status of
+                   PQ.EmptyQuery    -> getResult h mres'
+                   PQ.CommandOk     -> getResult h mres'
+                   PQ.TuplesOk      -> getResult h mres'
+                   PQ.CopyOut       -> return res
+                   PQ.CopyIn        -> return res
+                   PQ.BadResponse   -> getResult h mres'
+                   PQ.NonfatalError -> getResult h mres'
+                   PQ.FatalError    -> getResult h mres'
 #endif
 
 -- | A version of 'execute' that does not perform query substitution.
