@@ -287,11 +287,15 @@ testCopy TestEnv{..} = TestCase $ do
     copy_ conn "COPY copy_test FROM STDIN (FORMAT CSV)"
     mapM_ (putCopyData conn) abortRows
     putCopyError conn "aborted"
-    copy_ conn "COPY copy_test TO STDOUT (FORMAT CSV)"
-    rows <- loop []
     -- Hmm, does postgres always produce \n as an end-of-line here, or
     -- are there cases where it will use a \r\n as well?
+    copy_ conn "COPY copy_test TO STDOUT (FORMAT CSV)"
+    rows <- loop []
     sort rows @?= sort copyRows
+    -- Now, let's just verify that the connection state is back to ready,
+    -- so that we can issue more queries:
+    [Only (x::Int)] <- query_ conn "SELECT 2 + 2"
+    x @?= 4
   where
     copyRows  = ["1,foo\n"
                 ,"2,bar\n"]
