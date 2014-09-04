@@ -5,6 +5,7 @@ import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
 import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
+import Database.PostgreSQL.Simple.Copy
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 import Control.Applicative
 import Control.Exception as E
@@ -41,6 +42,7 @@ tests =
     , TestLabel "Savepoint"     . testSavepoint
     , TestLabel "Unicode"       . testUnicode
     , TestLabel "Values"        . testValues
+    , TestLabel "Copy"          . testCopy
     ]
 
 testBytea :: TestEnv -> Test
@@ -274,6 +276,31 @@ testValues TestEnv{..} = TestCase $ do
       execute conn "INSERT INTO values_test ?" (Only table)
       vals' <- query_  conn "DELETE FROM values_test RETURNING *"
       sort vals @?= sort vals'
+
+
+testCopy :: TestEnv -> Test
+testCopy TestEnv{..} = TestCase $ do
+    execute_ conn "CREATE TEMPORARY TABLE copy_test (x int, y text)"
+    copy_ conn "COPY copy_test FROM STDIN (FORMAT CSV)"
+    mapM_ (putCopyData conn) copyRows
+    putCopyEnd conn
+    copy_ conn "COPY copy_test FROM STDIN (FORMAT CSV)"
+    mapM_ (putCopyData conn) abortRows
+    putCopyError conn "aborted"
+    copy_ conn "COPY copy_test TO STDOUT (FORMAT CSV)"
+    rows <- loop []
+    -- Hmm, does postgres always produce \n as an end-of-line here, or
+    -- are there cases where it will use a \r\n as well?
+    sort rows @?= sort copyRows
+  where
+    copyRows  = ["1,foo\n"
+                ,"2,bar\n"]
+    abortRows = ["3,baz\n"]
+    loop rows = do
+      mrow <- getCopyData conn
+      case mrow of
+        CopyOutDone _   -> return rows
+        CopyOutRow  row -> loop (row:rows)
 
 data TestException
   = TestException
