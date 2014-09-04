@@ -310,6 +310,7 @@ exec conn sql =
           case mres' of
             Nothing -> case mres of
                          Nothing  -> throwLibPQError h "PQgetResult returned no results"
+                         Just res -> return res
             Just res -> do
                 status <- PQ.resultStatus res
                 case status of
