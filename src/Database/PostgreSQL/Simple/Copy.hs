@@ -186,6 +186,7 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
 putCopyError :: Connection -> B.ByteString -> IO ()
 putCopyError conn err = withConnection conn $ \pqconn -> do
     doCopyIn funcName (\c -> PQ.putCopyEnd c (Just err)) pqconn
+    consumeResults pqconn
   where
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyError"
 
@@ -220,6 +221,7 @@ getCopyCommandTag :: B.ByteString -> PQ.Connection -> IO Int64
 getCopyCommandTag funcName pqconn = do
     result  <- maybe (fail errCmdStatus) return =<< PQ.getResult pqconn
     cmdStat <- maybe (fail errCmdStatus) return =<< PQ.cmdStatus result
+    consumeResults pqconn
     let rowCount =   P.string "COPY " *> (P.decimal <* P.endOfInput)
     case P.parseOnly rowCount cmdStat of
       Left  _ -> fail errCmdStatusFmt
@@ -227,3 +229,11 @@ getCopyCommandTag funcName pqconn = do
   where
     errCmdStatus    = B.unpack funcName ++ ": failed to fetch command status"
     errCmdStatusFmt = B.unpack funcName ++ ": failed to parse command status"
+
+
+consumeResults :: PQ.Connection -> IO ()
+consumeResults pqconn = do
+    mres <- PQ.getResult pqconn
+    case mres of
+      Nothing -> return ()
+      Just _  -> consumeResults pqconn
