@@ -1,3 +1,10 @@
+Version 0.4.4.1 (2014-09-07)
+  * Fixed a rather serious bug that prevented the COPY module from working
+    at all on unix clients since version 0.4.3.0.   Thanks goes to
+    Dmitry Dzhus for reporting the issue.
+
+  * Added a regression test for the COPY module to the test suite.
+
 Version 0.4.4.0 (2014-08-26)
   * Added the jsonb type debuting in PostgreSQL 9.4 to the TypeInfo.Static
     and Builtin tables, and extended the out-of-box json instances to
