@@ -34,6 +34,13 @@ this idiom is additionally compatible with PostgreSQL's @numeric@ type.
 If this is unacceptable,  you may find
 'Database.PostgreSQL.Simple.FromRow.fieldWith' useful.
 
+Also note that while converting to a 'Double' through the 'Scientific' type
+is likely somewhat faster than converting through the 'Rational' type,
+the 'Scientific' type has no way to represent @NaN@ and @±Infinity@ values.
+Thus,  if you need precision conversion of regular floating point values
+and the possibility of receiving these special values from the backend,
+stick with 'Rational'.
+
 Because 'FromField' is a typeclass,  one may provide conversions to
 additional Haskell types without modifying postgresql-simple.  This is
 particularly useful for supporting PostgreSQL types that postgresql-simple
