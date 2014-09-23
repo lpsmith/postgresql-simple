@@ -104,7 +104,7 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative ( (<|>), (<$>), pure )
+import           Control.Applicative ( (<|>), (<$>), pure, (*>) )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
@@ -138,6 +138,7 @@ import qualified Data.Text.Lazy as LT
 import           Data.UUID   (UUID)
 import qualified Data.UUID as UUID
 import           Data.Scientific (Scientific)
+import           GHC.Real (infinity, notANumber)
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
 -- value fails.
@@ -314,18 +315,18 @@ instance FromField Integer where
 -- | int2, float4    (Uses attoparsec's 'double' routine,  for
 --   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Float where
-    fromField = atto ok (realToFrac <$> double)
+    fromField = atto ok (realToFrac <$> pg_double)
       where ok = $(mkCompats [TI.float4,TI.int2])
 
 -- | int2, int4, float4, float8  (Uses attoparsec's 'double' routine,  for
 --   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Double where
-    fromField = atto ok double
+    fromField = atto ok pg_double
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4])
 
 -- | int2, int4, float4, float8, numeric
 instance FromField (Ratio Integer) where
-    fromField = atto ok rational
+    fromField = atto ok pg_rational
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
 
 -- | int2, int4, float4, float8, numeric
@@ -335,6 +336,20 @@ instance FromField Scientific where
 
 unBinary :: Binary t -> t
 unBinary (Binary x) = x
+
+pg_double :: Parser Double
+pg_double
+    =   (string "NaN"       *> pure ( 0 / 0))
+    <|> (string "Infinity"  *> pure ( 1 / 0))
+    <|> (string "-Infinity" *> pure (-1 / 0))
+    <|> double
+
+pg_rational :: Parser Rational
+pg_rational
+    =   (string "NaN"       *> pure notANumber )
+    <|> (string "Infinity"  *> pure infinity   )
+    <|> (string "-Infinity" *> pure (-infinity))
+    <|> rational
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField SB.ByteString where

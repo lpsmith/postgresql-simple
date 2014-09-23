@@ -43,6 +43,7 @@ tests =
     , TestLabel "Unicode"       . testUnicode
     , TestLabel "Values"        . testValues
     , TestLabel "Copy"          . testCopy
+    , TestLabel "Double"        . testDouble
     ]
 
 testBytea :: TestEnv -> Test
@@ -305,6 +306,16 @@ testCopy TestEnv{..} = TestCase $ do
       case mrow of
         CopyOutDone _   -> return rows
         CopyOutRow  row -> loop (row:rows)
+
+testDouble :: TestEnv -> Test
+testDouble TestEnv{..} = TestCase $ do
+    [Only (x :: Double)] <- query_ conn "SELECT 'NaN'::float8"
+    assertBool "expected NaN" (isNaN x)
+    [Only (x :: Double)] <- query_ conn "SELECT 'Infinity'::float8"
+    x @?= (1 / 0)
+    [Only (x :: Double)] <- query_ conn "SELECT '-Infinity'::float8"
+    x @?= (-1 / 0)
+
 
 data TestException
   = TestException
