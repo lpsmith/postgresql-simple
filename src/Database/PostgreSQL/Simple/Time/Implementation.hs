@@ -231,14 +231,14 @@ dateToBuilder  = unboundedToBuilder dayToBuilder
 
 nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
 nominalDiffTimeToBuilder xyz
-    | yz == 0   = integral x
-    | z  == 0   = integral x ++ fromChar '.' ++  showD6 y
-    | otherwise = integral x ++ fromChar '.' ++  pad6   y ++ showD6 z
+    | yz < 500000 = sign ++ integral x
+    | otherwise   = sign ++ integral x ++ fromChar '.' ++  showD6 y
   where
     -- A kludge to work around the fact that Data.Fixed isn't very fast and
     -- doesn't give me access to the MkFixed constructor.
-    (x,yz) = (unsafeCoerce xyz :: Integer)     `quotRem` 1000000000000
-    (fromIntegral -> y, fromIntegral -> z) = yz `quotRem` 1000000
+    sign = if xyz >= 0 then mempty else fromChar '-'
+    (x,yz) = ((unsafeCoerce (abs xyz) :: Integer) + 500000)  `quotRem` 1000000000000
+    (fromIntegral -> y, _z) = yz `quotRem` 1000000
 
 showSeconds :: Pico -> Builder
 showSeconds xyz
