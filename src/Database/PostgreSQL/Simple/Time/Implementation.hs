@@ -229,6 +229,17 @@ localTimestampToBuilder = unboundedToBuilder localTimeToBuilder
 dateToBuilder  :: Date -> Builder
 dateToBuilder  = unboundedToBuilder dayToBuilder
 
+nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
+nominalDiffTimeToBuilder xyz
+    | yz == 0   = integral x
+    | z  == 0   = integral x ++ fromChar '.' ++  showD6 y
+    | otherwise = integral x ++ fromChar '.' ++  pad6   y ++ showD6 z
+  where
+    -- A kludge to work around the fact that Data.Fixed isn't very fast and
+    -- doesn't give me access to the MkFixed constructor.
+    (x,yz) = (unsafeCoerce xyz :: Integer)     `quotRem` 1000000000000
+    (fromIntegral -> y, fromIntegral -> z) = yz `quotRem` 1000000
+
 showSeconds :: Pico -> Builder
 showSeconds xyz
     | yz == 0   = pad2 x

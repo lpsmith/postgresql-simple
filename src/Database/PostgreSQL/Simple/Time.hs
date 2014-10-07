@@ -75,6 +75,7 @@ module Database.PostgreSQL.Simple.Time
      , zonedTimestampToBuilder
      , localTimestampToBuilder
      , unboundedToBuilder
+     , nominalDiffTimeToBuilder
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation
