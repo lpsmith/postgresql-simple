@@ -1,3 +1,6 @@
+Version 0.4.6.0 (2014-10-07)
+  * Added an instance ToField NominalDiffTime.
+
 Version 0.4.5.0 (2014-09-26)
   * Added support for retrieving NaN and ±Infinity floating point values
     from postgres to the FromField instances for Float, Double, and Rational.
