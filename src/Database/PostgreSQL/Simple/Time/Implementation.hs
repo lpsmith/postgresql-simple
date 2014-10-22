@@ -134,17 +134,42 @@ getLocalTime = LocalTime <$> getDay <*> (A.char ' ' *> getTimeOfDay)
 getLocalTimestamp :: A.Parser LocalTimestamp
 getLocalTimestamp = getUnbounded getLocalTime
 
-getTimeZone :: A.Parser TimeZone
+getTimeZone :: A.Parser (TimeZone, Int)
 getTimeZone = do
     sign  <- A.satisfy (\c -> c == '+' || c == '-')
     hours <- digits "timezone"
     mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+    secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
     let !absset = 60 * hours + mins
-        !offset = if sign == '+' then absset else -absset
-    return $! minutesToTimeZone offset
+        !isPos  = sign == '+'
+        !offset = if isPos then absset else -absset
+    return $! (minutesToTimeZone offset, if isPos then -secs else secs)
 
 getZonedTime :: A.Parser ZonedTime
-getZonedTime = ZonedTime <$> getLocalTime <*> getTimeZone
+getZonedTime = do
+    lt <- getLocalTime
+    (tz, secs) <- getTimeZone
+    let lt' = addSeconds lt secs
+    return $! ZonedTime lt' tz
+
+addSeconds :: LocalTime -> Int -> LocalTime
+addSeconds lt 0 = lt
+addSeconds (LocalTime (ModifiedJulianDay day) (TimeOfDay h m s)) secs =
+    LocalTime (ModifiedJulianDay day') (TimeOfDay h'' m'' s'')
+  where
+    s' = s + fromIntegral secs
+    (s'', m')
+        | s' < 0 = (s' + 60, m - 1)
+        | s' >= 60 = (s' - 60, m + 1)
+        | otherwise = (s', m)
+    (m'', h')
+        | m' < 0 = (m' + 60, h - 1)
+        | m' >= 60 = (m' - 60, h + 1)
+        | otherwise = (m', h)
+    (h'', day')
+        | h' < 0 = (h' + 24, day - 1)
+        | h' >= 24 = (h' - 24, day + 1)
+        | otherwise = (h', day)
 
 getZonedTimestamp :: A.Parser ZonedTimestamp
 getZonedTimestamp = getUnbounded getZonedTime
@@ -154,11 +179,11 @@ getUTCTime = do
     day  <- getDay
     _    <- A.char ' '
     time <- getTimeOfDay
-    zone <- getTimeZone
+    (zone, secs) <- getTimeZone
     let (!dayDelta,!time') = localToUTCTimeOfDay zone time
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
-    return (UTCTime day' time'')
+    return $! addUTCTime (fromIntegral secs) (UTCTime day' time'')
 
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
