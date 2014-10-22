@@ -168,7 +168,7 @@ addSeconds (LocalTime (ModifiedJulianDay day) (TimeOfDay h m s)) secs =
         | otherwise = (m', h)
     (h'', day')
         | h' < 0 = (h' + 24, day - 1)
-        | h' >= 60 = (h' - 24, day + 1)
+        | h' >= 24 = (h' - 24, day + 1)
         | otherwise = (h', day)
 
 getZonedTimestamp :: A.Parser ZonedTimestamp
