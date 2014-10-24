@@ -1,5 +1,10 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -20,6 +25,7 @@ module Database.PostgreSQL.Simple.ToField
     , ToField(..)
     , toJSONField
     , inQuotes
+    , rangeToField
     ) where
 
 import qualified Data.Aeson as JSON
@@ -46,12 +52,14 @@ import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
+import qualified Data.Text.Lazy.Encoding as LT
 import           Data.UUID   (UUID)
 import qualified Data.UUID as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Time
+import           Database.PostgreSQL.Simple.Range
 import           Data.Scientific (Scientific)
 #if MIN_VERSION_scientific(0,3,0)
 import           Data.Text.Lazy.Builder.Scientific (scientificBuilder)
@@ -281,6 +289,125 @@ instance (ToField a) => ToField (PGArray a) where
 
 instance (ToField a) => ToField (Vector a) where
     toField = toField . PGArray . V.toList
+
+-- | Generic range ToField function, useful if you want to define your own
+--   range types. Remember not to put your boundary value in quotes and
+--   escape double quotes.
+rangeToField :: (a -> Action) -> PGRange a -> Action
+rangeToField _ (PGRange Unbounded Unbounded) = Plain $ fromByteString "'empty'"
+rangeToField f (PGRange a b) = Many $ buildLB a ++ buildUB b
+  where
+    buildLB Unbounded     = [ Plain $ fromByteString "'(," ]
+    buildLB (Inclusive v) = [ Plain $ fromByteString "'[\"", f v
+                            , Plain $ fromByteString "\"," ]
+    buildLB (Exclusive v) = [ Plain $ fromByteString "'(\"", f v
+                            , Plain $ fromByteString "\"," ]
+    buildUB Unbounded     = [ Plain $ fromByteString "]'"]
+    buildUB (Inclusive v) = [ Plain $ fromChar '"', f v
+                            , Plain $ fromByteString "\"]'"]
+    buildUB (Exclusive v) = [ Plain $ fromChar '"', f v
+                            , Plain $ fromByteString "\")'"]
+integralRangeToBuilder :: (Integral a, Show a) => PGRange a -> Builder
+integralRangeToBuilder = rangeToBuilder integral
+{-# INLINE integralRangeToBuilder #-}
+
+instance ToField (PGRange Int8) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int16) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int32) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int64) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Integer) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word8) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word16) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word32) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word64) where
+    toField = Plain . integralRangeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Float) where
+    toField = Plain . rangeToBuilder float
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Double) where
+    toField = Plain . rangeToBuilder double
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Scientific) where
+    toField = Plain . rangeToBuilder f
+      where
+        f = fromLazyByteString . LT.encodeUtf8 . LT.toLazyText . scientificBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange UTCTime) where
+    toField = Plain . rangeToBuilder utcTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange ZonedTime) where
+    toField = Plain . rangeToBuilder zonedTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange LocalTime) where
+    toField = Plain . rangeToBuilder localTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Day) where
+    toField = Plain . rangeToBuilder dayToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange TimeOfDay) where
+    toField = Plain . rangeToBuilder timeOfDayToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange UTCTimestamp) where
+    toField = Plain . rangeToBuilder utcTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange ZonedTimestamp) where
+    toField = Plain . rangeToBuilder zonedTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange LocalTimestamp) where
+    toField = Plain . rangeToBuilder localTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Date) where
+    toField = Plain . rangeToBuilder dateToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange NominalDiffTime) where
+    toField = Plain . rangeToBuilder nominalDiffTimeToBuilder
+    {-# INLINE toField #-}
 
 instance ToField UUID where
     toField = Plain . inQuotes . byteString . UUID.toASCIIBytes
