@@ -549,14 +549,12 @@ instance (FromField a, Typeable a) => FromField (PGRange a) where
           Just "empty" -> pure $ PGRange Unbounded Unbounded
           Just bs ->
             let parseIt Unbounded     = pure Unbounded
-                parseIt (Inclusive v) = Inclusive <$> fromField f' (nullNothing v)
-                parseIt (Exclusive v) = Exclusive <$> fromField f' (nullNothing v)
+                parseIt (Inclusive v) = Inclusive <$> fromField f' v
+                parseIt (Exclusive v) = Exclusive <$> fromField f' v
             in case parseOnly pgrange bs of
                 Left e -> returnError ConversionFailed f e
                 Right (lb,ub) -> PGRange <$> parseIt lb <*> parseIt ub
       _ -> returnError Incompatible f ""
-    where
-      nullNothing v = if B.null v then Nothing else Just v
 
 -- | json
 instance FromField JSON.Value where
