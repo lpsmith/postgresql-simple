@@ -112,7 +112,7 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative ( (<|>), (<$>), pure, (*>), (<*>) )
+import           Control.Applicative ( (<|>), (<$>), pure, (*>) )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
@@ -131,7 +131,6 @@ import           Database.PostgreSQL.Simple.Internal
 import           Database.PostgreSQL.Simple.Compat
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types
-import           Database.PostgreSQL.Simple.Range
 import           Database.PostgreSQL.Simple.TypeInfo as TI
 import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
 import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
@@ -537,24 +536,6 @@ instance FromField UUID where
                  case UUID.fromASCIIBytes bs of
                    Nothing -> returnError ConversionFailed f "Invalid UUID"
                    Just uuid -> pure uuid
-
-instance (FromField a, Typeable a) => FromField (PGRange a) where
-  fromField f mdat = do
-    info <- typeInfo f
-    case info of
-      Range{} ->
-        let f' = f { typeOid = typoid (rngsubtype info) }
-        in case mdat of
-          Nothing -> returnError UnexpectedNull f ""
-          Just "empty" -> pure $ PGRange Unbounded Unbounded
-          Just bs ->
-            let parseIt Unbounded     = pure Unbounded
-                parseIt (Inclusive v) = Inclusive <$> fromField f' v
-                parseIt (Exclusive v) = Exclusive <$> fromField f' v
-            in case parseOnly pgrange bs of
-                Left e -> returnError ConversionFailed f e
-                Right (lb,ub) -> PGRange <$> parseIt lb <*> parseIt ub
-      _ -> returnError Incompatible f ""
 
 -- | json
 instance FromField JSON.Value where
