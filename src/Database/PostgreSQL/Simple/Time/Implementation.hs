@@ -98,7 +98,7 @@ getDay = do
 
     let !year = toNum yearStr
     _       <- A.char '-'
-    month   <- digits "month"
+    !month  <- digits "month"
     _       <- A.char '-'
     day     <- digits "day"
 
@@ -115,7 +115,7 @@ decimal str = toNum str / 10^(B.length str)
 
 getTimeOfDay :: A.Parser TimeOfDay
 getTimeOfDay = do
-    hour   <- digits "hours"
+    !hour  <- digits "hours"
     _      <- A.char ':'
     minute <- digits "minutes"
     _      <- A.char ':'
@@ -136,9 +136,9 @@ getLocalTimestamp = getUnbounded getLocalTime
 
 getTimeZone :: A.Parser TimeZone
 getTimeZone = do
-    sign  <- A.satisfy (\c -> c == '+' || c == '-')
-    hours <- digits "timezone"
-    mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+    !sign  <- A.satisfy (\c -> c == '+' || c == '-')
+    !hours <- digits "timezone"
+    !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
     let !absset = 60 * hours + mins
         !offset = if sign == '+' then absset else -absset
     return $! minutesToTimeZone offset
@@ -147,12 +147,12 @@ type TimeZoneHMS = (Int,Int,Int)
 
 getTimeZoneHMS :: A.Parser TimeZoneHMS
 getTimeZoneHMS = do
-    sign  <- A.satisfy (\c -> c == '+' || c == '-')
-    hours <- digits "timezone"
-    mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
-    secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
+    !sign  <- A.satisfy (\c -> c == '+' || c == '-')
+    !hours <- digits "timezone"
+    !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+    !secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
     if sign == '+'
-    then return (hours, mins, secs)
+    then return $! (hours, mins, secs)
     else return $! (\ !h !m !s -> (h,m,s)) (-hours) (-mins) (-secs)
 
 localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
@@ -185,10 +185,10 @@ getUTCTime = do
     _    <- A.char ' '
     time <- getTimeOfDay
     zone <- getTimeZoneHMS
-    let (!dayDelta,!time') = localToUTCTimeOfDayHMS zone time
+    let !(dayDelta,time') = localToUTCTimeOfDayHMS zone time
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
-    return (UTCTime day' time'')
+    return $! UTCTime day' time''
 
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
