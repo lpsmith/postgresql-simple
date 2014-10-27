@@ -19,6 +19,9 @@ module Database.PostgreSQL.Simple.Time.Internal
      , getZonedTimestamp
      , getUTCTime
      , getUTCTimestamp
+     , TimeZoneHMS
+     , getTimeZoneHMS
+     , localToUTCTimeOfDayHMS
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation

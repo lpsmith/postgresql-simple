@@ -143,6 +143,36 @@ getTimeZone = do
         !offset = if sign == '+' then absset else -absset
     return $! minutesToTimeZone offset
 
+type TimeZoneHMS = (Int,Int,Int)
+
+getTimeZoneHMS :: A.Parser TimeZoneHMS
+getTimeZoneHMS = do
+    sign  <- A.satisfy (\c -> c == '+' || c == '-')
+    hours <- digits "timezone"
+    mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+    secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
+    if sign == '+'
+    then return (hours, mins, secs)
+    else return $! (\ !h !m !s -> (h,m,s)) (-hours) (-mins) (-secs)
+
+localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
+localToUTCTimeOfDayHMS (dh, dm, ds) (TimeOfDay h m s) =
+    (\ !a !b -> (a,b)) dday (TimeOfDay h'' m'' s'')
+  where
+    s' = s - fromIntegral ds
+    (!s'', m')
+        | s' < 0    = (s' + 60, m - dm - 1)
+        | s' >= 60  = (s' - 60, m - dm + 1)
+        | otherwise = (s'     , m - dm    )
+    (!m'', h')
+        | m' < 0    = (m' + 60, h - dh - 1)
+        | m' >= 60  = (m' - 60, h - dh + 1)
+        | otherwise = (m'     , h - dh    )
+    (!h'', dday)
+        | h' < 0    = (h' + 24, -1)
+        | h' >= 24  = (h' - 24,  1)
+        | otherwise = (h'     ,  0)
+
 getZonedTime :: A.Parser ZonedTime
 getZonedTime = ZonedTime <$> getLocalTime <*> getTimeZone
 
@@ -154,8 +184,8 @@ getUTCTime = do
     day  <- getDay
     _    <- A.char ' '
     time <- getTimeOfDay
-    zone <- getTimeZone
-    let (!dayDelta,!time') = localToUTCTimeOfDay zone time
+    zone <- getTimeZoneHMS
+    let (!dayDelta,!time') = localToUTCTimeOfDayHMS zone time
     let !day' = addDays dayDelta day
     let !time'' = timeOfDayToTime time'
     return (UTCTime day' time'')

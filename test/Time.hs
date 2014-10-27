@@ -17,6 +17,19 @@ correspond;  for example,  a conversion that consistently added hour
 when printed to a string and subtracted an hour when parsed from string
 would still pass these tests.
 
+
+Right now,  we are checking that 1400+ timestamps in the range of 1860 to
+2060 round trip from postgresql to haskell and back in 5 different timezones.
+In addition to UTC,  the four timezones were selected so that 2 have a positive
+offset,  and 2 have a negative offset,   and that 2 have an offset of a
+whole number of hours,  while the other two do not.
+
+It may be worth adding a few more timezones to ensure better test coverage.
+
+We are checking a handful of selected timestamps to ensure we hit
+various corner-cases in the code,  in addition to 1400 timestamps randomly
+generated with granularity of seconds down to microseconds in powers of ten.
+
 -}
 
 module Time (testTime) where
@@ -35,13 +48,13 @@ testTime env@TestEnv{..} = TestCase $ do
   initializeTable env
   execute_ conn "SET timezone TO 'UTC'"
   checkRoundTrips env
-  execute_ conn "SET timezone TO 'America/Chicago'"
+  execute_ conn "SET timezone TO 'America/Chicago'"   -- -5:00
   checkRoundTrips env
-  execute_ conn "SET timezone TO 'Asia/Tokyo'"
+  execute_ conn "SET timezone TO 'Asia/Tokyo'"        -- +9:00
   checkRoundTrips env
-  execute_ conn "SET timezone TO 'Asia/Kathmandu'"
+  execute_ conn "SET timezone TO 'Asia/Kathmandu'"    -- +5:45
   checkRoundTrips env
-  execute_ conn "SET timezone TO 'America/St_Johns'"
+  execute_ conn "SET timezone TO 'America/St_Johns'"  -- -3:30
   checkRoundTrips env
 
 initializeTable :: TestEnv -> IO ()
@@ -49,10 +62,37 @@ initializeTable TestEnv{..} = withTransaction conn $ do
   execute_ conn
      [sql| CREATE TEMPORARY TABLE testtime
              ( x serial, y timestamptz, PRIMARY KEY(x) ) |]
+
+  let test :: ByteString -> IO () = \x -> do
+               execute conn [sql|
+                   INSERT INTO testtime (y) VALUES (?)
+                |] (Only x)
+               return ()
+  -- America/Chicago
+  test "1883-11-18 11:59:59-05:50:36"
+  test "1883-11-18 12:09:23-05:50:36"
+  test "1883-11-18 12:00:00-06"
+  -- Asia/Tokyo
+  test "1887-12-31 23:59:59+09:18:59"
+  test "1888-01-01 00:18:58+09:18:59"
+  test "1888-01-01 00:00:00+09"
+  -- Asia/Kathmandu
+  test "1919-12-31 23:59:59+05:41:16"
+  test "1919-12-31 23:48:44+05:30"
+  test "1985-12-31 23:59:59+05:30"
+  test "1986-01-01 00:15:00+05:45"
+  -- America/St_Johns
+  test "1935-03-29 23:59:59-03:30:52"
+  test "1935-03-30 00:00:52-03:30"
+
+  -- While the above special cases are probably a decent start,  there
+  -- are probably more that are well worth adding to ensure better
+  -- coverage.
+
   let pop :: ByteString ->  Double -> IO () = \x y ->
                replicateM_ numTests $ execute conn
                  [sql| INSERT INTO testtime (y) VALUES
-                         ('1936-01-01 00:00:00+00'::timestamptz
+                         ('1860-01-01 00:00:00+00'::timestamptz
                           + ?::interval * ROUND(RANDOM() * ?)) |] (x,y)
   pop   "1 microsecond"  6.3113904e15
   pop  "10 microseconds" 6.3113904e14
