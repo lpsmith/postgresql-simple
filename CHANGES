@@ -1,3 +1,23 @@
+Version 0.4.7.0 (2014-10-27)
+  * Added support for very old timestamps to UTCTime.   Depending on time
+    zone,  very old timestamps can be returned with a offset from UTC that
+    contains seconds.
+
+    All timezones in the TZ database moved to a time standard offset an
+    integer number of minutes from UTC before 1973, almost all locations
+    moved before 1938,  and a solid majority moved before 1921.
+
+    ZonedTime assumes offsets are a whole number of minutes,  and thus the
+    conversion to ZonedTime does not support these timestamps and will
+    still throw a conversion error.
+
+    Note that PostgreSQL's "timestamp with time zone" (or "timestamptz")
+    type is nearly universally misunderstood.  For an explanation, see:
+
+        https://github.com/lpsmith/postgresql-simple/issues/69
+
+    Thanks to Michael Snoyman for his assistance with this issue.
+
 Version 0.4.6.0 (2014-10-07)
   * Added an instance ToField NominalDiffTime.
 
