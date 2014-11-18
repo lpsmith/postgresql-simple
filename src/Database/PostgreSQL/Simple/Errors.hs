@@ -28,7 +28,7 @@ module Database.PostgreSQL.Simple.Errors
 import Control.Applicative
 import Control.Exception as E
 
-import Data.Attoparsec.Char8
+import Data.Attoparsec.ByteString.Char8
 import Data.ByteString       (ByteString)
 import Data.Typeable
 
