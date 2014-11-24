@@ -38,6 +38,7 @@ tests =
     , TestLabel "Time"          . testTime
     , TestLabel "Array"         . testArray
     , TestLabel "HStore"        . testHStore
+    , TestLabel "citext"        . testCiText
     , TestLabel "JSON"          . testJSON
     , TestLabel "Savepoint"     . testSavepoint
     , TestLabel "Unicode"       . testUnicode
@@ -177,6 +178,12 @@ testHStore TestEnv{..} = TestCase $ do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+testCiText :: TestEnv -> Test
+testCiText TestEnv{..} = TestCase $ do
+    execute_ conn "CREATE EXTENSION IF NOT EXISTS citext"
+    [Only r] <- query_ conn "SELECT 'foo'::citext"
+    r @?= ("foo" :: String)
 
 testJSON :: TestEnv -> Test
 testJSON TestEnv{..} = TestCase $ do
