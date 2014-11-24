@@ -142,6 +142,8 @@ import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
+import           Data.CaseInsensitive (CI)
+import qualified Data.CaseInsensitive as CI
 import           Data.UUID   (UUID)
 import qualified Data.UUID as UUID
 import           Data.Scientific (Scientific)
@@ -396,6 +398,28 @@ instance FromField ST.Text where
 -- | name, text, \"char\", bpchar, varchar
 instance FromField LT.Text where
     fromField f dat = LT.fromStrict <$> fromField f dat
+
+-- | citext
+instance FromField (CI ST.Text) where
+    fromField f mdat = do
+       typ <- typename f
+       if typ /= "citext"
+         then returnError Incompatible f ""
+         else case mdat of
+                Nothing  -> returnError UnexpectedNull f ""
+                Just dat -> either left (pure . CI.mk)
+                                        (ST.decodeUtf8' dat)
+
+-- | citext
+instance FromField (CI LT.Text) where
+    fromField f mdat = do
+       typ <- typename f
+       if typ /= "citext"
+         then returnError Incompatible f ""
+         else case mdat of
+                Nothing  -> returnError UnexpectedNull f ""
+                Just dat -> either left (pure . CI.mk . LT.fromStrict)
+                                        (ST.decodeUtf8' dat)
 
 -- | name, text, \"char\", bpchar, varchar
 instance FromField [Char] where
