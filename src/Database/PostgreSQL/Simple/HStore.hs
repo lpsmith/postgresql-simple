@@ -28,6 +28,7 @@ module Database.PostgreSQL.Simple.HStore
      , toBuilder
      , toLazyByteString
      , hstore
+     , parseHStoreList
      , ToHStoreText(..)
      , HStoreText
      ) where

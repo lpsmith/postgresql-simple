@@ -154,6 +154,13 @@ instance FromField HStoreMap where
     fromField f mdat = convert <$> fromField f mdat
       where convert (HStoreList xs) = HStoreMap (Map.fromList xs)
 
+parseHStoreList :: BS.ByteString -> Either String HStoreList
+parseHStoreList dat =
+    case P.parseOnly (parseHStore <* P.endOfInput) dat of
+      Left err          -> Left (show err)
+      Right (Left err)  -> Left (show err)
+      Right (Right val) -> Right val
+
 parseHStore :: P.Parser (Either UnicodeException HStoreList)
 parseHStore = do
     kvs <- P.sepBy' (skipWhiteSpace *> parseHStoreKeyVal)
