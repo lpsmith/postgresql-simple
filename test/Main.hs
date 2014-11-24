@@ -167,6 +167,7 @@ testArray TestEnv{..} = TestCase $ do
 
 testHStore :: TestEnv -> Test
 testHStore TestEnv{..} = TestCase $ do
+    execute_ conn "CREATE EXTENSION IF NOT EXISTS hstore"
     roundTrip []
     roundTrip [("foo","bar"),("bar","baz"),("baz","hello")]
     roundTrip [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")]

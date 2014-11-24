@@ -25,7 +25,7 @@ import Data.ByteString.Internal (c2w, w2c)
 import Data.Time hiding (getTimeZone, getZonedTime)
 import Data.Typeable
 import Data.Word(Word8)
-import qualified Data.Attoparsec.Char8 as A
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce

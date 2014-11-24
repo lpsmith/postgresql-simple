@@ -1,0 +1,7 @@
+language: haskell
+
+addons:
+  postgresql: "9.3"
+
+before_install:
+  - createdb `whoami`

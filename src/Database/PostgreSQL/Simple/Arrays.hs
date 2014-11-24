@@ -17,7 +17,7 @@ import           Control.Applicative (Applicative(..), Alternative(..), (<$>))
 import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Monoid
-import           Data.Attoparsec.Char8
+import           Data.Attoparsec.ByteString.Char8
 
 
 -- | Parse one of three primitive field formats: array, quoted and plain.

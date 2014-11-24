@@ -1,2 +1,16 @@
-:set -isrc
-:set Wall
+:set -isrc -itest -optP-includedist/build/autogen/cabal_macros.h
+:set -Wall -fno-warn-name-shadowing
+
+:set -XDoAndIfThenElse
+:set -XOverloadedStrings
+:set -XBangPatterns
+:set -XViewPatterns
+:set -XTypeOperators
+
+-- for tests
+:set -XNamedFieldPuns
+:set -XRank2Types
+:set -XRecordWildCards
+:set -XPatternGuards
+:set -XScopedTypeVariables
+:set -fno-warn-unused-do-bind
