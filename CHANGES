@@ -1,3 +1,9 @@
+Version 0.4.8.0 (2014-11-24)
+  * Added support for postgresql's citext type extension via the
+    case-insensitive package.
+
+  * Added the function parseHStoreList to the HStore module.
+
 Version 0.4.7.0 (2014-10-27)
   * Added support for very old timestamps to UTCTime.   Depending on time
     zone,  very old timestamps can be returned with a offset from UTC that
