@@ -7,4 +7,5 @@ dist/
 *.o
 \#*\#
 .#*
-postgresql-simple-*.tar.gz
+.cabal-sandbox/
+cabal.sandbox.config
