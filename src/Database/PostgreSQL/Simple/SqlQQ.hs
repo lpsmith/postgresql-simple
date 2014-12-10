@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.SqlQQ
@@ -13,6 +14,7 @@ module Database.PostgreSQL.Simple.SqlQQ (sql) where
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Data.Char
+import Data.String
 
 -- | 'sql' is a quasiquoter that eases the syntactic burden
 -- of writing big sql statements in Haskell source code.  For example:
@@ -60,7 +62,7 @@ sql = QuasiQuoter
     }
 
 sqlExp :: String -> Q Exp
-sqlExp = stringE . minimizeSpace
+sqlExp = appE [| fromString  |] . stringE . minimizeSpace
 
 minimizeSpace :: String -> String
 minimizeSpace = drop 1 . reduceSpace
