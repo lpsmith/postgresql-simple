@@ -10,7 +10,7 @@
 ------------------------------------------------------------------------------
 
 module Database.PostgreSQL.Simple.SqlQQ (sql) where
-
+import Database.PostgreSQL.Simple.Types (Query)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Data.Char
@@ -62,7 +62,7 @@ sql = QuasiQuoter
     }
 
 sqlExp :: String -> Q Exp
-sqlExp = appE [| fromString  |] . stringE . minimizeSpace
+sqlExp = appE [| fromString :: String -> Query |] . stringE . minimizeSpace
 
 minimizeSpace :: String -> String
 minimizeSpace = drop 1 . reduceSpace
