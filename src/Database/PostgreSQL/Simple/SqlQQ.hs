@@ -17,7 +17,7 @@ import Data.Char
 -- | 'sql' is a quasiquoter that eases the syntactic burden
 -- of writing big sql statements in Haskell source code.  For example:
 --
--- > {-# LANGUAGE QuasiQuotes #-}
+-- > {-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 -- >
 -- > query conn [sql| SELECT column_a, column_b
 -- >                    FROM table1 NATURAL JOIN table2
