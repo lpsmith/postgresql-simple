@@ -1,3 +1,11 @@
+Version 0.4.9.0 (2014-12-27)
+  * Made the fromField method for PGArray available as pgArrayFieldParser,
+    outside of the typeclass courtesy of Tom Ellis.
+
+  * Fixed a missing OverloadedStrings pragma in the documentation of SqlQQ.
+
+  * Fixed deprecation warnings, courtesy of Simon Hengel.
+
 Version 0.4.8.0 (2014-11-24)
   * Added support for postgresql's citext type extension via the
     case-insensitive package.
