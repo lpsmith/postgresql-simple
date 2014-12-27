@@ -105,6 +105,7 @@ module Database.PostgreSQL.Simple.FromField
     , typeOid
     , PQ.Oid(..)
     , PQ.Format(..)
+    , pgArrayFieldParser
 
     , fromJSONField
     ) where
@@ -490,27 +491,29 @@ instance (FromField a, FromField b) => FromField (Either a b) where
 
 -- | any postgresql array whose elements are compatible with type @a@
 instance (FromField a, Typeable a) => FromField (PGArray a) where
-    fromField f mdat = do
+  fromField = pgArrayFieldParser fromField
+
+pgArrayFieldParser :: Typeable a => FieldParser a -> FieldParser (PGArray a)
+pgArrayFieldParser fieldParser f mdat = do
         info <- typeInfo f
         case info of
           TI.Array{} ->
               case mdat of
                 Nothing  -> returnError UnexpectedNull f ""
                 Just dat -> do
-                   case parseOnly (fromArray info f) dat of
+                   case parseOnly (fromArray fieldParser info f) dat of
                      Left  err  -> returnError ConversionFailed f err
                      Right conv -> PGArray <$> conv
           _ -> returnError Incompatible f ""
 
-fromArray :: (FromField a)
-          => TypeInfo -> Field -> Parser (Conversion [a])
-fromArray typeInfo f = sequence . (parseIt <$>) <$> array delim
+fromArray :: FieldParser a -> TypeInfo -> Field -> Parser (Conversion [a])
+fromArray fieldParser typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
     delim = typdelim (typelem typeInfo)
     fElem = f{ typeOid = typoid (typelem typeInfo) }
 
     parseIt item =
-        fromField f' $ if item' == "NULL" then Nothing else Just item'
+        fieldParser f' $ if item' == "NULL" then Nothing else Just item'
       where
         item' = fmt delim item
         f' | Arrays.Array _ <- item = f
