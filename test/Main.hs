@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
 import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
@@ -10,8 +11,10 @@ import qualified Database.PostgreSQL.Simple.Transaction as ST
 import Control.Applicative
 import Control.Exception as E
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 import Data.ByteString (ByteString)
 import Data.IORef
+import Data.Monoid
 import Data.Typeable
 import qualified Data.ByteString as B
 import Data.Map (Map)
@@ -32,6 +35,8 @@ tests :: [TestEnv -> Test]
 tests =
     [ TestLabel "Bytea"         . testBytea
     , TestLabel "ExecuteMany"   . testExecuteMany
+    , TestLabel "Values"        . testValues
+#ifndef FOUNDATIONDB
     , TestLabel "Fold"          . testFold
     , TestLabel "Notify"        . testNotify
     , TestLabel "Serializable"  . testSerializable
@@ -41,15 +46,26 @@ tests =
     , TestLabel "JSON"          . testJSON
     , TestLabel "Savepoint"     . testSavepoint
     , TestLabel "Unicode"       . testUnicode
-    , TestLabel "Values"        . testValues
     , TestLabel "Copy"          . testCopy
     , TestLabel "Double"        . testDouble
+#endif
     ]
 
+
+binTyp :: Query
+binTyp =
+#ifdef FOUNDATIONDB
+         "BLOB"
+#else
+         "bytea"
+#endif
+
 testBytea :: TestEnv -> Test
-testBytea TestEnv{..} = TestList
-    [ testStr "empty"                  []
-    , testStr "\"hello\""              $ map (fromIntegral . fromEnum) ("hello" :: String)
+testBytea TestEnv{..} = TestList [
+#ifndef FOUNDATIONDB
+      testStr "empty"                  [] ,
+#endif
+      testStr "\"hello\""              $ map (fromIntegral . fromEnum) ("hello" :: String)
     , testStr "ascending"              [0..255]
     , testStr "descending"             [255,254..0]
     , testStr "ascending, doubled up"  $ doubleUp [0..255]
@@ -59,17 +75,18 @@ testBytea TestEnv{..} = TestList
     testStr label bytes = TestLabel label $ TestCase $ do
         let bs = B.pack bytes
 
-        [Only h] <- query conn "SELECT md5(?::bytea)" [Binary bs]
+        [Only h] <- query conn ("SELECT CAST(md5(?) AS " <> binTyp <> ")") [Binary bs]
         assertBool "Haskell -> SQL conversion altered the string" $ md5 bs == h
-
-        [Only (Binary r)] <- query conn "SELECT ?::bytea" [Binary bs]
+#ifndef FOUNDATIONDB
+        [Only (Binary r)] <- query conn ("SELECT CAST(? AS " <> binTyp <> ")") [Binary bs]
         assertBool "SQL -> Haskell conversion altered the string" $ bs == r
+#endif
 
     doubleUp = concatMap (\x -> [x, x])
 
 testExecuteMany :: TestEnv -> Test
 testExecuteMany TestEnv{..} = TestCase $ do
-    execute_ conn "CREATE TEMPORARY TABLE tmp_executeMany (i INT, t TEXT, b BYTEA)"
+    execute_ conn $ "DROP TABLE IF EXISTS tmp_executeMany; CREATE TABLE tmp_executeMany (i INT, t TEXT, b " <> binTyp <> ")"
 
     let rows :: [(Int, String, Binary ByteString)]
         rows = [ (1, "hello", Binary "bye")
@@ -83,6 +100,7 @@ testExecuteMany TestEnv{..} = TestCase $ do
     rows' <- query_ conn "SELECT * FROM tmp_executeMany"
     rows' @?= rows
 
+    execute_ conn $ "DROP TABLE tmp_executeMany"
     return ()
 
 testFold :: TestEnv -> Test
@@ -257,21 +275,25 @@ testUnicode TestEnv{..} = TestCase $ do
     let q = Query . T.encodeUtf8  -- Handle encoding ourselves to ensure
                                   -- the table gets created correctly.
     let messages = map Only ["привет","мир"] :: [Only Text]
-    execute_ conn (q "CREATE TEMPORARY TABLE ру́сский (сообщение TEXT)")
+    execute_ conn (q "DROP TABLE IF EXISTS ру́сский; CREATE TABLE ру́сский (сообщение TEXT)")
     executeMany conn "INSERT INTO ру́сский (сообщение) VALUES (?)" messages
     messages' <- query_ conn "SELECT сообщение FROM ру́сский"
     sort messages @?= sort messages'
+    void $ execute_ conn (q "DROP TABLE ру́сский")
 
 testValues :: TestEnv -> Test
 testValues TestEnv{..} = TestCase $ do
-    execute_ conn "CREATE TEMPORARY TABLE values_test (x int, y text)"
-    test (Values ["int4","text"] [])
-    test (Values ["int4","text"] [(1,"hello")])
-    test (Values ["int4","text"] [(1,"hello"),(2,"world")])
-    test (Values ["int4","text"] [(1,"hello"),(2,"world"),(3,"goodbye")])
+    execute_ conn "DROP TABLE IF EXISTS values_test; CREATE TABLE values_test (x int, y text)"
+#ifndef FOUNDATIONDB
+    test (Values ["int","text"] [])
+#endif
+    test (Values ["int","text"] [(1,"hello")])
+    test (Values ["int","text"] [(1,"hello"),(2,"world")])
+    test (Values ["int","text"] [(1,"hello"),(2,"world"),(3,"goodbye")])
     test (Values [] [(1,"hello")])
     test (Values [] [(1,"hello"),(2,"world")])
     test (Values [] [(1,"hello"),(2,"world"),(3,"goodbye")])
+    void $ execute_ conn "DROP TABLE values_test"
   where
     test :: Values (Int, Text) -> Assertion
     test table@(Values _ vals) = do
@@ -342,7 +364,11 @@ isSyntaxError SqlError{..} = sqlState == "42601"
 -- Note that some tests, such as Notify, use multiple connections, and assume
 -- that 'testConnect' connects to the same database every time it is called.
 testConnect :: IO Connection
-testConnect = connectPostgreSQL ""
+#ifdef FOUNDATIONDB
+testConnect = connectPostgreSQL "host=172.17.0.27 port=15432 user=postgres"
+#else
+testConnect = connectPostgreSQL "host=172.17.0.27 user=postgres password=password"
+#endif
 
 withTestEnv :: (TestEnv -> IO a) -> IO a
 withTestEnv cb =

@@ -18,6 +18,9 @@ extra-source-files:
      CONTRIBUTORS
 
 Library
+  if flag(foundationdb)
+    cpp-options: -DFOUNDATIONDB
+
   hs-source-dirs: src
   Exposed-modules:
      Database.PostgreSQL.Simple
@@ -84,9 +87,14 @@ source-repository this
   location: http://github.com/lpsmith/postgresql-simple
   tag:      v0.4.8.0
 
-test-suite test
-  type:           exitcode-stdio-1.0
+flag foundationdb
+  description: run tests against FoundationDB instead of PostgresSQL
 
+test-suite test
+  if flag(foundationdb)
+    cpp-options: -DFOUNDATIONDB
+
+  type:           exitcode-stdio-1.0
   hs-source-dirs: test
   main-is:        Main.hs
   other-modules:
@@ -115,3 +123,4 @@ test-suite test
                , text
                , time
                , vector
+               , transformers

@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE CPP #-}
 
 module Database.PostgreSQL.Simple.Transaction
     (
@@ -166,7 +167,14 @@ withTransactionModeRetry mode shouldRetry conn act =
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
-rollback conn = execute_ conn "ABORT" >> return ()
+rollback conn = execute_ conn undo >> return ()
+  where
+    undo =
+#ifdef FOUNDATIONDB
+          "ROLLBACK"
+#else
+          "ABORT"
+#endif
 
 -- | Commit a transaction.
 commit :: Connection -> IO ()
@@ -183,9 +191,14 @@ beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 -- | Begin a transaction with a given transaction mode
 beginMode :: TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
-    _ <- execute_ conn $! Query (B.concat ["BEGIN", isolevel, readmode])
+    _ <- execute_ conn $! Query (B.concat ["BEGIN"
+#ifndef FOUNDATIONDB
+        , isolevel, readmode
+#endif
+        ])
     return ()
   where
+#ifndef FOUNDATIONDB
     isolevel = case isolationLevel mode of
                  DefaultIsolationLevel -> ""
                  ReadCommitted  -> " ISOLATION LEVEL READ COMMITTED"
@@ -195,6 +208,7 @@ beginMode mode conn = do
                  DefaultReadWriteMode -> ""
                  ReadWrite -> " READ WRITE"
                  ReadOnly  -> " READ ONLY"
+#endif
 
 ------------------------------------------------------------------------
 -- Savepoint

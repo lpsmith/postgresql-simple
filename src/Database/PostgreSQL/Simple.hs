@@ -420,6 +420,7 @@ query_ = queryWith_ fromRow
 -- | A version of 'query' taking parser as argument
 queryWith :: ToRow q => RowParser r -> Connection -> Query -> q -> IO [r]
 queryWith parser conn template qs = do
+  -- liftIO $ print =<< formatQuery conn template qs
   result <- exec conn =<< formatQuery conn template qs
   finishQueryWith parser conn template result
 

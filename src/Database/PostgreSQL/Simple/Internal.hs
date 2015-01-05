@@ -196,10 +196,12 @@ connectPostgreSQL connstr = do
           connectionTempNameCounter <- newIORef 0
           let wconn = Connection{..}
           version <- PQ.serverVersion conn
+#ifndef FOUNDATIONDB
           let settings
                 | version < 80200 = "SET datestyle TO ISO"
                 | otherwise       = "SET standard_conforming_strings TO on;SET datestyle TO ISO"
           _ <- execute_ wconn settings
+#endif
           return wconn
       _ -> do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
@@ -286,6 +288,7 @@ exec conn sql =
           Just res -> return res
 #else
 exec conn sql =
+    -- print sql
     withConnection conn $ \h -> do
         success <- PQ.sendQuery h sql
         if success
