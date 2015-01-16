@@ -133,7 +133,7 @@ connect :: ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
 
 -- | Attempt to make a connection based on a libpq connection string.
---   See <http://www.postgresql.org/docs/9.3/static/libpq-connect.html>
+--   See <http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING>
 --   for more information.  Here is an example with some
 --   of the most commonly used parameters:
 --
@@ -184,6 +184,16 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --
 --   See <http://www.postgresql.org/docs/9.3/static/client-authentication.html>
 --   for more information regarding the authentication process.
+--
+--   SSL/TLS will typically "just work" if your postgresql server supports or
+--   requires it.  However,  note that libpq is trivially vulnerable to a MITM
+--   attack without setting additional SSL parameters in the connection string.
+--   In particular,  @sslmode@ needs to set be @require@, @verify-ca@, or
+--   @verify-full@ to perform certificate validation.   When @sslmode@ is
+--   @require@,  then you will also need to have a @sslrootcert@ file,
+--   otherwise no validation of the server's identity will be performed.
+--   Client authentication via certificates is also possible via the
+--   @sslcert@ and @sslkey@ parameters.
 
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
