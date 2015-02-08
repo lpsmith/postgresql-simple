@@ -108,6 +108,9 @@ module Database.PostgreSQL.Simple
     -- * Helper functions
     , formatMany
     , formatQuery
+    , escapeStringConn
+    , escapeIdentifier
+    , escapeByteaConn
     ) where
 
 import           Blaze.ByteString.Builder
