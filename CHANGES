@@ -1,3 +1,9 @@
+Version 0.4.10.0 (2015-02-26)
+  * Added a blurb about SSL/TLS in the documentation for connectPostgreSQL
+
+  * Moved some functions into the Internal module,  courtesy of Aleksey
+    Uimanov.
+
 Version 0.4.9.0 (2014-12-27)
   * Made the fromField method for PGArray available as pgArrayFieldParser,
     outside of the typeclass courtesy of Tom Ellis.
