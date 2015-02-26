@@ -19,7 +19,7 @@ import Data.String
 -- | 'sql' is a quasiquoter that eases the syntactic burden
 -- of writing big sql statements in Haskell source code.  For example:
 --
--- > {-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
+-- > {-# LANGUAGE QuasiQuotes #-}
 -- >
 -- > query conn [sql| SELECT column_a, column_b
 -- >                    FROM table1 NATURAL JOIN table2
@@ -29,10 +29,10 @@ import Data.String
 -- >                   LIMIT 100                        |]
 -- >            (beginTime,endTime,string)
 --
--- This quasiquoter attempts to mimimize whitespace;  otherwise the
--- above query would consist of approximately half whitespace when sent
--- to the database backend.  It also recognizes and strips out standard
--- sql comments "--".
+-- This quasiquoter returns a literal string expression of type 'Query',
+-- and attempts to mimimize whitespace;  otherwise the above query would
+-- consist of approximately half whitespace when sent to the database
+-- backend.  It also recognizes and strips out standard sql comments "--".
 --
 -- The implementation of the whitespace reducer is currently incomplete.
 -- Thus it can mess up your syntax in cases where whitespace should be
