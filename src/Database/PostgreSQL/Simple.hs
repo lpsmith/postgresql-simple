@@ -114,19 +114,18 @@ import           Blaze.ByteString.Builder
                    ( Builder, fromByteString, toByteString )
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text ( integral )
-import           Control.Applicative ((<$>), pure)
+import           Control.Applicative ((<$>))
 import           Control.Exception as E
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
-import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.Compat ( (<>) )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
+import           Database.PostgreSQL.Simple.ToField (Action(..))
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
@@ -135,8 +134,6 @@ import           Database.PostgreSQL.Simple.Transaction
 import           Database.PostgreSQL.Simple.TypeInfo
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as TE
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
