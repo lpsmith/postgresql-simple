@@ -108,9 +108,6 @@ module Database.PostgreSQL.Simple
     -- * Helper functions
     , formatMany
     , formatQuery
-    , escapeStringConn
-    , escapeIdentifier
-    , escapeByteaConn
     ) where
 
 import           Blaze.ByteString.Builder
@@ -289,26 +286,7 @@ parseTemplate template =
 
     skipSpace = B.dropWhile isSpace_ascii
 
-escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeStringConn = escapeWrap PQ.escapeStringConn
 
-escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeIdentifier = escapeWrap PQ.escapeIdentifier
-
-escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeByteaConn = escapeWrap PQ.escapeByteaConn
-
-escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
-                 -> Connection
-                 -> ByteString
-                 -> IO (Either ByteString ByteString)
-escapeWrap f conn s =
-    withConnection conn $ \c ->
-    f c s >>= checkError c
-
-checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
-checkError _ (Just x) = return $ Right x
-checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs

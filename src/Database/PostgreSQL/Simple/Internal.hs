@@ -501,3 +501,24 @@ throwLibPQError :: PQ.Connection -> ByteString -> IO a
 throwLibPQError conn default_desc = do
   msg <- maybe default_desc id <$> PQ.errorMessage conn
   throwIO $! libPQError msg
+
+checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
+checkError _ (Just x) = return $ Right x
+checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
+
+escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
+                 -> Connection
+                 -> ByteString
+                 -> IO (Either ByteString ByteString)
+escapeWrap f conn s =
+    withConnection conn $ \c ->
+    f c s >>= checkError c
+
+escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeStringConn = escapeWrap PQ.escapeStringConn
+
+escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeIdentifier = escapeWrap PQ.escapeIdentifier
+
+escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeByteaConn = escapeWrap PQ.escapeByteaConn
