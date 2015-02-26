@@ -20,24 +20,31 @@
 
 module Database.PostgreSQL.Simple.Internal where
 
+import           Blaze.ByteString.Builder
+                   ( Builder, fromByteString, toByteString )
 import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
 import           Control.Monad(MonadPlus(..))
 import           Data.ByteString(ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import           Data.Char (ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
 import           Data.IORef
 import           Data.Maybe(fromMaybe)
+import           Data.Monoid
 import           Data.String
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import           Data.Typeable
 import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.LibPQ(ExecStatus(..))
 import           Database.PostgreSQL.Simple.Ok
+import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
 import           Database.PostgreSQL.Simple.Types (Query(..))
 import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
 import           Control.Monad.Trans.State.Strict
@@ -91,6 +98,17 @@ data QueryError = QueryError {
     } deriving (Eq, Show, Typeable)
 
 instance Exception QueryError
+
+-- | Exception thrown if a 'Query' could not be formatted correctly.
+-- This may occur if the number of \'@?@\' characters in the query
+-- string does not match the number of parameters provided.
+data FormatError = FormatError {
+      fmtMessage :: String
+    , fmtQuery :: Query
+    , fmtParams :: [ByteString]
+    } deriving (Eq, Show, Typeable)
+
+instance Exception FormatError
 
 data ConnectInfo = ConnectInfo {
       connectHost :: String
@@ -501,3 +519,57 @@ throwLibPQError :: PQ.Connection -> ByteString -> IO a
 throwLibPQError conn default_desc = do
   msg <- maybe default_desc id <$> PQ.errorMessage conn
   throwIO $! libPQError msg
+
+
+fmtError :: String -> Query -> [Action] -> a
+fmtError msg q xs = throw FormatError {
+                      fmtMessage = msg
+                    , fmtQuery = q
+                    , fmtParams = map twiddle xs
+                    }
+  where twiddle (Plain b)            = toByteString b
+        twiddle (Escape s)           = s
+        twiddle (EscapeByteA s)      = s
+        twiddle (EscapeIdentifier s) = s
+        twiddle (Many ys)            = B.concat (map twiddle ys)
+
+fmtErrorBs :: Query -> [Action] -> ByteString -> a
+fmtErrorBs q xs msg = fmtError (T.unpack $ TE.decodeUtf8 msg) q xs
+
+-- | Quote bytestring or throw 'FormatError'
+quote :: Query -> [Action] -> Either ByteString ByteString -> Builder
+quote q xs = either (fmtErrorBs q xs) (inQuotes . fromByteString)
+
+buildAction :: Connection        -- ^ Connection for string escaping
+            -> Query             -- ^ Query for message error
+            -> [Action]          -- ^ List of parameters for message error
+            -> Action            -- ^ Action to build
+            -> IO Builder
+buildAction _ _ _     (Plain  b)            = pure b
+buildAction conn q xs (Escape s)            = quote q xs <$> escapeStringConn conn s
+buildAction conn q xs (EscapeByteA s)       = quote q xs <$> escapeByteaConn conn s
+buildAction conn q xs (EscapeIdentifier s) =
+    either (fmtErrorBs q xs) fromByteString <$> escapeIdentifier conn s
+buildAction conn q xs (Many  ys)           =
+    mconcat <$> mapM (buildAction conn q xs) ys
+
+checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
+checkError _ (Just x) = return $ Right x
+checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
+
+escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
+                 -> Connection
+                 -> ByteString
+                 -> IO (Either ByteString ByteString)
+escapeWrap f conn s =
+    withConnection conn $ \c ->
+    f c s >>= checkError c
+
+escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeStringConn = escapeWrap PQ.escapeStringConn
+
+escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeIdentifier = escapeWrap PQ.escapeIdentifier
+
+escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeByteaConn = escapeWrap PQ.escapeByteaConn

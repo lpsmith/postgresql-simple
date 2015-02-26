@@ -66,9 +66,9 @@ module Database.PostgreSQL.Simple
     -- ** Exceptions
     , SqlError(..)
     , PQ.ExecStatus(..)
-    , FormatError(fmtMessage, fmtQuery, fmtParams)
-    , QueryError(qeMessage, qeQuery)
-    , ResultError(errSQLType, errHaskellType, errMessage)
+    , FormatError(..)
+    , QueryError(..)
+    , ResultError(..)
     -- * Connection management
     , Base.connectPostgreSQL
     , Base.close
@@ -114,19 +114,18 @@ import           Blaze.ByteString.Builder
                    ( Builder, fromByteString, toByteString )
 import           Blaze.ByteString.Builder.Char8 (fromChar)
 import           Blaze.Text ( integral )
-import           Control.Applicative ((<$>), pure)
+import           Control.Applicative ((<$>))
 import           Control.Exception as E
 import           Control.Monad (foldM)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
-import           Data.Typeable (Typeable)
 import           Database.PostgreSQL.Simple.Compat ( (<>) )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
-import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
+import           Database.PostgreSQL.Simple.ToField (Action(..))
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
@@ -135,21 +134,9 @@ import           Database.PostgreSQL.Simple.Transaction
 import           Database.PostgreSQL.Simple.TypeInfo
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
-import qualified Data.Text          as T
-import qualified Data.Text.Encoding as TE
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
--- | Exception thrown if a 'Query' could not be formatted correctly.
--- This may occur if the number of \'@?@\' characters in the query
--- string does not match the number of parameters provided.
-data FormatError = FormatError {
-      fmtMessage :: String
-    , fmtQuery :: Query
-    , fmtParams :: [ByteString]
-    } deriving (Eq, Show, Typeable)
-
-instance Exception FormatError
 
 -- | Format a query string.
 --
@@ -286,40 +273,17 @@ parseTemplate template =
 
     skipSpace = B.dropWhile isSpace_ascii
 
-escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeStringConn = escapeWrap PQ.escapeStringConn
 
-escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeIdentifier = escapeWrap PQ.escapeIdentifier
-
-escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
-escapeByteaConn = escapeWrap PQ.escapeByteaConn
-
-escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
-                 -> Connection
-                 -> ByteString
-                 -> IO (Either ByteString ByteString)
-escapeWrap f conn s =
-    withConnection conn $ \c ->
-    f c s >>= checkError c
-
-checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
-checkError _ (Just x) = return $ Right x
-checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
-buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
-  where err' msg = fmtError (utf8ToString msg) q xs
-        quote = either err' (inQuotes . fromByteString)
-        utf8ToString = T.unpack . TE.decodeUtf8
-        sub (Plain  b)           = pure b
-        sub (Escape s)           = quote <$> escapeStringConn conn s
-        sub (EscapeByteA s)      = quote <$> escapeByteaConn conn s
-        sub (EscapeIdentifier s) = either err' fromByteString <$>
-                                       escapeIdentifier conn s
-        sub (Many  ys)           = mconcat <$> mapM sub ys
-        split s = fromByteString h : if B.null t then [] else split (B.tail t)
-            where (h,t) = B.break (=='?') s
+buildQuery conn q template xs =
+    zipParams (split template) <$> mapM (buildAction conn q xs) xs
+  where split s =
+            let (h,t) = B.break (=='?') s
+            in fromByteString h
+               : if B.null t
+                 then []
+                 else split (B.tail t)
         zipParams (t:ts) (p:ps) = t <> p <> zipParams ts ps
         zipParams [t] []        = t
         zipParams _ _ = fmtError (show (B.count '?' template) ++
@@ -659,17 +623,6 @@ ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
 
-fmtError :: String -> Query -> [Action] -> a
-fmtError msg q xs = throw FormatError {
-                      fmtMessage = msg
-                    , fmtQuery = q
-                    , fmtParams = map twiddle xs
-                    }
-  where twiddle (Plain b)            = toByteString b
-        twiddle (Escape s)           = s
-        twiddle (EscapeByteA s)      = s
-        twiddle (EscapeIdentifier s) = s
-        twiddle (Many ys)            = B.concat (map twiddle ys)
 
 -- $use
 --
