@@ -22,7 +22,6 @@ Library
   Exposed-modules:
      Database.PostgreSQL.Simple
      Database.PostgreSQL.Simple.Arrays
-     Database.PostgreSQL.Simple.BuiltinTypes
      Database.PostgreSQL.Simple.Copy
      Database.PostgreSQL.Simple.FromField
      Database.PostgreSQL.Simple.FromRow
