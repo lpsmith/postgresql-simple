@@ -140,16 +140,6 @@ import qualified Data.Text.Encoding as TE
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
--- | Exception thrown if a 'Query' could not be formatted correctly.
--- This may occur if the number of \'@?@\' characters in the query
--- string does not match the number of parameters provided.
-data FormatError = FormatError {
-      fmtMessage :: String
-    , fmtQuery :: Query
-    , fmtParams :: [ByteString]
-    } deriving (Eq, Show, Typeable)
-
-instance Exception FormatError
 
 -- | Format a query string.
 --
@@ -289,18 +279,14 @@ parseTemplate template =
 
 
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
-buildQuery conn q template xs = zipParams (split template) <$> mapM sub xs
-  where err' msg = fmtError (utf8ToString msg) q xs
-        quote = either err' (inQuotes . fromByteString)
-        utf8ToString = T.unpack . TE.decodeUtf8
-        sub (Plain  b)           = pure b
-        sub (Escape s)           = quote <$> escapeStringConn conn s
-        sub (EscapeByteA s)      = quote <$> escapeByteaConn conn s
-        sub (EscapeIdentifier s) = either err' fromByteString <$>
-                                       escapeIdentifier conn s
-        sub (Many  ys)           = mconcat <$> mapM sub ys
-        split s = fromByteString h : if B.null t then [] else split (B.tail t)
-            where (h,t) = B.break (=='?') s
+buildQuery conn q template xs =
+    zipParams (split template) <$> mapM (buildAction conn q xs) xs
+  where split s =
+            let (h,t) = B.break (=='?') s
+            in fromByteString h
+               : if B.null t
+                 then []
+                 else split (B.tail t)
         zipParams (t:ts) (p:ps) = t <> p <> zipParams ts ps
         zipParams [t] []        = t
         zipParams _ _ = fmtError (show (B.count '?' template) ++
@@ -640,17 +626,6 @@ ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
 
-fmtError :: String -> Query -> [Action] -> a
-fmtError msg q xs = throw FormatError {
-                      fmtMessage = msg
-                    , fmtQuery = q
-                    , fmtParams = map twiddle xs
-                    }
-  where twiddle (Plain b)            = toByteString b
-        twiddle (Escape s)           = s
-        twiddle (EscapeByteA s)      = s
-        twiddle (EscapeIdentifier s) = s
-        twiddle (Many ys)            = B.concat (map twiddle ys)
 
 -- $use
 --
