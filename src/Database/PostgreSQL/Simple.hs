@@ -42,7 +42,7 @@ module Database.PostgreSQL.Simple
     -- ** Modifying multiple rows at once
     -- $many
 
-    -- ** @RETURNING@: modifications that returns results
+    -- ** @RETURNING@: modifications that return results
     -- $returning
 
     -- * Extracting results
