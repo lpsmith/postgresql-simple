@@ -308,6 +308,13 @@ interleaveFoldr :: (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
 interleaveFoldr f b bs as = foldr (\a bs -> b : f a bs) bs as
 {-# INLINE interleaveFoldr #-}
 
+#ifdef FOUNDATIONDB
+typeForCastExpr :: QualifiedIdentifier -> Action
+-- don't quote a type in a CAST expression
+typeForCastExpr (QualifiedIdentifier Nothing  t) = Plain $ fromByteString (ST.encodeUtf8 t)
+typeForCastExpr q = toField q
+#endif
+
 instance ToRow a => ToField (Values a) where
     toField (Values types rows) =
         case rows of
@@ -328,7 +335,13 @@ instance ToRow a => ToField (Values a) where
         values x = Many (lit "(VALUES ": x)
 
         typedField :: (Action, QualifiedIdentifier) -> [Action] -> [Action]
-        typedField (val,typ) rest = val : lit "::" : toField typ : rest
+        typedField (val,typ) rest =
+#ifdef FOUNDATIONDB
+            lit "CAST(" :  val : lit " AS " : typeForCastExpr typ : litC ')'
+#else
+            val : lit "::" : toField typ
+#endif
+              : rest
 
         typedRow :: [Action] -> [QualifiedIdentifier] -> [Action] -> [Action]
         typedRow (val:vals) (typ:typs) rest =
