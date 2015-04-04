@@ -20,8 +20,6 @@
 
 module Database.PostgreSQL.Simple.Internal where
 
-import           Blaze.ByteString.Builder
-                   ( Builder, fromByteString, toByteString )
 import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
@@ -29,6 +27,7 @@ import           Control.Monad(MonadPlus(..))
 import           Data.ByteString(ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
+import           Data.ByteString.Builder ( Builder, byteString )
 import           Data.Char (ord)
 import           Data.Int (Int64)
 import qualified Data.IntMap as IntMap
@@ -43,6 +42,7 @@ import           Data.Word
 import           Database.PostgreSQL.LibPQ(Oid(..))
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.LibPQ(ExecStatus(..))
+import           Database.PostgreSQL.Simple.Compat ( toByteString )
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.ToField (Action(..), inQuotes)
 import           Database.PostgreSQL.Simple.Types (Query(..))
@@ -538,7 +538,7 @@ fmtErrorBs q xs msg = fmtError (T.unpack $ TE.decodeUtf8 msg) q xs
 
 -- | Quote bytestring or throw 'FormatError'
 quote :: Query -> [Action] -> Either ByteString ByteString -> Builder
-quote q xs = either (fmtErrorBs q xs) (inQuotes . fromByteString)
+quote q xs = either (fmtErrorBs q xs) (inQuotes . byteString)
 
 buildAction :: Connection        -- ^ Connection for string escaping
             -> Query             -- ^ Query for message error
@@ -549,7 +549,7 @@ buildAction _ _ _     (Plain  b)            = pure b
 buildAction conn q xs (Escape s)            = quote q xs <$> escapeStringConn conn s
 buildAction conn q xs (EscapeByteA s)       = quote q xs <$> escapeByteaConn conn s
 buildAction conn q xs (EscapeIdentifier s) =
-    either (fmtErrorBs q xs) fromByteString <$> escapeIdentifier conn s
+    either (fmtErrorBs q xs) byteString <$> escapeIdentifier conn s
 buildAction conn q xs (Many  ys)           =
     mconcat <$> mapM (buildAction conn q xs) ys
 

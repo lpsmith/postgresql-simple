@@ -22,11 +22,14 @@ module Database.PostgreSQL.Simple.ToField
     , inQuotes
     ) where
 
-import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char8 (fromChar)
-import Blaze.Text (integral, double, float)
 import qualified Data.Aeson as JSON
-import Data.ByteString (ByteString)
+import           Data.ByteString (ByteString)
+import           Data.ByteString.Builder
+                   ( Builder, byteString, char8, stringUtf8
+                   , intDec, int8Dec, int16Dec, int32Dec, int64Dec, integerDec
+                   , wordDec, word8Dec, word16Dec, word32Dec, word64Dec
+                   , floatDec, doubleDec
+                   )
 import Data.Int (Int8, Int16, Int32, Int64)
 import Data.List (intersperse)
 import Data.Monoid (mappend)
@@ -35,7 +38,8 @@ import Data.Typeable (Typeable)
 import Data.Word (Word, Word8, Word16, Word32, Word64)
 import {-# SOURCE #-} Database.PostgreSQL.Simple.ToRow
 import Database.PostgreSQL.Simple.Types
-import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
+import Database.PostgreSQL.Simple.Compat (toByteString)
+
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as ST
@@ -54,6 +58,7 @@ import           Data.Text.Lazy.Builder.Scientific (scientificBuilder)
 #else
 import           Data.Scientific (scientificBuilder)
 #endif
+import           Foreign.C.Types (CUInt(..))
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -99,84 +104,84 @@ instance (ToField a) => ToField (Maybe a) where
     {-# INLINE toField #-}
 
 instance (ToField a) => ToField (In [a]) where
-    toField (In []) = Plain $ fromByteString "(null)"
+    toField (In []) = Plain $ byteString "(null)"
     toField (In xs) = Many $
-        Plain (fromChar '(') :
-        (intersperse (Plain (fromChar ',')) . map toField $ xs) ++
-        [Plain (fromChar ')')]
+        Plain (char8 '(') :
+        (intersperse (Plain (char8 ',')) . map toField $ xs) ++
+        [Plain (char8 ')')]
 
 renderNull :: Action
-renderNull = Plain (fromByteString "null")
+renderNull = Plain (byteString "null")
 
 instance ToField Null where
     toField _ = renderNull
     {-# INLINE toField #-}
 
 instance ToField Default where
-    toField _ = Plain (fromByteString "default")
+    toField _ = Plain (byteString "default")
     {-# INLINE toField #-}
 
 instance ToField Bool where
-    toField True  = Plain (fromByteString "true")
-    toField False = Plain (fromByteString "false")
+    toField True  = Plain (byteString "true")
+    toField False = Plain (byteString "false")
     {-# INLINE toField #-}
 
 instance ToField Int8 where
-    toField = Plain . integral
+    toField = Plain . int8Dec
     {-# INLINE toField #-}
 
 instance ToField Int16 where
-    toField = Plain . integral
+    toField = Plain . int16Dec
     {-# INLINE toField #-}
 
 instance ToField Int32 where
-    toField = Plain . integral
+    toField = Plain . int32Dec
     {-# INLINE toField #-}
 
 instance ToField Int where
-    toField = Plain . integral
+    toField = Plain . intDec
     {-# INLINE toField #-}
 
 instance ToField Int64 where
-    toField = Plain . integral
+    toField = Plain . int64Dec
     {-# INLINE toField #-}
 
 instance ToField Integer where
-    toField = Plain . integral
+    toField = Plain . integerDec
     {-# INLINE toField #-}
 
 instance ToField Word8 where
-    toField = Plain . integral
+    toField = Plain . word8Dec
     {-# INLINE toField #-}
 
 instance ToField Word16 where
-    toField = Plain . integral
+    toField = Plain . word16Dec
     {-# INLINE toField #-}
 
 instance ToField Word32 where
-    toField = Plain . integral
+    toField = Plain . word32Dec
     {-# INLINE toField #-}
 
 instance ToField Word where
-    toField = Plain . integral
+    toField = Plain . wordDec
     {-# INLINE toField #-}
 
 instance ToField Word64 where
-    toField = Plain . integral
+    toField = Plain . word64Dec
     {-# INLINE toField #-}
 
 instance ToField PQ.Oid where
-    toField = Plain . integral . \(PQ.Oid x) -> x
+    toField = Plain . \(PQ.Oid (CUInt x)) -> word32Dec x
     {-# INLINE toField #-}
 
 instance ToField Float where
-    toField v | isNaN v || isInfinite v = Plain (inQuotes (float v))
-              | otherwise               = Plain (float v)
+    toField v | isNaN v || isInfinite v = Plain (inQuotes (floatDec v))
+              | otherwise               = Plain (floatDec v)
     {-# INLINE toField #-}
 
 instance ToField Double where
-    toField v | isNaN v || isInfinite v = Plain (inQuotes (double v))
-              | otherwise               = Plain (double v)
+    toField v | isNaN v || isInfinite v = Plain (inQuotes (doubleDec v))
+              | otherwise               = Plain (doubleDec v)
     {-# INLINE toField #-}
 
 instance ToField Scientific where
@@ -198,7 +203,7 @@ instance ToField Identifier where
 instance ToField QualifiedIdentifier where
     toField (QualifiedIdentifier (Just s) t) =
         Many [ EscapeIdentifier (ST.encodeUtf8 s)
-             , Plain (fromChar '.')
+             , Plain (char8 '.')
              , EscapeIdentifier (ST.encodeUtf8 t)
              ]
     toField (QualifiedIdentifier Nothing  t) =
@@ -218,7 +223,7 @@ instance ToField ST.Text where
     {-# INLINE toField #-}
 
 instance ToField [Char] where
-    toField = Escape . toByteString . Utf8.fromString
+    toField = Escape . toByteString . stringUtf8
     {-# INLINE toField #-}
 
 instance ToField LT.Text where
@@ -268,9 +273,9 @@ instance ToField NominalDiffTime where
 
 instance (ToField a) => ToField (PGArray a) where
     toField xs = Many $
-        Plain (fromByteString "ARRAY[") :
-        (intersperse (Plain (fromChar ',')) . map toField $ fromPGArray xs) ++
-        [Plain (fromChar ']')]
+        Plain (byteString "ARRAY[") :
+        (intersperse (Plain (char8 ',')) . map toField $ fromPGArray xs) ++
+        [Plain (char8 ']')]
         -- Because the ARRAY[...] input syntax is being used, it is possible
         -- that the use of type-specific separator characters is unnecessary.
 
@@ -278,7 +283,7 @@ instance (ToField a) => ToField (Vector a) where
     toField = toField . PGArray . V.toList
 
 instance ToField UUID where
-    toField = Plain . inQuotes . fromByteString . UUID.toASCIIBytes
+    toField = Plain . inQuotes . byteString . UUID.toASCIIBytes
 
 instance ToField JSON.Value where
     toField = toField . JSON.encode
@@ -297,7 +302,7 @@ toJSONField = toField . JSON.toJSON
 -- This function /does not/ perform any other escaping.
 inQuotes :: Builder -> Builder
 inQuotes b = quote `mappend` b `mappend` quote
-  where quote = Utf8.fromChar '\''
+  where quote = char8 '\''
 
 interleaveFoldr :: (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
 interleaveFoldr f b bs as = foldr (\a bs -> b : f a bs) bs as
@@ -318,8 +323,8 @@ instance ToRow a => ToField (Values a) where
         funcname = "Database.PostgreSQL.Simple.toField :: Values a -> Action"
         norows   = funcname ++ "  either values or types must be non-empty"
         emptyrow = funcname ++ "  each row must contain at least one column"
-        lit  = Plain . fromByteString
-        litC = Plain . fromChar
+        lit  = Plain . byteString
+        litC = Plain . char8
         values x = Many (lit "(VALUES ": x)
 
         typedField :: (Action, QualifiedIdentifier) -> [Action] -> [Action]

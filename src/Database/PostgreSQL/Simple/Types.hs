@@ -30,18 +30,18 @@ module Database.PostgreSQL.Simple.Types
     , Values(..)
     ) where
 
-import           Blaze.ByteString.Builder (toByteString)
 import           Control.Arrow (first)
 import           Data.ByteString (ByteString)
 import           Data.Hashable (Hashable(hashWithSalt))
 import           Data.Monoid (Monoid(..))
 import           Data.String (IsString(..))
 import           Data.Typeable (Typeable)
-import qualified Blaze.ByteString.Builder.Char.Utf8 as Utf8
+import           Data.ByteString.Builder ( stringUtf8 )
 import qualified Data.ByteString as B
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Database.PostgreSQL.LibPQ (Oid(..))
+import           Database.PostgreSQL.Simple.Compat (toByteString)
 
 -- | A placeholder for the SQL @NULL@ value.
 data Null = Null
@@ -85,7 +85,7 @@ instance Read Query where
     readsPrec i = fmap (first Query) . readsPrec i
 
 instance IsString Query where
-    fromString = Query . toByteString . Utf8.fromString
+    fromString = Query . toByteString . stringUtf8
 
 instance Monoid Query where
     mempty = Query B.empty

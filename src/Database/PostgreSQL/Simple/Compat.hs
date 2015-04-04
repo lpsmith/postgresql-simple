@@ -5,10 +5,15 @@ module Database.PostgreSQL.Simple.Compat
     ( mask
     , (<>)
     , unsafeDupablePerformIO
+    , toByteString
     ) where
 
 import qualified Control.Exception as E
 import Data.Monoid
+import Data.ByteString         (ByteString)
+import Data.ByteString.Lazy    (toStrict)
+import Data.ByteString.Builder (Builder, toLazyByteString)
+
 
 #if   __GLASGOW_HASKELL__ >= 702
 import System.IO.Unsafe (unsafeDupablePerformIO)
@@ -43,3 +48,6 @@ infixr 6 <>
 (<>) = mappend
 {-# INLINE (<>) #-}
 #endif
+
+toByteString :: Builder -> ByteString
+toByteString x = toStrict (toLazyByteString x)

@@ -13,9 +13,7 @@
 module Database.PostgreSQL.Simple.Time.Implementation where
 
 import Prelude hiding (take, (++))
-import Blaze.ByteString.Builder(Builder, fromByteString)
-import Blaze.ByteString.Builder.Char8(fromChar)
-import Blaze.Text.Int(integral)
+import Data.ByteString.Builder(Builder, byteString, char8, integerDec)
 import Control.Arrow((***))
 import Control.Applicative
 import Control.Monad(when)
@@ -212,25 +210,25 @@ digits msg = do
 
 dayToBuilder :: Day -> Builder
 dayToBuilder (toGregorian -> (y,m,d)) = do
-    pad4 y ++ fromChar '-' ++ pad2 m ++ fromChar '-' ++ pad2 d
+    pad4 y ++ char8 '-' ++ pad2 m ++ char8 '-' ++ pad2 d
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
 timeOfDayToBuilder (TimeOfDay h m s) = do
-    pad2 h ++ fromChar ':' ++ pad2 m ++ fromChar ':' ++ showSeconds s
+    pad2 h ++ char8 ':' ++ pad2 m ++ char8 ':' ++ showSeconds s
 
 timeZoneToBuilder :: TimeZone -> Builder
 timeZoneToBuilder tz
     | m == 0     =  sign h ++ pad2 (abs h)
-    | otherwise  =  sign h ++ pad2 (abs h) ++ fromChar ':' ++ pad2 (abs m)
+    | otherwise  =  sign h ++ pad2 (abs h) ++ char8 ':' ++ pad2 (abs m)
   where
     (h,m) = timeZoneMinutes tz `quotRem` 60
-    sign h | h >= 0    = fromChar '+'
-           | otherwise = fromChar '-'
+    sign h | h >= 0    = char8 '+'
+           | otherwise = char8 '-'
 
 utcTimeToBuilder :: UTCTime -> Builder
 utcTimeToBuilder (UTCTime day time) =
-    dayToBuilder day ++ fromChar ' '
-    ++ timeOfDayToBuilder (timeToTimeOfDay time) ++ fromByteString "+00"
+    dayToBuilder day ++ char8 ' '
+    ++ timeOfDayToBuilder (timeToTimeOfDay time) ++ byteString "+00"
 
 zonedTimeToBuilder :: ZonedTime -> Builder
 zonedTimeToBuilder (ZonedTime localTime tz) =
@@ -238,14 +236,14 @@ zonedTimeToBuilder (ZonedTime localTime tz) =
 
 localTimeToBuilder :: LocalTime -> Builder
 localTimeToBuilder (LocalTime day tod) =
-    dayToBuilder day ++ fromChar ' ' ++ timeOfDayToBuilder tod
+    dayToBuilder day ++ char8 ' ' ++ timeOfDayToBuilder tod
 
 unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
 unboundedToBuilder finiteToBuilder unbounded
     = case unbounded of
-        NegInfinity -> fromByteString "-infinity"
+        NegInfinity -> byteString "-infinity"
         Finite a    -> finiteToBuilder a
-        PosInfinity -> fromByteString  "infinity"
+        PosInfinity -> byteString  "infinity"
 
 utcTimestampToBuilder :: UTCTimestamp -> Builder
 utcTimestampToBuilder = unboundedToBuilder utcTimeToBuilder
@@ -261,20 +259,20 @@ dateToBuilder  = unboundedToBuilder dayToBuilder
 
 nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
 nominalDiffTimeToBuilder xyz
-    | yz < 500000 = sign ++ integral x
-    | otherwise   = sign ++ integral x ++ fromChar '.' ++  showD6 y
+    | yz < 500000 = sign ++ integerDec x
+    | otherwise   = sign ++ integerDec x ++ char8 '.' ++  showD6 y
   where
     -- A kludge to work around the fact that Data.Fixed isn't very fast and
     -- doesn't give me access to the MkFixed constructor.
-    sign = if xyz >= 0 then mempty else fromChar '-'
+    sign = if xyz >= 0 then mempty else char8 '-'
     (x,yz) = ((unsafeCoerce (abs xyz) :: Integer) + 500000)  `quotRem` 1000000000000
     (fromIntegral -> y, _z) = yz `quotRem` 1000000
 
 showSeconds :: Pico -> Builder
 showSeconds xyz
     | yz == 0   = pad2 x
-    | z  == 0   = pad2 x ++ fromChar '.' ++  showD6 y
-    | otherwise = pad2 x ++ fromChar '.' ++  pad6   y ++ showD6 z
+    | z  == 0   = pad2 x ++ char8 '.' ++  showD6 y
+    | otherwise = pad2 x ++ char8 '.' ++  pad6   y ++ showD6 z
   where
     -- A kludge to work around the fact that Data.Fixed isn't very fast and
     -- doesn't give me access to the MkFixed constructor.
@@ -305,7 +303,7 @@ showD3 abc = case abc `quotRem` 100 of
 
 -- | p assumes its input is in the range [0..9]
 p :: Integral n => n -> Builder
-p n = fromChar (w2c (fromIntegral (n + 48)))
+p n = char8 (w2c (fromIntegral (n + 48)))
 {-# INLINE p #-}
 
 -- | pad2 assumes its input is in the range [0..99]
@@ -314,8 +312,8 @@ pad2 n = let (a,b) = n `quotRem` 10 in p a ++ p b
 {-# INLINE pad2 #-}
 
 -- | pad4 assumes its input is positive
-pad4 :: (Integral n, Show n) => n -> Builder
-pad4 abcd | abcd >= 10000 = integral abcd
+pad4 :: Integer -> Builder
+pad4 abcd | abcd >= 10000 = integerDec abcd
           | otherwise     = p a ++ p b ++ p c ++ p d
   where (ab,cd) = abcd `quotRem` 100
         (a,b)   = ab   `quotRem` 10

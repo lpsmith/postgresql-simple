@@ -110,10 +110,8 @@ module Database.PostgreSQL.Simple
     , formatQuery
     ) where
 
-import           Blaze.ByteString.Builder
-                   ( Builder, fromByteString, toByteString )
-import           Blaze.ByteString.Builder.Char8 (fromChar)
-import           Blaze.Text ( integral )
+import           Data.ByteString.Builder
+                   ( Builder, byteString, char8, intDec )
 import           Control.Applicative ((<$>))
 import           Control.Exception as E
 import           Control.Monad (foldM)
@@ -121,7 +119,7 @@ import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
-import           Database.PostgreSQL.Simple.Compat ( (<>) )
+import           Database.PostgreSQL.Simple.Compat ( (<>), toByteString )
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Ok
@@ -173,9 +171,9 @@ formatMany conn q@(Query template) qs = do
   case parseTemplate template of
     Just (before, qbits, after) -> do
       bs <- mapM (buildQuery conn q qbits . toRow) qs
-      return . toByteString . mconcat $ fromByteString before :
-                                        intersperse (fromChar ',') bs ++
-                                        [fromByteString after]
+      return . toByteString . mconcat $ byteString before :
+                                        intersperse (char8 ',') bs ++
+                                        [byteString after]
     Nothing -> fmtError "syntax error in multi-row template" q []
 
 -- Split the input string into three pieces, @before@, @qbits@, and @after@,
@@ -280,7 +278,7 @@ buildQuery conn q template xs =
     zipParams (split template) <$> mapM (buildAction conn q xs) xs
   where split s =
             let (h,t) = B.break (=='?') s
-            in fromByteString h
+            in byteString h
                : if B.null t
                  then []
                  else split (B.tail t)
@@ -519,10 +517,10 @@ doFold FoldOptions{..} conn _template q a0 f = do
                  [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
         return name
     fetch (Query name) = query_ conn $
-        Query (toByteString (fromByteString "FETCH FORWARD "
-                             <> integral chunkSize
-                             <> fromByteString " FROM "
-                             <> fromByteString name
+        Query (toByteString (byteString "FETCH FORWARD "
+                             <> intDec chunkSize
+                             <> byteString " FROM "
+                             <> byteString name
                             ))
     close name =
         (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->

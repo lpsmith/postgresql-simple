@@ -1,7 +1,7 @@
 module Database.PostgreSQL.Simple.ToField where
 
 import Database.PostgreSQL.Simple.Types
-import Blaze.ByteString.Builder(Builder)
+import Data.ByteString.Builder(Builder)
 import Data.ByteString(ByteString)
 
 -- | How to render an element when substituting it into a query.

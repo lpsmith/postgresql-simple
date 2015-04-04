@@ -15,12 +15,11 @@
 module Database.PostgreSQL.Simple.HStore.Implementation where
 
 import           Control.Applicative
-import           Blaze.ByteString.Builder as Blaze
-    ( Builder, toLazyByteString, copyByteString )
-import           Blaze.ByteString.Builder.Char8 (fromChar)
 import qualified Data.Attoparsec.ByteString as P
 import qualified Data.Attoparsec.ByteString.Char8 as P (isSpace_w8)
 import qualified Data.ByteString as BS
+import           Data.ByteString.Builder (Builder, byteString, char8)
+import qualified Data.ByteString.Builder as BU
 import           Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy          as BL
 #if !MIN_VERSION_bytestring(0,10,0)
@@ -58,7 +57,7 @@ toBuilder x = case x of
 toLazyByteString :: HStoreBuilder -> BL.ByteString
 toLazyByteString x = case x of
                        Empty -> BL.empty
-                       Comma x -> Blaze.toLazyByteString x
+                       Comma x -> BU.toLazyByteString x
 
 instance Monoid HStoreBuilder where
     mempty = Empty
@@ -66,7 +65,7 @@ instance Monoid HStoreBuilder where
     mappend (Comma a) x
         = Comma (a `mappend` case x of
                                Empty   -> mempty
-                               Comma b -> fromChar ',' `mappend` b)
+                               Comma b -> char8 ',' `mappend` b)
 
 class ToHStoreText a where
   toHStoreText :: a -> HStoreText
@@ -95,24 +94,24 @@ escapeAppend :: BS.ByteString -> Builder -> Builder
 escapeAppend = loop
   where
     loop (BS.break quoteNeeded -> (a,b)) rest
-      = copyByteString a `mappend`
+      = byteString a `mappend`
           case BS.uncons b of
             Nothing     ->  rest
             Just (c,d)  ->  quoteChar c `mappend` loop d rest
 
     quoteNeeded c = c == c2w '\"' || c == c2w '\\'
     quoteChar c
-        | c == c2w '\"' = copyByteString "\\\""
-        | otherwise     = copyByteString "\\\\"
+        | c == c2w '\"' = byteString "\\\""
+        | otherwise     = byteString "\\\\"
 
 hstore :: (ToHStoreText a, ToHStoreText b) => a -> b -> HStoreBuilder
 hstore (toHStoreText -> (HStoreText key)) (toHStoreText -> (HStoreText val)) =
-    Comma (fromChar '"' `mappend` key `mappend` copyByteString "\"=>\""
-              `mappend` val `mappend` fromChar '"')
+    Comma (char8 '"' `mappend` key `mappend` byteString "\"=>\""
+              `mappend` val `mappend` char8 '"')
 
 instance ToField HStoreBuilder where
     toField  Empty    = toField (BS.empty)
-    toField (Comma x) = toField (Blaze.toLazyByteString x)
+    toField (Comma x) = toField (BU.toLazyByteString x)
 
 newtype HStoreList = HStoreList {fromHStoreList :: [(Text,Text)]} deriving (Typeable, Show)
 
