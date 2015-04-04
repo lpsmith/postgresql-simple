@@ -12,7 +12,7 @@
 
 module Database.PostgreSQL.Simple.Time.Implementation where
 
-import Prelude hiding (take, (++))
+import Prelude hiding (take)
 import Data.ByteString.Builder(Builder, byteString, char8, integerDec)
 import Control.Arrow((***))
 import Control.Applicative
@@ -24,13 +24,10 @@ import Data.Time hiding (getTimeZone, getZonedTime)
 import Data.Typeable
 import Data.Word(Word8)
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Database.PostgreSQL.Simple.Compat ((<>))
 import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce
-
-(++) :: Monoid a => a -> a -> a
-(++) = mappend
-infixr 5 ++
 
 data Unbounded a
    = NegInfinity
@@ -41,9 +38,9 @@ data Unbounded a
 instance Show a => Show (Unbounded a) where
   showsPrec prec x rest
     = case x of
-        NegInfinity -> "-infinity" ++ rest
+        NegInfinity -> "-infinity" <> rest
         Finite time -> showsPrec prec time rest
-        PosInfinity ->  "infinity" ++ rest
+        PosInfinity ->  "infinity" <> rest
 
 instance Read a => Read (Unbounded a) where
   readsPrec prec = readParen False $ \str -> case str of
@@ -205,21 +202,21 @@ digits msg = do
   y <- A.anyChar
   if A.isDigit x && A.isDigit y
   then return $! (10 * digit (c2w x) + digit (c2w y))
-  else fail (msg ++ " is not 2 digits")
+  else fail (msg <> " is not 2 digits")
 {-# INLINE digits #-}
 
 dayToBuilder :: Day -> Builder
 dayToBuilder (toGregorian -> (y,m,d)) = do
-    pad4 y ++ char8 '-' ++ pad2 m ++ char8 '-' ++ pad2 d
+    pad4 y <> char8 '-' <> pad2 m <> char8 '-' <> pad2 d
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
 timeOfDayToBuilder (TimeOfDay h m s) = do
-    pad2 h ++ char8 ':' ++ pad2 m ++ char8 ':' ++ showSeconds s
+    pad2 h <> char8 ':' <> pad2 m <> char8 ':' <> showSeconds s
 
 timeZoneToBuilder :: TimeZone -> Builder
 timeZoneToBuilder tz
-    | m == 0     =  sign h ++ pad2 (abs h)
-    | otherwise  =  sign h ++ pad2 (abs h) ++ char8 ':' ++ pad2 (abs m)
+    | m == 0     =  sign h <> pad2 (abs h)
+    | otherwise  =  sign h <> pad2 (abs h) <> char8 ':' <> pad2 (abs m)
   where
     (h,m) = timeZoneMinutes tz `quotRem` 60
     sign h | h >= 0    = char8 '+'
@@ -227,16 +224,16 @@ timeZoneToBuilder tz
 
 utcTimeToBuilder :: UTCTime -> Builder
 utcTimeToBuilder (UTCTime day time) =
-    dayToBuilder day ++ char8 ' '
-    ++ timeOfDayToBuilder (timeToTimeOfDay time) ++ byteString "+00"
+    dayToBuilder day <> char8 ' '
+    <> timeOfDayToBuilder (timeToTimeOfDay time) <> byteString "+00"
 
 zonedTimeToBuilder :: ZonedTime -> Builder
 zonedTimeToBuilder (ZonedTime localTime tz) =
-    localTimeToBuilder localTime ++ timeZoneToBuilder tz
+    localTimeToBuilder localTime <> timeZoneToBuilder tz
 
 localTimeToBuilder :: LocalTime -> Builder
 localTimeToBuilder (LocalTime day tod) =
-    dayToBuilder day ++ char8 ' ' ++ timeOfDayToBuilder tod
+    dayToBuilder day <> char8 ' ' <> timeOfDayToBuilder tod
 
 unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
 unboundedToBuilder finiteToBuilder unbounded
@@ -259,8 +256,8 @@ dateToBuilder  = unboundedToBuilder dayToBuilder
 
 nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
 nominalDiffTimeToBuilder xyz
-    | yz < 500000 = sign ++ integerDec x
-    | otherwise   = sign ++ integerDec x ++ char8 '.' ++  showD6 y
+    | yz < 500000 = sign <> integerDec x
+    | otherwise   = sign <> integerDec x <> char8 '.' <>  showD6 y
   where
     -- A kludge to work around the fact that Data.Fixed isn't very fast and
     -- doesn't give me access to the MkFixed constructor.
@@ -271,8 +268,8 @@ nominalDiffTimeToBuilder xyz
 showSeconds :: Pico -> Builder
 showSeconds xyz
     | yz == 0   = pad2 x
-    | z  == 0   = pad2 x ++ char8 '.' ++  showD6 y
-    | otherwise = pad2 x ++ char8 '.' ++  pad6   y ++ showD6 z
+    | z  == 0   = pad2 x <> char8 '.' <>  showD6 y
+    | otherwise = pad2 x <> char8 '.' <>  pad6   y <> showD6 z
   where
     -- A kludge to work around the fact that Data.Fixed isn't very fast and
     -- doesn't give me access to the MkFixed constructor.
@@ -282,24 +279,24 @@ showSeconds xyz
 
 pad6 :: Int -> Builder
 pad6 xy = let (x,y) = xy `quotRem` 1000
-           in pad3 x ++ pad3 y
+           in pad3 x <> pad3 y
 
 showD6 :: Int -> Builder
 showD6 xy = case xy `quotRem` 1000 of
               (x,0) -> showD3 x
-              (x,y) -> pad3 x ++ showD3 y
+              (x,y) -> pad3 x <> showD3 y
 
 pad3 :: Int -> Builder
 pad3 abc = let (ab,c) = abc `quotRem` 10
                (a,b)  = ab  `quotRem` 10
-            in p a ++ p b ++ p c
+            in p a <> p b <> p c
 
 showD3 :: Int -> Builder
 showD3 abc = case abc `quotRem` 100 of
               (a, 0) -> p a
               (a,bc) -> case bc `quotRem` 10 of
-                          (b,0) -> p a ++ p b
-                          (b,c) -> p a ++ p b ++ p c
+                          (b,0) -> p a <> p b
+                          (b,c) -> p a <> p b <> p c
 
 -- | p assumes its input is in the range [0..9]
 p :: Integral n => n -> Builder
@@ -308,13 +305,13 @@ p n = char8 (w2c (fromIntegral (n + 48)))
 
 -- | pad2 assumes its input is in the range [0..99]
 pad2 :: Integral n => n -> Builder
-pad2 n = let (a,b) = n `quotRem` 10 in p a ++ p b
+pad2 n = let (a,b) = n `quotRem` 10 in p a <> p b
 {-# INLINE pad2 #-}
 
 -- | pad4 assumes its input is positive
 pad4 :: Integer -> Builder
 pad4 abcd | abcd >= 10000 = integerDec abcd
-          | otherwise     = p a ++ p b ++ p c ++ p d
+          | otherwise     = p a <> p b <> p c <> p d
   where (ab,cd) = abcd `quotRem` 100
         (a,b)   = ab   `quotRem` 10
         (c,d)   = cd   `quotRem` 10
