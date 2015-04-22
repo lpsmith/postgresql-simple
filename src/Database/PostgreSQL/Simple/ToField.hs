@@ -1,5 +1,8 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -22,12 +25,6 @@ module Database.PostgreSQL.Simple.ToField
     , inQuotes
     ) where
 
-<<<<<<< HEAD
-=======
-import Blaze.ByteString.Builder (Builder, fromByteString, toByteString)
-import Blaze.ByteString.Builder.Char8 (fromChar)
-import Blaze.Text (integral, double, float)
->>>>>>> Another take on ranges
 import qualified Data.Aeson as JSON
 import           Data.ByteString (ByteString)
 import           Data.ByteString.Builder

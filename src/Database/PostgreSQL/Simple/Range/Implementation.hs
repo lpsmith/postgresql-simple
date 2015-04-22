@@ -6,15 +6,16 @@
 module Database.PostgreSQL.Simple.Range.Implementation
        where
 
-import           Blaze.ByteString.Builder             (Builder, fromByteString,
-                                                       fromLazyByteString,
-                                                       toByteString)
-import           Blaze.ByteString.Builder.Char8       (fromChar)
-import           Blaze.Text                           (double, float, integral)
+
 import           Control.Applicative
 import           Data.Attoparsec.ByteString.Char8     (Parser, parseOnly)
 import qualified Data.Attoparsec.ByteString.Char8     as A
 import qualified Data.ByteString                      as B
+import           Data.ByteString.Builder
+                   ( Builder, byteString, lazyByteString, char8
+                   , intDec, int8Dec, int16Dec, int32Dec, int64Dec, integerDec
+                   , wordDec, word8Dec, word16Dec, word32Dec, word64Dec
+                   , doubleDec, floatDec )
 import           Data.Int                             (Int16, Int32, Int64,
                                                        Int8)
 import           Data.Maybe                           (fromMaybe, isNothing)
@@ -30,7 +31,7 @@ import           Data.Typeable                        (Typeable)
 import           Data.Word                            (Word, Word16, Word32,
                                                        Word64, Word8)
 
-import           Database.PostgreSQL.Simple.Compat    (scientificBuilder, (<>))
+import           Database.PostgreSQL.Simple.Compat    (scientificBuilder, (<>), toByteString)
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.ToField
@@ -205,33 +206,33 @@ doubleQuoted :: Parser B.ByteString
 doubleQuoted = toByteString <$> go mempty
   where
     go acc = do
-      h <- fromByteString <$> A.takeTill (\c -> c == '\\' || c == '"')
+      h <- byteString <$> A.takeTill (\c -> c == '\\' || c == '"')
       let rest = do
            start <- A.anyChar
            case start of
              '\\' -> do
                c <- A.anyChar
-               go (acc <> h <> fromChar c)
-             '"' -> (A.char '"' *> go (acc <> h <> fromChar '"'))
+               go (acc <> h <> char8 c)
+             '"' -> (A.char '"' *> go (acc <> h <> char8 '"'))
                     <|> pure (acc <> h)
              _ -> error "impossible in doubleQuoted"
       rest
 
 -- | Generic range to builder for plain values
 rangeToBuilder :: (a -> Builder) -> PGRange a -> Builder
-rangeToBuilder _ EmptyRange = fromByteString "'empty'"
-rangeToBuilder _ (PGRange Nothing Nothing) = fromByteString "'[,)'"
+rangeToBuilder _ EmptyRange = byteString "'empty'"
+rangeToBuilder _ (PGRange Nothing Nothing) = byteString "'[,)'"
 rangeToBuilder f (PGRange a b) = buildLB a <> buildUB b
   where
-    buildLB Nothing = fromByteString "'[,"
+    buildLB Nothing = byteString "'[,"
     buildLB (Just bound) = case bound of
-       Inclusive v -> fromByteString "'[\"" <> f v <> fromByteString "\","
-       Exclusive v -> fromByteString "'(\"" <> f v <> fromByteString "\","
+       Inclusive v -> byteString "'[\"" <> f v <> byteString "\","
+       Exclusive v -> byteString "'(\"" <> f v <> byteString "\","
 
-    buildUB Nothing = fromByteString "]'"
+    buildUB Nothing = byteString "]'"
     buildUB (Just bound) = case bound of
-        Inclusive v -> fromChar '"' <> f v <> fromByteString "\"]'"
-        Exclusive v -> fromChar '"' <> f v <> fromByteString "\")'"
+        Inclusive v -> char8 '"' <> f v <> byteString "\"]'"
+        Exclusive v -> char8 '"' <> f v <> byteString "\")'"
 {-# INLINE rangeToBuilder #-}
 
 ------ instances -----
@@ -258,83 +259,79 @@ instance (FromField a, Typeable a) => FromField (PGRange a) where
 --   range types. Remember not to put your boundary value in quotes and
 --   escape double quotes.
 rangeToField :: (a -> Action) -> PGRange a -> Action
-rangeToField _ EmptyRange = Plain $ fromByteString "'empty'"
-rangeToField _ (PGRange Nothing Nothing) = Plain $ fromByteString "'[,)'"
+rangeToField _ EmptyRange = Plain $ byteString "'empty'"
+rangeToField _ (PGRange Nothing Nothing) = Plain $ byteString "'[,)'"
 rangeToField f (PGRange a b) = Many $ buildLB a ++ buildUB b
   where
-    buildLB Nothing     = [ Plain $ fromByteString "'(," ]
+    buildLB Nothing     = [ Plain $ byteString "'(," ]
     buildLB (Just bound) = case bound of
-        Inclusive v -> [ Plain $ fromByteString "'[\"", f v
-                       , Plain $ fromByteString "\"," ]
-        Exclusive v -> [ Plain $ fromByteString "'(\"", f v
-                       , Plain $ fromByteString "\"," ]
-    buildUB Nothing     = [ Plain $ fromByteString "]'"]
+        Inclusive v -> [ Plain $ byteString "'[\"", f v
+                       , Plain $ byteString "\"," ]
+        Exclusive v -> [ Plain $ byteString "'(\"", f v
+                       , Plain $ byteString "\"," ]
+    buildUB Nothing     = [ Plain $ byteString "]'"]
     buildUB (Just bound) = case bound of
-        Inclusive v -> [ Plain $ fromChar '"', f v
-                       , Plain $ fromByteString "\"]'"]
-        Exclusive v -> [ Plain $ fromChar '"', f v
-                       , Plain $ fromByteString "\")'"]
-
-integralRangeToBuilder :: (Integral a, Show a) => PGRange a -> Builder
-integralRangeToBuilder = rangeToBuilder integral
-{-# INLINE integralRangeToBuilder #-}
+        Inclusive v -> [ Plain $ char8 '"', f v
+                       , Plain $ byteString "\"]'"]
+        Exclusive v -> [ Plain $ char8 '"', f v
+                       , Plain $ byteString "\")'"]
 
 instance ToField (PGRange Int8) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder int8Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Int16) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder int16Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Int32) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder int32Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Int) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder intDec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Int64) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder int64Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Integer) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder integerDec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Word8) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder word8Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Word16) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder word16Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Word32) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder word32Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Word) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder wordDec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Word64) where
-    toField = Plain . integralRangeToBuilder
+    toField = Plain . rangeToBuilder word64Dec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Float) where
-    toField = Plain . rangeToBuilder float
+    toField = Plain . rangeToBuilder floatDec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Double) where
-    toField = Plain . rangeToBuilder double
+    toField = Plain . rangeToBuilder doubleDec
     {-# INLINE toField #-}
 
 instance ToField (PGRange Scientific) where
     toField = Plain . rangeToBuilder f
       where
-        f = fromLazyByteString . LT.encodeUtf8 . LT.toLazyText . scientificBuilder
+        f = lazyByteString . LT.encodeUtf8 . LT.toLazyText . scientificBuilder
     {-# INLINE toField #-}
 
 instance ToField (PGRange UTCTime) where
