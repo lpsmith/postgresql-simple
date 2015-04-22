@@ -206,9 +206,9 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   SSL/TLS will typically "just work" if your postgresql server supports or
 --   requires it.  However,  note that libpq is trivially vulnerable to a MITM
 --   attack without setting additional SSL parameters in the connection string.
---   In particular,  @sslmode@ needs to set be @require@, @verify-ca@, or
---   @verify-full@ to perform certificate validation.   When @sslmode@ is
---   @require@,  then you will also need to have a @sslrootcert@ file,
+--   In particular,  @sslmode@ needs to be set to @require@, @verify-ca@, or
+--   @verify-full@ in order to perform certificate validation.  When @sslmode@
+--   is @require@,  then you will also need to specify a @sslrootcert@ file,
 --   otherwise no validation of the server's identity will be performed.
 --   Client authentication via certificates is also possible via the
 --   @sslcert@ and @sslkey@ parameters.
