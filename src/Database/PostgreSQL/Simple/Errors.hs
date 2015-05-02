@@ -55,6 +55,8 @@ data ConstraintViolation
    -- ^ Name of violated constraint
    | CheckViolation ByteString ByteString
    -- ^ Relation name (usually table), constraint name
+   | ExclusionViolation ByteString
+   -- ^ Name of the exclusion violation constraint
    deriving (Show, Eq, Ord, Typeable)
 
 -- Default instance should be enough
@@ -75,6 +77,7 @@ constraintViolation e =
     "23503" -> uncurry ForeignKeyViolation <$> parseMaybe parseQ2 msg
     "23505" -> UniqueViolation <$> parseMaybe parseQ1 msg
     "23514" -> uncurry CheckViolation <$> parseMaybe parseQ2 msg
+    "23P01" -> ExclusionViolation <$> parseMaybe parseQ1 msg
     _ -> Nothing
   where msg = sqlErrorMsg e
 
