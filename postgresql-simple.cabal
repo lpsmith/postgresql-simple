@@ -31,6 +31,7 @@ Library
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Ok
      Database.PostgreSQL.Simple.SqlQQ
+     Database.PostgreSQL.Simple.DeriveFromRow
      Database.PostgreSQL.Simple.Time
      Database.PostgreSQL.Simple.Time.Internal
      Database.PostgreSQL.Simple.ToField
