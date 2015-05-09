@@ -145,8 +145,8 @@ import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import           Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
-import           Data.UUID   (UUID)
-import qualified Data.UUID as UUID
+import           Data.UUID.Types   (UUID)
+import qualified Data.UUID.Types as UUID
 import           Data.Scientific (Scientific)
 import           GHC.Real (infinity, notANumber)
 
