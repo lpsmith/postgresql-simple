@@ -46,8 +46,8 @@ import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LT
-import           Data.UUID   (UUID)
-import qualified Data.UUID as UUID
+import           Data.UUID.Types   (UUID)
+import qualified Data.UUID.Types as UUID
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
