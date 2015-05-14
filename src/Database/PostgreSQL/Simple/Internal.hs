@@ -75,7 +75,10 @@ data Connection = Connection {
      connectionHandle  :: {-# UNPACK #-} !(MVar PQ.Connection)
    , connectionObjects :: {-# UNPACK #-} !(MVar TypeInfoCache)
    , connectionTempNameCounter :: {-# UNPACK #-} !(IORef Int64)
-   }
+   } deriving (Typeable)
+
+instance Eq Connection where
+   x == y = connectionHandle x == connectionHandle y
 
 data SqlError = SqlError {
      sqlState       :: ByteString
