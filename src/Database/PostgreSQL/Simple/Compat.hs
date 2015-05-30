@@ -6,6 +6,7 @@ module Database.PostgreSQL.Simple.Compat
     , (<>)
     , unsafeDupablePerformIO
     , toByteString
+    , scientificBuilder
     ) where
 
 import qualified Control.Exception as E
@@ -14,6 +15,11 @@ import Data.ByteString         (ByteString)
 import Data.ByteString.Lazy    (toStrict)
 import Data.ByteString.Builder (Builder, toLazyByteString)
 
+#if MIN_VERSION_scientific(0,3,0)
+import Data.Text.Lazy.Builder.Scientific (scientificBuilder)
+#else
+import Data.Scientific (scientificBuilder)
+#endif
 
 #if   __GLASGOW_HASKELL__ >= 702
 import System.IO.Unsafe (unsafeDupablePerformIO)

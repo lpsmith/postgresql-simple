@@ -1,0 +1,276 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE FlexibleInstances  #-}
+
+------------------------------------------------------------------------------
+-- |
+-- Module:      Database.PostgreSQL.Simple.Range
+-- Copyright:   (c) 2014-2015 Leonid Onokhov
+--              (c) 2014-2015 Leon P Smith
+-- License:     BSD3
+-- Maintainer:  Leon P Smith <leon@melding-monads.com>
+--
+------------------------------------------------------------------------------
+
+module Database.PostgreSQL.Simple.Range
+      ( RangeBound(..)
+      , PGRange(..)
+      , empty
+      , isEmpty
+      , isEmptyBy
+      ) where
+
+import           Control.Applicative hiding (empty)
+import           Data.Attoparsec.ByteString.Char8     (Parser, parseOnly)
+import qualified Data.Attoparsec.ByteString.Char8     as A
+import qualified Data.ByteString                      as B
+import           Data.ByteString.Builder
+                   ( Builder, byteString, lazyByteString, char8
+                   , intDec, int8Dec, int16Dec, int32Dec, int64Dec, integerDec
+                   , wordDec, word8Dec, word16Dec, word32Dec, word64Dec
+                   , doubleDec, floatDec )
+import           Data.Int                             (Int16, Int32, Int64,
+                                                       Int8)
+import           Data.Function (on)
+import           Data.Monoid                          (mempty)
+import           Data.Scientific                      (Scientific)
+import qualified Data.Text.Lazy.Builder               as LT
+import qualified Data.Text.Lazy.Encoding              as LT
+import           Data.Time                            (Day, LocalTime,
+                                                       NominalDiffTime,
+                                                       TimeOfDay, UTCTime,
+                                                       ZonedTime,
+                                                       zonedTimeToUTC)
+import           Data.Typeable                        (Typeable)
+import           Data.Word                            (Word, Word16, Word32,
+                                                       Word64, Word8)
+
+import           Database.PostgreSQL.Simple.Compat    (scientificBuilder, (<>), toByteString)
+import           Database.PostgreSQL.Simple.FromField
+import           Database.PostgreSQL.Simple.Time
+                   hiding (PosInfinity, NegInfinity)
+-- import qualified Database.PostgreSQL.Simple.Time as Time
+import           Database.PostgreSQL.Simple.ToField
+
+-- | Represents boundary of a range
+data RangeBound a = NegInfinity
+                  | Inclusive !a
+                  | Exclusive !a
+                  | PosInfinity
+     deriving (Show, Typeable, Eq, Functor)
+
+-- | Generic range type
+data PGRange a = PGRange !(RangeBound a) !(RangeBound a)
+     deriving (Show, Typeable, Functor)
+
+empty :: PGRange a
+empty = PGRange PosInfinity NegInfinity
+
+instance Ord a => Eq (PGRange a) where
+  x == y = eq x y || (isEmpty x && isEmpty y)
+   where eq (PGRange a m) (PGRange b n) = a == b && m == n
+
+isEmptyBy :: (a -> a -> Ordering) -> PGRange a -> Bool
+isEmptyBy cmp v =
+    case v of
+      (PGRange PosInfinity _) -> True
+      (PGRange _ NegInfinity) -> True
+      (PGRange NegInfinity _) -> False
+      (PGRange _ PosInfinity) -> False
+      (PGRange (Inclusive x) (Inclusive y)) -> cmp x y == GT
+      (PGRange (Inclusive x) (Exclusive y)) -> cmp x y /= LT
+      (PGRange (Exclusive x) (Inclusive y)) -> cmp x y /= LT
+      (PGRange (Exclusive x) (Exclusive y)) -> cmp x y /= LT
+
+isEmpty :: Ord a => PGRange a -> Bool
+isEmpty = isEmptyBy compare
+
+lowerBound :: Parser (a -> RangeBound a)
+lowerBound = (A.char '(' *> pure Exclusive) <|> (A.char '[' *> pure Inclusive)
+{-# INLINE lowerBound #-}
+
+upperBound :: Parser (a -> RangeBound a)
+upperBound = (A.char ')' *> pure Exclusive) <|> (A.char ']' *> pure Inclusive)
+{-# INLINE upperBound #-}
+
+-- | Generic range parser
+pgrange :: Parser (RangeBound B.ByteString, RangeBound B.ByteString)
+pgrange = do
+  lb <- lowerBound
+  v1 <- (A.char ',' *> "") <|> (rangeElem (==',') <* A.char ',')
+  v2 <- rangeElem $ \c -> c == ')' || c == ']'
+  ub <- upperBound
+  A.endOfInput
+  let low = if B.null v1 then NegInfinity else lb v1
+      up  = if B.null v2 then PosInfinity else ub v2
+  return (low, up)
+
+rangeElem :: (Char -> Bool) -> Parser B.ByteString
+rangeElem end = (A.char '"' *> doubleQuoted)
+            <|> A.takeTill end
+{-# INLINE rangeElem #-}
+
+-- | Simple double quoted value parser
+doubleQuoted :: Parser B.ByteString
+doubleQuoted = toByteString <$> go mempty
+  where
+    go acc = do
+      h <- byteString <$> A.takeTill (\c -> c == '\\' || c == '"')
+      let rest = do
+           start <- A.anyChar
+           case start of
+             '\\' -> do
+               c <- A.anyChar
+               go (acc <> h <> char8 c)
+             '"' -> (A.char '"' *> go (acc <> h <> char8 '"'))
+                    <|> pure (acc <> h)
+             _ -> error "impossible in doubleQuoted"
+      rest
+
+rangeToBuilder :: Ord a => (a -> Builder) -> PGRange a -> Builder
+rangeToBuilder = rangeToBuilderBy compare
+
+-- | Generic range to builder for plain values
+rangeToBuilderBy :: (a -> a -> Ordering) => (a -> Builder) -> PGRange a -> Builder
+rangeToBuilderBy cmp f x =
+    if isEmptyBy cmp x
+    then byteString "'empty'"
+    else let (PGRange a b) = x
+          in buildLB a <> buildUB b
+  where
+    buildLB NegInfinity   = byteString "'[,"
+    buildLB (Inclusive v) = byteString "'[\"" <> f v <> byteString "\","
+    buildLB (Exclusive v) = byteString "'(\"" <> f v <> byteString "\","
+    buildLB PosInfinity   = error "impossible in rangeToBuilder"
+
+    buildUB NegInfinity   = error "impossible in rangeToBuilder"
+    buildUB (Inclusive v) = char8 '"' <> f v <> byteString "\"]'"
+    buildUB (Exclusive v) = char8 '"' <> f v <> byteString "\")'"
+    buildUB PosInfinity   = byteString "]'"
+{-# INLINE rangeToBuilder #-}
+
+
+instance (FromField a, Typeable a) => FromField (PGRange a) where
+  fromField f mdat = do
+    info <- typeInfo f
+    case info of
+      Range{} ->
+        let f' = f { typeOid = typoid (rngsubtype info) }
+        in case mdat of
+          Nothing -> returnError UnexpectedNull f ""
+          Just "empty" -> pure $ empty
+          Just bs ->
+            let parseIt NegInfinity   = pure NegInfinity
+                parseIt (Inclusive v) = Inclusive <$> fromField f' (Just v)
+                parseIt (Exclusive v) = Exclusive <$> fromField f' (Just v)
+                parseIt PosInfinity   = pure PosInfinity
+            in case parseOnly pgrange bs of
+                Left e -> returnError ConversionFailed f e
+                Right (lb,ub) -> PGRange <$> parseIt lb <*> parseIt ub
+      _ -> returnError Incompatible f ""
+
+
+instance ToField (PGRange Int8) where
+    toField = Plain . rangeToBuilder int8Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int16) where
+    toField = Plain . rangeToBuilder int16Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int32) where
+    toField = Plain . rangeToBuilder int32Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int) where
+    toField = Plain . rangeToBuilder intDec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Int64) where
+    toField = Plain . rangeToBuilder int64Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Integer) where
+    toField = Plain . rangeToBuilder integerDec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word8) where
+    toField = Plain . rangeToBuilder word8Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word16) where
+    toField = Plain . rangeToBuilder word16Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word32) where
+    toField = Plain . rangeToBuilder word32Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word) where
+    toField = Plain . rangeToBuilder wordDec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Word64) where
+    toField = Plain . rangeToBuilder word64Dec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Float) where
+    toField = Plain . rangeToBuilder floatDec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Double) where
+    toField = Plain . rangeToBuilder doubleDec
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Scientific) where
+    toField = Plain . rangeToBuilder f
+      where
+        f = lazyByteString . LT.encodeUtf8 . LT.toLazyText . scientificBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange UTCTime) where
+    toField = Plain . rangeToBuilder utcTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange ZonedTime) where
+    toField = Plain . rangeToBuilderBy cmpZonedTime zonedTimeToBuilder
+    {-# INLINE toField #-}
+
+cmpZonedTime :: ZonedTime -> ZonedTime -> Ordering
+cmpZonedTime = compare `on` zonedTimeToUTC   -- FIXME:  optimize
+
+instance ToField (PGRange LocalTime) where
+    toField = Plain . rangeToBuilder localTimeToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Day) where
+    toField = Plain . rangeToBuilder dayToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange TimeOfDay) where
+    toField = Plain . rangeToBuilder timeOfDayToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange UTCTimestamp) where
+    toField = Plain . rangeToBuilder utcTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange ZonedTimestamp) where
+    toField = Plain . rangeToBuilderBy cmpZonedTimestamp zonedTimestampToBuilder
+    {-# INLINE toField #-}
+
+cmpZonedTimestamp :: ZonedTimestamp -> ZonedTimestamp -> Ordering
+cmpZonedTimestamp = compare `on` (zonedTimeToUTC <$>)
+
+instance ToField (PGRange LocalTimestamp) where
+    toField = Plain . rangeToBuilder localTimestampToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange Date) where
+    toField = Plain . rangeToBuilder dateToBuilder
+    {-# INLINE toField #-}
+
+instance ToField (PGRange NominalDiffTime) where
+    toField = Plain . rangeToBuilder nominalDiffTimeToBuilder
+    {-# INLINE toField #-}

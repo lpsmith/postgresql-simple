@@ -8,7 +8,7 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor #-}
 
 module Database.PostgreSQL.Simple.Time.Implementation where
 
@@ -33,7 +33,7 @@ data Unbounded a
    = NegInfinity
    | Finite !a
    | PosInfinity
-     deriving (Eq, Ord, Typeable)
+     deriving (Eq, Ord, Typeable, Functor)
 
 instance Show a => Show (Unbounded a) where
   showsPrec prec x rest
