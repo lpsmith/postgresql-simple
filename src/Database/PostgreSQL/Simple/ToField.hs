@@ -1,5 +1,8 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE CPP                  #-}
+{-# LANGUAGE DeriveDataTypeable   #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 ------------------------------------------------------------------------------
 -- |

@@ -30,6 +30,9 @@ Library
      Database.PostgreSQL.Simple.HStore.Internal
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Ok
+     Database.PostgreSQL.Simple.Range
+     Database.PostgreSQL.Simple.Range.Implementation
+     Database.PostgreSQL.Simple.Range.Simple
      Database.PostgreSQL.Simple.SqlQQ
      Database.PostgreSQL.Simple.Time
      Database.PostgreSQL.Simple.Time.Internal
