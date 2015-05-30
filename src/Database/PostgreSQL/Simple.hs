@@ -93,6 +93,14 @@ module Database.PostgreSQL.Simple
     , forEach
     , forEach_
     , returning
+    -- ** Queries that stream results taking a parser as an argument
+    , foldWith
+    , foldWithOptionsAndParser
+    , foldWith_
+    , foldWithOptionsAndParser_
+    , forEachWith
+    , forEachWith_
+    , returningWith
     -- * Statements that do not return results
     , execute
     , execute_
@@ -349,10 +357,13 @@ executeMany conn q qs = do
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
 returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
-returning _ _ [] = return []
-returning conn q qs = do
+returning = returningWith fromRow
+
+returningWith :: (ToRow q) => RowParser r -> Connection -> Query -> [q] -> IO [r]
+returningWith _ _ _ [] = return []
+returningWith parser conn q qs = do
   result <- exec conn =<< formatMany conn q qs
-  finishQuery conn q result
+  finishQueryWith parser conn q result
 
 -- | Perform a @SELECT@ or other SQL query that is expected to return
 -- results. All results are retrieved and converted before this
@@ -427,6 +438,17 @@ fold            :: ( FromRow row, ToRow params )
                 -> IO a
 fold = foldWithOptions defaultFoldOptions
 
+-- | A version of 'fold' taking a parser as an argument
+foldWith        :: ( ToRow params )
+                => RowParser row
+                -> Connection
+                -> Query
+                -> params
+                -> a
+                -> (a -> row -> IO a)
+                -> IO a
+foldWith = foldWithOptionsAndParser defaultFoldOptions
+
 -- | Number of rows to fetch at a time.   'Automatic' currently defaults
 --   to 256 rows,  although it might be nice to make this more intelligent
 --   based on e.g. the average size of the rows.
@@ -461,9 +483,21 @@ foldWithOptions :: ( FromRow row, ToRow params )
                 -> a
                 -> (a -> row -> IO a)
                 -> IO a
-foldWithOptions opts conn template qs a f = do
+foldWithOptions opts = foldWithOptionsAndParser opts fromRow
+
+-- | A version of 'foldWithOptions' taking a parser as an argument
+foldWithOptionsAndParser :: (ToRow params)
+                         => FoldOptions
+                         -> RowParser row
+                         -> Connection
+                         -> Query
+                         -> params
+                         -> a
+                         -> (a -> row -> IO a)
+                         -> IO a
+foldWithOptionsAndParser opts parser conn template qs a f = do
     q <- formatQuery conn template qs
-    doFold opts conn template (Query q) a f
+    doFold opts parser conn template (Query q) a f
 
 -- | A version of 'fold' that does not perform query substitution.
 fold_ :: (FromRow r) =>
@@ -474,6 +508,14 @@ fold_ :: (FromRow r) =>
       -> IO a
 fold_ = foldWithOptions_ defaultFoldOptions
 
+-- | A version of 'foldWith' taking a parser as an argument
+foldWith_ :: RowParser r
+          -> Connection
+          -> Query
+          -> a
+          -> (a -> r -> IO a)
+          -> IO a
+foldWith_ = foldWithOptionsAndParser_ defaultFoldOptions
 
 foldWithOptions_ :: (FromRow r) =>
                     FoldOptions
@@ -482,18 +524,27 @@ foldWithOptions_ :: (FromRow r) =>
                  -> a                 -- ^ Initial state for result consumer.
                  -> (a -> r -> IO a)  -- ^ Result consumer.
                  -> IO a
-foldWithOptions_ opts conn query a f = doFold opts conn query query a f
+foldWithOptions_ opts conn query a f = doFold opts fromRow conn query query a f
 
+-- | A version of 'foldWithOptions_' taking a parser as an argument
+foldWithOptionsAndParser_ :: FoldOptions
+                          -> RowParser r
+                          -> Connection
+                          -> Query             -- ^ Query.
+                          -> a                 -- ^ Initial state for result consumer.
+                          -> (a -> r -> IO a)  -- ^ Result consumer.
+                          -> IO a
+foldWithOptionsAndParser_ opts parser conn query a f = doFold opts parser conn query query a f
 
-doFold :: ( FromRow row )
-       => FoldOptions
+doFold :: FoldOptions
+       -> RowParser row
        -> Connection
        -> Query
        -> Query
        -> a
        -> (a -> row -> IO a)
        -> IO a
-doFold FoldOptions{..} conn _template q a0 f = do
+doFold FoldOptions{..} parser conn _template q a0 f = do
     stat <- withConnection conn PQ.transactionStatus
     case stat of
       PQ.TransIdle    -> withTransactionMode transactionMode conn go
@@ -516,7 +567,7 @@ doFold FoldOptions{..} conn _template q a0 f = do
         _ <- execute_ conn $ mconcat
                  [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
         return name
-    fetch (Query name) = query_ conn $
+    fetch (Query name) = queryWith_ parser conn $
         Query (toByteString (byteString "FETCH FORWARD "
                              <> intDec chunkSize
                              <> byteString " FROM "
@@ -551,8 +602,19 @@ forEach :: (ToRow q, FromRow r) =>
         -> q                    -- ^ Query parameters.
         -> (r -> IO ())         -- ^ Result consumer.
         -> IO ()
-forEach conn template qs = fold conn template qs () . const
+forEach = forEachWith fromRow
 {-# INLINE forEach #-}
+
+-- | A version of 'forEach' taking a parser as an argument
+forEachWith :: ( ToRow q )
+            => RowParser r
+            -> Connection
+            -> Query
+            -> q
+            -> (r -> IO ())
+            -> IO ()
+forEachWith parser conn template qs = foldWith parser conn template qs () . const
+{-# INLINE forEachWith #-}
 
 -- | A version of 'forEach' that does not perform query substitution.
 forEach_ :: (FromRow r) =>
@@ -560,8 +622,16 @@ forEach_ :: (FromRow r) =>
          -> Query                -- ^ Query template.
          -> (r -> IO ())         -- ^ Result consumer.
          -> IO ()
-forEach_ conn template = fold_ conn template () . const
+forEach_ = forEachWith_ fromRow
 {-# INLINE forEach_ #-}
+
+forEachWith_ :: RowParser r
+             -> Connection
+             -> Query
+             -> (r -> IO ())
+             -> IO ()
+forEachWith_ parser conn template = foldWith_ parser conn template () . const
+{-# INLINE forEachWith_ #-}
 
 forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
 forM' lo hi m = loop hi []
