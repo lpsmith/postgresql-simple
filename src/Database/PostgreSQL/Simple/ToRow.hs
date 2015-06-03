@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures, FlexibleInstances, FlexibleContexts #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.ToRow
@@ -22,6 +23,7 @@ module Database.PostgreSQL.Simple.ToRow
 
 import Database.PostgreSQL.Simple.ToField (Action(..), ToField(..))
 import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
+import GHC.Generics
 
 -- | A collection type that can be turned into a list of rendering
 -- 'Action's.
@@ -30,6 +32,8 @@ import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
 -- to perform conversion of each element of the collection.
 class ToRow a where
     toRow :: a -> [Action]
+    default toRow :: (Generic a, GToRow (Rep a)) => a -> [Action]
+    toRow = gtoRow . from
     -- ^ ToField a collection of values.
 
 instance ToRow () where
@@ -90,3 +94,20 @@ instance (ToField a) => ToRow [a] where
 
 instance (ToRow a, ToRow b) => ToRow (a :. b) where
     toRow (a :. b) = toRow a ++ toRow b
+
+
+-- Type class for default implementation of ToRow using generics
+class GToRow f where
+    gtoRow :: f p -> [Action]
+
+instance GToRow f => GToRow (M1 c i f) where
+    gtoRow (M1 x) = gtoRow x
+
+instance (GToRow f, GToRow g) => GToRow (f :*: g) where
+    gtoRow (f :*: g) = gtoRow f ++ gtoRow g
+
+instance (ToField a) => GToRow (K1 R a) where
+    gtoRow (K1 a) = [toField a]
+
+instance GToRow U1 where
+    gtoRow _ = []

@@ -53,7 +53,7 @@ Library
   Build-depends:
     aeson >= 0.6,
     attoparsec >= 0.10.3,
-    base < 5,
+    base >= 4.4 && < 5,
     bytestring >= 0.9,
     bytestring-builder,
     case-insensitive,
