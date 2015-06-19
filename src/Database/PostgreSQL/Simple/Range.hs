@@ -132,7 +132,7 @@ rangeToBuilder :: Ord a => (a -> Builder) -> PGRange a -> Builder
 rangeToBuilder = rangeToBuilderBy compare
 
 -- | Generic range to builder for plain values
-rangeToBuilderBy :: (a -> a -> Ordering) => (a -> Builder) -> PGRange a -> Builder
+rangeToBuilderBy :: (a -> a -> Ordering) -> (a -> Builder) -> PGRange a -> Builder
 rangeToBuilderBy cmp f x =
     if isEmptyBy cmp x
     then byteString "'empty'"
