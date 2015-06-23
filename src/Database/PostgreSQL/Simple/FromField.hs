@@ -112,10 +112,11 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative ( (<|>), (<$>), pure, (*>) )
+import           Control.Applicative ( (<|>), (<$>), pure, (*>), (<*) )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.Parser as JSON (value')
 import           Data.Attoparsec.ByteString.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -545,13 +546,7 @@ instance FromField JSON.Value where
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""
              Just bs ->
-#if MIN_VERSION_aeson(0,6,3)
-                 case JSON.eitherDecodeStrict' bs of
-#elif MIN_VERSION_bytestring(0,10,0)
-                 case JSON.eitherDecode' $ LB.fromStrict bs of
-#else
-                 case JSON.eitherDecode' $ LB.fromChunks [bs] of
-#endif
+                 case parseOnly (JSON.value' <* endOfInput) bs of
                    Left  err -> returnError ConversionFailed f err
                    Right val -> pure val
 
