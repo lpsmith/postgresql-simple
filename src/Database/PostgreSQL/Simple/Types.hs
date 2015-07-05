@@ -19,6 +19,7 @@ module Database.PostgreSQL.Simple.Types
     , Default(..)
     , Only(..)
     , In(..)
+    , Cube(..)
     , Binary(..)
     , Identifier(..)
     , QualifiedIdentifier(..)
@@ -232,3 +233,5 @@ newtype Savepoint = Savepoint Query
 --   more information.
 data Values a = Values [QualifiedIdentifier] [a]
     deriving (Eq, Ord, Show, Read, Typeable)
+
+data Cube = Cube [[Float]]
