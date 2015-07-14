@@ -151,13 +151,16 @@ type TimeZoneHMS = (Int,Int,Int)
 
 getTimeZoneHMS :: A.Parser TimeZoneHMS
 getTimeZoneHMS = do
-    !sign  <- A.satisfy (\c -> c == '+' || c == '-')
-    !hours <- digits "timezone"
-    !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
-    !secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
-    if sign == '+'
-    then return $! (hours, mins, secs)
-    else return $! (\ !h !m !s -> (h,m,s)) (-hours) (-mins) (-secs)
+    !sign  <- A.satisfy (\c -> c == '+' || c == '-' || c == 'Z')
+    if sign == 'Z'
+    then return (0,0,0)
+    else do
+      !hours <- digits "timezone"
+      !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+      !secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
+      if sign == '+'
+      then return $! (hours, mins, secs)
+      else return $! (\ !h !m !s -> (h,m,s)) (-hours) (-mins) (-secs)
 
 localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
 localToUTCTimeOfDayHMS (dh, dm, ds) (TimeOfDay h m s) =
