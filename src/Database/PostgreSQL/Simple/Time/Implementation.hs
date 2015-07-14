@@ -104,39 +104,48 @@ getDay = do
 getDate :: A.Parser Date
 getDate = getUnbounded getDay
 
-decimal :: Fractional a => B.ByteString -> a
-decimal str = toNum str / 10^(B.length str)
-{-# INLINE decimal #-}
-
 getTimeOfDay :: A.Parser TimeOfDay
 getTimeOfDay = do
     !hour  <- digits "hours"
     _      <- A.char ':'
     minute <- digits "minutes"
-    _      <- A.char ':'
-    second <- digits "seconds"
-    subsec <- (A.char '.' *> (decimal <$> A.takeWhile1 A.isDigit)) <|> return 0
+    sec    <- (A.char ':' *> getSeconds) <|> pure 0
 
-    let !picos' = second + subsec
-
-    case makeTimeOfDayValid hour minute picos' of
+    case makeTimeOfDayValid hour minute sec of
       Nothing -> fail "invalid time of day"
       Just x  -> return $! x
+  where
+    getSeconds :: A.Parser Pico
+    getSeconds = do
+        secs <- digits "seconds"
+        decimal secs <|> (return $! fromInteger secs)
+
+    decimal :: Integer -> A.Parser Pico
+    decimal secs = do
+        _      <- A.satisfy (\c -> c == '.' || c == ',')
+        digits <- B.take 12 <$> A.takeWhile1 A.isDigit
+        -- A kludge to work around the fact that Data.Fixed isn't very fast and
+        -- doesn't give me access to the MkFixed constructor.
+        return $! unsafeCoerce (toNum_ secs digits * 10^(12 - B.length digits))
 
 getLocalTime :: A.Parser LocalTime
-getLocalTime = LocalTime <$> getDay <*> (A.char ' ' *> getTimeOfDay)
+getLocalTime = LocalTime <$> getDay <*> (todSeparator *> getTimeOfDay)
+  where todSeparator = A.satisfy (\c -> c == ' ' || c == 'T')
 
 getLocalTimestamp :: A.Parser LocalTimestamp
 getLocalTimestamp = getUnbounded getLocalTime
 
 getTimeZone :: A.Parser TimeZone
 getTimeZone = do
-    !sign  <- A.satisfy (\c -> c == '+' || c == '-')
-    !hours <- digits "timezone"
-    !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
-    let !absset = 60 * hours + mins
-        !offset = if sign == '+' then absset else -absset
-    return $! minutesToTimeZone offset
+    !sign  <- A.satisfy (\c -> c == '+' || c == '-' || c == 'Z')
+    if sign == 'Z'
+    then return utc
+    else do
+      !hours <- digits "timezone"
+      !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
+      let !absset = 60 * hours + mins
+          !offset = if sign == '+' then absset else -absset
+      return $! minutesToTimeZone offset
 
 type TimeZoneHMS = (Int,Int,Int)
 
@@ -189,8 +198,11 @@ getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
 toNum :: Num n => B.ByteString -> n
-toNum = B.foldl' (\a c -> 10*a + digit c) 0
+toNum = toNum_ 0
 {-# INLINE toNum #-}
+
+toNum_ :: Num n => n -> B.ByteString -> n
+toNum_ = B.foldl' (\a c -> 10*a + digit c)
 
 digit :: Num n => Word8 -> n
 digit c = fromIntegral (c .&. 0x0f)
