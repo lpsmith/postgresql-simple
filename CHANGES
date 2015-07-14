@@ -18,11 +18,14 @@ Version 0.5.0.0
 
   * Postgresql-simple now explicitly assumes the UTF8 character encoding
     for communication between the client and server.   All database encodings
-    support UTF8 except for Mule Internal Code.   An exception should be 
+    support UTF8 except for Mule Internal Code.   An exception should be
     raised upon connecting to a database by the backend if the backend cannot
     accomodate this requirement.
 
   * Added Eq and Typeable instance for Connection.
+
+  * Added the foldWith, forEachWith, and returningWith families of functions
+    courtesy of Travis Staton.
 
   * Support for Ranged types.
 
