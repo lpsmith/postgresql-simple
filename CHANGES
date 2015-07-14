@@ -1,3 +1,41 @@
+Version 0.5.0.0
+  * Removed the deprecated BuiltinTypes module
+
+  * Modified the SQL quasiquoter so that it returns a Query,  not
+    an overloaded string,  and so that the OverloadedStrings language
+    extension is no longer necessary,  thanks to Mike Ledger
+
+  * Moved away from blaze-builder in favor of bytestring-builder.  This
+    shouldn't affect very many people, but does reduce the transitive
+    dependencies.
+
+  * Added support for exclusion violations to the ConstraintViolation
+    type in the Errors module,  thanks to Joao Cristovao.
+
+  * Moved away from the uuid package in favor of the uuid-types package,
+    thanks to Bardur Arantsson.  This shouldn't affect anybody, but does
+    reduce the transitive dependencies.
+
+  * Postgresql-simple now explicitly assumes the UTF8 character encoding
+    for communication between the client and server.   All database encodings
+    support UTF8 except for Mule Internal Code.   An exception should be 
+    raised upon connecting to a database by the backend if the backend cannot
+    accomodate this requirement.
+
+  * Added Eq and Typeable instance for Connection.
+
+  * Support for Ranged types.
+
+  * The FromField instance for JSON now allows for top-level values that
+    are not objects or arrays.
+
+  * The timestamp parsers are now slightly more flexible in what they accept.
+    Thanks goes to Janne Hellsten for his contributions to this issue.
+
+  * Optimized the parsing of timestamps with fractional seconds,  shaving
+    approximately 17% off the time taken.
+
+
 Version 0.4.10.0 (2015-02-26)
   * Added a blurb about SSL/TLS in the documentation for connectPostgreSQL
 
