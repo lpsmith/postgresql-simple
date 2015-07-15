@@ -63,6 +63,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , refcursor
      , record
      , void
+     , array_record
      , uuid
      , json
      , jsonb
@@ -118,6 +119,7 @@ staticTypeInfo (Oid x) = case x of
     1790 -> Just refcursor
     2249 -> Just record
     2278 -> Just void
+    2287 -> Just array_record
     2950 -> Just uuid
     114  -> Just json
     3802 -> Just jsonb
@@ -481,6 +483,15 @@ void =  Basic {
     typcategory = 'P',
     typdelim    = ',',
     typname     = "void"
+  }
+
+array_record :: TypeInfo
+array_record =  Array {
+    typoid      = Oid 2287,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "_record",
+    typelem     = record
   }
 
 uuid :: TypeInfo

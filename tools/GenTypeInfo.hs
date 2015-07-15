@@ -125,6 +125,7 @@ numeric
 refcursor
 record
 void
+_record array_record
 uuid
 json
 jsonb
@@ -187,6 +188,35 @@ renderElem byOid elemOid
                   Nothing -> error ("oid not found: " ++ show elemOid)
                   Just x  -> "Just " ++ bs (typname x)
 
+renderTypeInfo :: OidMap -> TypeInfo -> TypeName -> Blaze.Builder
+renderTypeInfo byOid info name
+  | typcategory info == 'A' || typname info == "_record" =
+     let (Just typelem_info)    = Map.lookup (typelem info) byOid
+         (Just typelem_hs_name) = lookup (typname typelem_info) typeNames
+      in concat
+           [ "\n"
+           , bs (hs name), " :: TypeInfo\n"
+           , bs (hs name), " =  Array {\n"
+           , "    typoid      = ", fromString (show (typoid info)), ",\n"
+           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
+           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typname     = \"", bs (typname info), "\",\n"
+           , "    typelem     = ", bs typelem_hs_name, "\n"
+           , "  }\n"
+           ]
+  | typcategory info == 'R' = undefined
+  | otherwise =
+         concat
+           [ "\n"
+           , bs (hs name), " :: TypeInfo\n"
+           , bs (hs name), " =  Basic {\n"
+           , "    typoid      = ", fromString (show (typoid info)), ",\n"
+           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
+           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typname     = \"", bs (typname info), "\"\n"
+           , "  }\n"
+           ]
+
 -- FIXME:  add in any names that we need that we didn't specify, (i.e.
 --         the "unknowns" in getTypeInfos
 --         and munge them into a valid haskell identifier if needed.
@@ -237,15 +267,6 @@ staticTypeInfo (Oid x) = case x of
    ++ [longstring|
     _ -> Nothing
 |]
-   ++ concat [concat
-              [ "\n"
-              , bs (hs name), " :: TypeInfo\n"
-              , bs (hs name), " =  Basic {\n"
-              , "    typoid      = ", fromString (show typoid), ",\n"
-              , "    typcategory = '", Blaze.fromChar typcategory, "',\n"
-              , "    typdelim    = '", Blaze.fromChar typdelim, "',\n"
-              , "    typname     = \"", bs typname, "\"\n"
-              , "  }\n"
-              ]
+   ++ concat [ renderTypeInfo byOid typeInfo name
              | name <- getNames byName names
-             ,  let (Just (TypeInfo{..})) = Map.lookup (pg name) byName])
+             ,  let (Just typeInfo) = Map.lookup (pg name) byName])
