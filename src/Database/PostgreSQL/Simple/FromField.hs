@@ -30,8 +30,8 @@ type,  and then converting to a floating-point type.   If you are defining
 your own 'Database.PostgreSQL.Simple.FromRow.FromRow' instances,  this can be
 acheived simply by
 @'fromRational' '<$>' 'Database.PostgreSQL.Simple.FromRow.field'@,  although
-this idiom is additionally compatible with PostgreSQL's @numeric@ type.
-If this is unacceptable,  you may find
+this idiom is additionally compatible with PostgreSQL's @int8@ and @numeric@
+types.  If this is unacceptable,  you may find
 'Database.PostgreSQL.Simple.FromRow.fieldWith' useful.
 
 Also note that while converting to a 'Double' through the 'Scientific' type
