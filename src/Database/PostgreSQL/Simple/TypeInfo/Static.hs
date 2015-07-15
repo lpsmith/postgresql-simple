@@ -25,7 +25,6 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , int8
      , int2
      , int4
-     , regproc
      , text
      , oid
      , tid
@@ -67,6 +66,54 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , uuid
      , json
      , jsonb
+     , int2vector
+     , oidvector
+     , array_xml
+     , array_json
+     , array_line
+     , array_cidr
+     , array_circle
+     , array_money
+     , array_bool
+     , array_bytea
+     , array_char
+     , array_name
+     , array_int2
+     , array_int2vector
+     , array_int4
+     , array_text
+     , array_tid
+     , array_xid
+     , array_cid
+     , array_oidvector
+     , array_bpchar
+     , array_varchar
+     , array_int8
+     , array_point
+     , array_lseg
+     , array_path
+     , array_box
+     , array_float4
+     , array_float8
+     , array_abstime
+     , array_reltime
+     , array_tinterval
+     , array_polygon
+     , array_oid
+     , array_macaddr
+     , array_inet
+     , array_timestamp
+     , array_date
+     , array_time
+     , array_timestamptz
+     , array_interval
+     , array_numeric
+     , array_timetz
+     , array_bit
+     , array_varbit
+     , array_refcursor
+     , array_uuid
+     , array_jsonb
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
@@ -81,7 +128,6 @@ staticTypeInfo (Oid x) = case x of
     20   -> Just int8
     21   -> Just int2
     23   -> Just int4
-    24   -> Just regproc
     25   -> Just text
     26   -> Just oid
     27   -> Just tid
@@ -123,6 +169,54 @@ staticTypeInfo (Oid x) = case x of
     2950 -> Just uuid
     114  -> Just json
     3802 -> Just jsonb
+    22   -> Just int2vector
+    30   -> Just oidvector
+    143  -> Just array_xml
+    199  -> Just array_json
+    629  -> Just array_line
+    651  -> Just array_cidr
+    719  -> Just array_circle
+    791  -> Just array_money
+    1000 -> Just array_bool
+    1001 -> Just array_bytea
+    1002 -> Just array_char
+    1003 -> Just array_name
+    1005 -> Just array_int2
+    1006 -> Just array_int2vector
+    1007 -> Just array_int4
+    1009 -> Just array_text
+    1010 -> Just array_tid
+    1011 -> Just array_xid
+    1012 -> Just array_cid
+    1013 -> Just array_oidvector
+    1014 -> Just array_bpchar
+    1015 -> Just array_varchar
+    1016 -> Just array_int8
+    1017 -> Just array_point
+    1018 -> Just array_lseg
+    1019 -> Just array_path
+    1020 -> Just array_box
+    1021 -> Just array_float4
+    1022 -> Just array_float8
+    1023 -> Just array_abstime
+    1024 -> Just array_reltime
+    1025 -> Just array_tinterval
+    1027 -> Just array_polygon
+    1028 -> Just array_oid
+    1040 -> Just array_macaddr
+    1041 -> Just array_inet
+    1115 -> Just array_timestamp
+    1182 -> Just array_date
+    1183 -> Just array_time
+    1185 -> Just array_timestamptz
+    1187 -> Just array_interval
+    1231 -> Just array_numeric
+    1270 -> Just array_timetz
+    1561 -> Just array_bit
+    1563 -> Just array_varbit
+    2201 -> Just array_refcursor
+    2951 -> Just array_uuid
+    3807 -> Just array_jsonb
     _ -> Nothing
 
 bool :: TypeInfo
@@ -179,14 +273,6 @@ int4 =  Basic {
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int4"
-  }
-
-regproc :: TypeInfo
-regproc =  Basic {
-    typoid      = Oid 24,
-    typcategory = 'N',
-    typdelim    = ',',
-    typname     = "regproc"
   }
 
 text :: TypeInfo
@@ -516,4 +602,436 @@ jsonb =  Basic {
     typcategory = 'U',
     typdelim    = ',',
     typname     = "jsonb"
+  }
+
+int2vector :: TypeInfo
+int2vector =  Array {
+    typoid      = Oid 22,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "int2vector",
+    typelem     = int2
+  }
+
+oidvector :: TypeInfo
+oidvector =  Array {
+    typoid      = Oid 30,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "oidvector",
+    typelem     = oid
+  }
+
+array_xml :: TypeInfo
+array_xml =  Array {
+    typoid      = Oid 143,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_xml",
+    typelem     = xml
+  }
+
+array_json :: TypeInfo
+array_json =  Array {
+    typoid      = Oid 199,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_json",
+    typelem     = json
+  }
+
+array_line :: TypeInfo
+array_line =  Array {
+    typoid      = Oid 629,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_line",
+    typelem     = line
+  }
+
+array_cidr :: TypeInfo
+array_cidr =  Array {
+    typoid      = Oid 651,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_cidr",
+    typelem     = cidr
+  }
+
+array_circle :: TypeInfo
+array_circle =  Array {
+    typoid      = Oid 719,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_circle",
+    typelem     = circle
+  }
+
+array_money :: TypeInfo
+array_money =  Array {
+    typoid      = Oid 791,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_money",
+    typelem     = money
+  }
+
+array_bool :: TypeInfo
+array_bool =  Array {
+    typoid      = Oid 1000,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_bool",
+    typelem     = bool
+  }
+
+array_bytea :: TypeInfo
+array_bytea =  Array {
+    typoid      = Oid 1001,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_bytea",
+    typelem     = bytea
+  }
+
+array_char :: TypeInfo
+array_char =  Array {
+    typoid      = Oid 1002,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_char",
+    typelem     = char
+  }
+
+array_name :: TypeInfo
+array_name =  Array {
+    typoid      = Oid 1003,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_name",
+    typelem     = name
+  }
+
+array_int2 :: TypeInfo
+array_int2 =  Array {
+    typoid      = Oid 1005,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int2",
+    typelem     = int2
+  }
+
+array_int2vector :: TypeInfo
+array_int2vector =  Array {
+    typoid      = Oid 1006,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int2vector",
+    typelem     = int2vector
+  }
+
+array_int4 :: TypeInfo
+array_int4 =  Array {
+    typoid      = Oid 1007,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int4",
+    typelem     = int4
+  }
+
+array_text :: TypeInfo
+array_text =  Array {
+    typoid      = Oid 1009,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_text",
+    typelem     = text
+  }
+
+array_tid :: TypeInfo
+array_tid =  Array {
+    typoid      = Oid 1010,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tid",
+    typelem     = tid
+  }
+
+array_xid :: TypeInfo
+array_xid =  Array {
+    typoid      = Oid 1011,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_xid",
+    typelem     = xid
+  }
+
+array_cid :: TypeInfo
+array_cid =  Array {
+    typoid      = Oid 1012,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_cid",
+    typelem     = cid
+  }
+
+array_oidvector :: TypeInfo
+array_oidvector =  Array {
+    typoid      = Oid 1013,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_oidvector",
+    typelem     = oidvector
+  }
+
+array_bpchar :: TypeInfo
+array_bpchar =  Array {
+    typoid      = Oid 1014,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_bpchar",
+    typelem     = bpchar
+  }
+
+array_varchar :: TypeInfo
+array_varchar =  Array {
+    typoid      = Oid 1015,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_varchar",
+    typelem     = varchar
+  }
+
+array_int8 :: TypeInfo
+array_int8 =  Array {
+    typoid      = Oid 1016,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int8",
+    typelem     = int8
+  }
+
+array_point :: TypeInfo
+array_point =  Array {
+    typoid      = Oid 1017,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_point",
+    typelem     = point
+  }
+
+array_lseg :: TypeInfo
+array_lseg =  Array {
+    typoid      = Oid 1018,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_lseg",
+    typelem     = lseg
+  }
+
+array_path :: TypeInfo
+array_path =  Array {
+    typoid      = Oid 1019,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_path",
+    typelem     = path
+  }
+
+array_box :: TypeInfo
+array_box =  Array {
+    typoid      = Oid 1020,
+    typcategory = 'A',
+    typdelim    = ';',
+    typname     = "_box",
+    typelem     = box
+  }
+
+array_float4 :: TypeInfo
+array_float4 =  Array {
+    typoid      = Oid 1021,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_float4",
+    typelem     = float4
+  }
+
+array_float8 :: TypeInfo
+array_float8 =  Array {
+    typoid      = Oid 1022,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_float8",
+    typelem     = float8
+  }
+
+array_abstime :: TypeInfo
+array_abstime =  Array {
+    typoid      = Oid 1023,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_abstime",
+    typelem     = abstime
+  }
+
+array_reltime :: TypeInfo
+array_reltime =  Array {
+    typoid      = Oid 1024,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_reltime",
+    typelem     = reltime
+  }
+
+array_tinterval :: TypeInfo
+array_tinterval =  Array {
+    typoid      = Oid 1025,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tinterval",
+    typelem     = tinterval
+  }
+
+array_polygon :: TypeInfo
+array_polygon =  Array {
+    typoid      = Oid 1027,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_polygon",
+    typelem     = polygon
+  }
+
+array_oid :: TypeInfo
+array_oid =  Array {
+    typoid      = Oid 1028,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_oid",
+    typelem     = oid
+  }
+
+array_macaddr :: TypeInfo
+array_macaddr =  Array {
+    typoid      = Oid 1040,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_macaddr",
+    typelem     = macaddr
+  }
+
+array_inet :: TypeInfo
+array_inet =  Array {
+    typoid      = Oid 1041,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_inet",
+    typelem     = inet
+  }
+
+array_timestamp :: TypeInfo
+array_timestamp =  Array {
+    typoid      = Oid 1115,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_timestamp",
+    typelem     = timestamp
+  }
+
+array_date :: TypeInfo
+array_date =  Array {
+    typoid      = Oid 1182,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_date",
+    typelem     = date
+  }
+
+array_time :: TypeInfo
+array_time =  Array {
+    typoid      = Oid 1183,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_time",
+    typelem     = time
+  }
+
+array_timestamptz :: TypeInfo
+array_timestamptz =  Array {
+    typoid      = Oid 1185,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_timestamptz",
+    typelem     = timestamptz
+  }
+
+array_interval :: TypeInfo
+array_interval =  Array {
+    typoid      = Oid 1187,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_interval",
+    typelem     = interval
+  }
+
+array_numeric :: TypeInfo
+array_numeric =  Array {
+    typoid      = Oid 1231,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_numeric",
+    typelem     = numeric
+  }
+
+array_timetz :: TypeInfo
+array_timetz =  Array {
+    typoid      = Oid 1270,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_timetz",
+    typelem     = timetz
+  }
+
+array_bit :: TypeInfo
+array_bit =  Array {
+    typoid      = Oid 1561,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_bit",
+    typelem     = bit
+  }
+
+array_varbit :: TypeInfo
+array_varbit =  Array {
+    typoid      = Oid 1563,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_varbit",
+    typelem     = varbit
+  }
+
+array_refcursor :: TypeInfo
+array_refcursor =  Array {
+    typoid      = Oid 2201,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_refcursor",
+    typelem     = refcursor
+  }
+
+array_uuid :: TypeInfo
+array_uuid =  Array {
+    typoid      = Oid 2951,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_uuid",
+    typelem     = uuid
+  }
+
+array_jsonb :: TypeInfo
+array_jsonb =  Array {
+    typoid      = Oid 3807,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_jsonb",
+    typelem     = jsonb
   }

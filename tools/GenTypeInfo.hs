@@ -87,7 +87,6 @@ name
 int8
 int2
 int4
-regproc
 text
 oid
 tid
@@ -125,10 +124,58 @@ numeric
 refcursor
 record
 void
-_record array_record
+_record                  array_record
 uuid
 json
 jsonb
+int2vector
+oidvector
+_xml                     array_xml
+_json                    array_json
+_line                    array_line
+_cidr                    array_cidr
+_circle                  array_circle
+_money                   array_money
+_bool                    array_bool
+_bytea                   array_bytea
+_char                    array_char
+_name                    array_name
+_int2                    array_int2
+_int2vector              array_int2vector
+_int4                    array_int4
+_text                    array_text
+_tid                     array_tid
+_xid                     array_xid
+_cid                     array_cid
+_oidvector               array_oidvector
+_bpchar                  array_bpchar
+_varchar                 array_varchar
+_int8                    array_int8
+_point                   array_point
+_lseg                    array_lseg
+_path                    array_path
+_box                     array_box
+_float4                  array_float4
+_float8                  array_float8
+_abstime                 array_abstime
+_reltime                 array_reltime
+_tinterval               array_tinterval
+_polygon                 array_polygon
+_oid                     array_oid
+_macaddr                 array_macaddr
+_inet                    array_inet
+_timestamp               array_timestamp
+_date                    array_date
+_time                    array_time
+_timestamptz             array_timestamptz
+_interval                array_interval
+_numeric                 array_numeric
+_timetz                  array_timetz
+_bit                     array_bit
+_varbit                  array_varbit
+_refcursor               array_refcursor
+_uuid                    array_uuid
+_jsonb                   array_jsonb
 |]
 
 instance IsString Blaze.Builder where
@@ -192,7 +239,9 @@ renderTypeInfo :: OidMap -> TypeInfo -> TypeName -> Blaze.Builder
 renderTypeInfo byOid info name
   | typcategory info == 'A' || typname info == "_record" =
      let (Just typelem_info)    = Map.lookup (typelem info) byOid
-         (Just typelem_hs_name) = lookup (typname typelem_info) typeNames
+         typelem_hs_name = case lookup (typname typelem_info) typeNames of
+                             Nothing -> error ("type not found: " ++ B.unpack( typname typelem_info) ++ " (typelem of " ++ B.unpack (typname info) ++ ")")
+                             Just x  -> x
       in concat
            [ "\n"
            , bs (hs name), " :: TypeInfo\n"
