@@ -88,6 +88,7 @@ name
 int8
 int2
 int4
+regproc
 text
 oid
 tid
@@ -103,9 +104,6 @@ line
 cidr
 float4
 float8
-abstime
-reltime
-tinterval
 unknown
 circle
 money
@@ -126,6 +124,11 @@ refcursor
 record
 void
 _record                  array_record
+regprocedure
+regoper
+regoperator
+regclass
+regtype
 uuid
 json
 jsonb
@@ -144,6 +147,7 @@ _name                    array_name
 _int2                    array_int2
 _int2vector              array_int2vector
 _int4                    array_int4
+_regproc                 array_regproc
 _text                    array_text
 _tid                     array_tid
 _xid                     array_xid
@@ -158,9 +162,6 @@ _path                    array_path
 _box                     array_box
 _float4                  array_float4
 _float8                  array_float8
-_abstime                 array_abstime
-_reltime                 array_reltime
-_tinterval               array_tinterval
 _polygon                 array_polygon
 _oid                     array_oid
 _macaddr                 array_macaddr
@@ -175,6 +176,11 @@ _timetz                  array_timetz
 _bit                     array_bit
 _varbit                  array_varbit
 _refcursor               array_refcursor
+_regprocedure            array_regprocedure
+_regoper                 array_regoper
+_regoperator             array_regoperator
+_regclass                array_regclass
+_regtype                 array_regtype
 _uuid                    array_uuid
 _jsonb                   array_jsonb
 int4range

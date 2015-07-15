@@ -25,6 +25,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , int8
      , int2
      , int4
+     , regproc
      , text
      , oid
      , tid
@@ -40,9 +41,6 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , cidr
      , float4
      , float8
-     , abstime
-     , reltime
-     , tinterval
      , unknown
      , circle
      , money
@@ -63,6 +61,11 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , record
      , void
      , array_record
+     , regprocedure
+     , regoper
+     , regoperator
+     , regclass
+     , regtype
      , uuid
      , json
      , jsonb
@@ -81,6 +84,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_int2
      , array_int2vector
      , array_int4
+     , array_regproc
      , array_text
      , array_tid
      , array_xid
@@ -95,9 +99,6 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_box
      , array_float4
      , array_float8
-     , array_abstime
-     , array_reltime
-     , array_tinterval
      , array_polygon
      , array_oid
      , array_macaddr
@@ -112,6 +113,11 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_bit
      , array_varbit
      , array_refcursor
+     , array_regprocedure
+     , array_regoper
+     , array_regoperator
+     , array_regclass
+     , array_regtype
      , array_uuid
      , array_jsonb
      , int4range
@@ -140,6 +146,7 @@ staticTypeInfo (Oid x) = case x of
     20   -> Just int8
     21   -> Just int2
     23   -> Just int4
+    24   -> Just regproc
     25   -> Just text
     26   -> Just oid
     27   -> Just tid
@@ -155,9 +162,6 @@ staticTypeInfo (Oid x) = case x of
     650  -> Just cidr
     700  -> Just float4
     701  -> Just float8
-    702  -> Just abstime
-    703  -> Just reltime
-    704  -> Just tinterval
     705  -> Just unknown
     718  -> Just circle
     790  -> Just money
@@ -178,6 +182,11 @@ staticTypeInfo (Oid x) = case x of
     2249 -> Just record
     2278 -> Just void
     2287 -> Just array_record
+    2202 -> Just regprocedure
+    2203 -> Just regoper
+    2204 -> Just regoperator
+    2205 -> Just regclass
+    2206 -> Just regtype
     2950 -> Just uuid
     114  -> Just json
     3802 -> Just jsonb
@@ -196,6 +205,7 @@ staticTypeInfo (Oid x) = case x of
     1005 -> Just array_int2
     1006 -> Just array_int2vector
     1007 -> Just array_int4
+    1008 -> Just array_regproc
     1009 -> Just array_text
     1010 -> Just array_tid
     1011 -> Just array_xid
@@ -210,9 +220,6 @@ staticTypeInfo (Oid x) = case x of
     1020 -> Just array_box
     1021 -> Just array_float4
     1022 -> Just array_float8
-    1023 -> Just array_abstime
-    1024 -> Just array_reltime
-    1025 -> Just array_tinterval
     1027 -> Just array_polygon
     1028 -> Just array_oid
     1040 -> Just array_macaddr
@@ -227,6 +234,11 @@ staticTypeInfo (Oid x) = case x of
     1561 -> Just array_bit
     1563 -> Just array_varbit
     2201 -> Just array_refcursor
+    2207 -> Just array_regprocedure
+    2208 -> Just array_regoper
+    2209 -> Just array_regoperator
+    2210 -> Just array_regclass
+    2211 -> Just array_regtype
     2951 -> Just array_uuid
     3807 -> Just array_jsonb
     3904 -> Just int4range
@@ -297,6 +309,14 @@ int4 =  Basic {
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int4"
+  }
+
+regproc :: TypeInfo
+regproc =  Basic {
+    typoid      = Oid 24,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regproc"
   }
 
 text :: TypeInfo
@@ -417,30 +437,6 @@ float8 =  Basic {
     typcategory = 'N',
     typdelim    = ',',
     typname     = "float8"
-  }
-
-abstime :: TypeInfo
-abstime =  Basic {
-    typoid      = Oid 702,
-    typcategory = 'D',
-    typdelim    = ',',
-    typname     = "abstime"
-  }
-
-reltime :: TypeInfo
-reltime =  Basic {
-    typoid      = Oid 703,
-    typcategory = 'T',
-    typdelim    = ',',
-    typname     = "reltime"
-  }
-
-tinterval :: TypeInfo
-tinterval =  Basic {
-    typoid      = Oid 704,
-    typcategory = 'T',
-    typdelim    = ',',
-    typname     = "tinterval"
   }
 
 unknown :: TypeInfo
@@ -604,6 +600,46 @@ array_record =  Array {
     typelem     = record
   }
 
+regprocedure :: TypeInfo
+regprocedure =  Basic {
+    typoid      = Oid 2202,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regprocedure"
+  }
+
+regoper :: TypeInfo
+regoper =  Basic {
+    typoid      = Oid 2203,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regoper"
+  }
+
+regoperator :: TypeInfo
+regoperator =  Basic {
+    typoid      = Oid 2204,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regoperator"
+  }
+
+regclass :: TypeInfo
+regclass =  Basic {
+    typoid      = Oid 2205,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regclass"
+  }
+
+regtype :: TypeInfo
+regtype =  Basic {
+    typoid      = Oid 2206,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regtype"
+  }
+
 uuid :: TypeInfo
 uuid =  Basic {
     typoid      = Oid 2950,
@@ -763,6 +799,15 @@ array_int4 =  Array {
     typelem     = int4
   }
 
+array_regproc :: TypeInfo
+array_regproc =  Array {
+    typoid      = Oid 1008,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regproc",
+    typelem     = regproc
+  }
+
 array_text :: TypeInfo
 array_text =  Array {
     typoid      = Oid 1009,
@@ -889,33 +934,6 @@ array_float8 =  Array {
     typelem     = float8
   }
 
-array_abstime :: TypeInfo
-array_abstime =  Array {
-    typoid      = Oid 1023,
-    typcategory = 'A',
-    typdelim    = ',',
-    typname     = "_abstime",
-    typelem     = abstime
-  }
-
-array_reltime :: TypeInfo
-array_reltime =  Array {
-    typoid      = Oid 1024,
-    typcategory = 'A',
-    typdelim    = ',',
-    typname     = "_reltime",
-    typelem     = reltime
-  }
-
-array_tinterval :: TypeInfo
-array_tinterval =  Array {
-    typoid      = Oid 1025,
-    typcategory = 'A',
-    typdelim    = ',',
-    typname     = "_tinterval",
-    typelem     = tinterval
-  }
-
 array_polygon :: TypeInfo
 array_polygon =  Array {
     typoid      = Oid 1027,
@@ -1040,6 +1058,51 @@ array_refcursor =  Array {
     typdelim    = ',',
     typname     = "_refcursor",
     typelem     = refcursor
+  }
+
+array_regprocedure :: TypeInfo
+array_regprocedure =  Array {
+    typoid      = Oid 2207,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regprocedure",
+    typelem     = regprocedure
+  }
+
+array_regoper :: TypeInfo
+array_regoper =  Array {
+    typoid      = Oid 2208,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regoper",
+    typelem     = regoper
+  }
+
+array_regoperator :: TypeInfo
+array_regoperator =  Array {
+    typoid      = Oid 2209,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regoperator",
+    typelem     = regoperator
+  }
+
+array_regclass :: TypeInfo
+array_regclass =  Array {
+    typoid      = Oid 2210,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regclass",
+    typelem     = regclass
+  }
+
+array_regtype :: TypeInfo
+array_regtype =  Array {
+    typoid      = Oid 2211,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regtype",
+    typelem     = regtype
   }
 
 array_uuid :: TypeInfo
