@@ -335,15 +335,15 @@ instance FromField Double where
     fromField = atto ok pg_double
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4])
 
--- | int2, int4, float4, float8, numeric
+-- | int2, int4, int8, float4, float8, numeric
 instance FromField (Ratio Integer) where
     fromField = atto ok pg_rational
-      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
+      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.int8,TI.numeric])
 
--- | int2, int4, float4, float8, numeric
+-- | int2, int4, int8, float4, float8, numeric
 instance FromField Scientific where
      fromField = atto ok rational
-      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.numeric])
+      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.int8,TI.numeric])
 
 unBinary :: Binary t -> t
 unBinary (Binary x) = x
