@@ -63,10 +63,11 @@ data TypeInfo = TypeInfo
     , typdelim    :: Char
     , typname     :: ByteString
     , typelem     :: Oid
+    , rngsubtype  :: Maybe Oid
     }
 
-instance FromRow TypeInfo where
-    fromRow = TypeInfo <$> field <*> field <*> field <*> field <*> field
+instance FromRow TypeInfo where 
+    fromRow = TypeInfo <$> field <*> field <*> field <*> field <*> field <*> field
 
 type NameMap   = Map.Map B.ByteString TypeInfo
 
@@ -176,6 +177,18 @@ _varbit                  array_varbit
 _refcursor               array_refcursor
 _uuid                    array_uuid
 _jsonb                   array_jsonb
+int4range
+_int4range
+numrange
+_numrange
+tsrange
+_tsrange
+tstzrange
+_tstzrange
+daterange
+_daterange
+int8range
+_int8range
 |]
 
 instance IsString Blaze.Builder where
@@ -187,28 +200,31 @@ withPostgreSQL = bracket (connectPostgreSQL connectionString) close
 
 getTypeInfos :: TypeNames -> IO (OidMap, NameMap)
 getTypeInfos typnames = withPostgreSQL $ \conn -> do
-    infos <- query conn [sql|
-                SELECT oid, typcategory, typdelim, typname, typelem
-                FROM   pg_type
-                WHERE  typname IN ?
-              |]
-              (Only (In (sort (map pg typnames))))
+    infos <- query conn [sql| 
+         WITH types AS 
+            (SELECT oid, typcategory, typdelim, typname, typelem
+               FROM pg_type WHERE typname IN ?)
+            SELECT types.*, rngsubtype FROM types LEFT JOIN pg_range ON oid = rngtypid
+      |] (Only (In (sort (map pg typnames))))
     loop conn (oidMap infos) (nameMap infos) infos
   where
     oidMap  = Map.fromList . map (typoid  &&& id)
     nameMap = Map.fromList . map (typname &&& id)
     loop conn oids names infos = do
-      let unknowns = [ x | x <- map typelem infos,
+      let unknowns = [ x | x <- map typelem infos ++
+                                  [ x | Just x <- map rngsubtype infos ],
                            x /= Oid 0,
                            not (Map.member x oids) ]
       case unknowns of
         []    -> return (oids, names)
         (_:_) -> do
            infos' <- query conn [sql|
-                         SELECT oid, typcategory, typdelim, typname, typelem
-                         FROM   pg_type
-                         WHERE  oid IN ?
-                       |] (Only (In (sort unknowns)))
+             WITH types AS 
+               (SELECT oid, typcategory, typdelim, typname, typelem
+                  FROM pg_type WHERE oid IN ?)
+               SELECT types.*, rngsubtype 
+                 FROM types LEFT JOIN pg_range ON oid = rngtypid
+             |] (Only (In (sort unknowns)))
            let oids'  = oids  `Map.union` oidMap  infos'
                names' = names `Map.union` nameMap infos'
            loop conn oids' names' infos'
@@ -239,9 +255,13 @@ renderTypeInfo :: OidMap -> TypeInfo -> TypeName -> Blaze.Builder
 renderTypeInfo byOid info name
   | typcategory info == 'A' || typname info == "_record" =
      let (Just typelem_info)    = Map.lookup (typelem info) byOid
-         typelem_hs_name = case lookup (typname typelem_info) typeNames of
-                             Nothing -> error ("type not found: " ++ B.unpack( typname typelem_info) ++ " (typelem of " ++ B.unpack (typname info) ++ ")")
-                             Just x  -> x
+         typelem_hs_name =
+             case lookup (typname typelem_info) typeNames of
+               Nothing -> error (   "type not found: "
+                                 ++ B.unpack( typname typelem_info)
+                                 ++ " (typelem of " ++ B.unpack (typname info)
+                                 ++ ")")
+               Just x  -> x
       in concat
            [ "\n"
            , bs (hs name), " :: TypeInfo\n"
@@ -253,7 +273,27 @@ renderTypeInfo byOid info name
            , "    typelem     = ", bs typelem_hs_name, "\n"
            , "  }\n"
            ]
-  | typcategory info == 'R' = undefined
+  | typcategory info == 'R' =
+      let (Just rngsubtype_oid)  = rngsubtype info
+          (Just rngsubtype_info) = Map.lookup rngsubtype_oid byOid
+          rngsubtype_hs_name =
+              case lookup (typname rngsubtype_info) typeNames of
+                Nothing -> error (   "type not found: "
+                                  ++ B.unpack (typname rngsubtype_info)
+                                  ++ " (rngsubtype of "
+                                  ++ B.unpack (typname info) ++ ")")
+                Just x  -> x
+       in concat
+           [ "\n"
+           , bs (hs name), " :: TypeInfo\n"
+           , bs (hs name), " =  Range {\n"
+           , "    typoid      = ", fromString (show (typoid info)), ",\n"
+           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
+           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typname     = \"", bs (typname info), "\",\n"
+           , "    rngsubtype  = ", bs rngsubtype_hs_name, "\n"
+           , "  }\n"
+           ]
   | otherwise =
          concat
            [ "\n"

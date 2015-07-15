@@ -114,6 +114,18 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_refcursor
      , array_uuid
      , array_jsonb
+     , int4range
+     , _int4range
+     , numrange
+     , _numrange
+     , tsrange
+     , _tsrange
+     , tstzrange
+     , _tstzrange
+     , daterange
+     , _daterange
+     , int8range
+     , _int8range
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
@@ -217,6 +229,18 @@ staticTypeInfo (Oid x) = case x of
     2201 -> Just array_refcursor
     2951 -> Just array_uuid
     3807 -> Just array_jsonb
+    3904 -> Just int4range
+    3905 -> Just _int4range
+    3906 -> Just numrange
+    3907 -> Just _numrange
+    3908 -> Just tsrange
+    3909 -> Just _tsrange
+    3910 -> Just tstzrange
+    3911 -> Just _tstzrange
+    3912 -> Just daterange
+    3913 -> Just _daterange
+    3926 -> Just int8range
+    3927 -> Just _int8range
     _ -> Nothing
 
 bool :: TypeInfo
@@ -1034,4 +1058,112 @@ array_jsonb =  Array {
     typdelim    = ',',
     typname     = "_jsonb",
     typelem     = jsonb
+  }
+
+int4range :: TypeInfo
+int4range =  Range {
+    typoid      = Oid 3904,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "int4range",
+    rngsubtype  = int4
+  }
+
+_int4range :: TypeInfo
+_int4range =  Array {
+    typoid      = Oid 3905,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int4range",
+    typelem     = int4range
+  }
+
+numrange :: TypeInfo
+numrange =  Range {
+    typoid      = Oid 3906,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "numrange",
+    rngsubtype  = numeric
+  }
+
+_numrange :: TypeInfo
+_numrange =  Array {
+    typoid      = Oid 3907,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_numrange",
+    typelem     = numrange
+  }
+
+tsrange :: TypeInfo
+tsrange =  Range {
+    typoid      = Oid 3908,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "tsrange",
+    rngsubtype  = timestamp
+  }
+
+_tsrange :: TypeInfo
+_tsrange =  Array {
+    typoid      = Oid 3909,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tsrange",
+    typelem     = tsrange
+  }
+
+tstzrange :: TypeInfo
+tstzrange =  Range {
+    typoid      = Oid 3910,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "tstzrange",
+    rngsubtype  = timestamptz
+  }
+
+_tstzrange :: TypeInfo
+_tstzrange =  Array {
+    typoid      = Oid 3911,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tstzrange",
+    typelem     = tstzrange
+  }
+
+daterange :: TypeInfo
+daterange =  Range {
+    typoid      = Oid 3912,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "daterange",
+    rngsubtype  = date
+  }
+
+_daterange :: TypeInfo
+_daterange =  Array {
+    typoid      = Oid 3913,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_daterange",
+    typelem     = daterange
+  }
+
+int8range :: TypeInfo
+int8range =  Range {
+    typoid      = Oid 3926,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "int8range",
+    rngsubtype  = int8
+  }
+
+_int8range :: TypeInfo
+_int8range =  Array {
+    typoid      = Oid 3927,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_int8range",
+    typelem     = int8range
   }
