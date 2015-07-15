@@ -17,8 +17,8 @@ module Database.PostgreSQL.Simple.Range
       ( RangeBound(..)
       , PGRange(..)
       , empty
-      , isEmpty
-      , isEmptyBy
+      , isEmpty, isEmptyBy
+      , contains, containsBy
       ) where
 
 import           Control.Applicative hiding (empty)
@@ -83,8 +83,45 @@ isEmptyBy cmp v =
       (PGRange (Exclusive x) (Inclusive y)) -> cmp x y /= LT
       (PGRange (Exclusive x) (Exclusive y)) -> cmp x y /= LT
 
+-- | Is a range empty?   If this returns 'True',  then the 'contains'
+--   predicate will always return 'False'.   However,  if this returns
+--   'False', it is not necessarily true that there exists a point for
+--   which 'contains' returns 'True'.
+--   Consider @'PGRange' ('Excludes' 2) ('Excludes' 3) :: PGRange Int@,
+--   for example.
 isEmpty :: Ord a => PGRange a -> Bool
 isEmpty = isEmptyBy compare
+
+
+-- | Does a range contain a given point?   Note that in some cases, this may
+-- not correspond exactly with a server-side computation.   Consider @UTCTime@
+-- for example, which has a resolution of a picosecond,  whereas postgresql's
+-- @timestamptz@ types have a resolution of a microsecond.  Putting such
+-- Haskell values into the database will result in them being rounded, which
+-- can change the value of the containment predicate.
+
+contains :: Ord a => PGRange a -> (a -> Bool)
+contains = containsBy compare
+
+containsBy :: (a -> a -> Ordering) -> PGRange a -> (a -> Bool)
+containsBy cmp rng x =
+    case rng of
+      PGRange _lb         NegInfinity -> False
+      PGRange lb          ub          -> checkLB lb x && checkUB ub x
+  where
+    checkLB lb x =
+        case lb of
+          NegInfinity -> True
+          PosInfinity -> False
+          Inclusive a -> cmp a x /= GT
+          Exclusive a -> cmp a x == LT
+
+    checkUB ub x =
+        case ub of
+          NegInfinity -> False
+          PosInfinity -> True
+          Inclusive z -> cmp x z /= GT
+          Exclusive z -> cmp x z == LT
 
 lowerBound :: Parser (a -> RangeBound a)
 lowerBound = (A.char '(' *> pure Exclusive) <|> (A.char '[' *> pure Inclusive)
