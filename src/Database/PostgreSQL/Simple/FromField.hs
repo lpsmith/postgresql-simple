@@ -28,7 +28,7 @@ conversion routine,  which sacrifices some accuracy for speed.   If you
 need accuracy,  consider first converting data to a 'Scientific' or 'Rational'
 type,  and then converting to a floating-point type.   If you are defining
 your own 'Database.PostgreSQL.Simple.FromRow.FromRow' instances,  this can be
-acheived simply by
+achieved simply by
 @'fromRational' '<$>' 'Database.PostgreSQL.Simple.FromRow.field'@,  although
 this idiom is additionally compatible with PostgreSQL's @int8@ and @numeric@
 types.  If this is unacceptable,  you may find
