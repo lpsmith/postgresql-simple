@@ -8,7 +8,7 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, CPP #-}
 
 module Database.PostgreSQL.Simple.Time.Implementation where
 
@@ -28,6 +28,26 @@ import Database.PostgreSQL.Simple.Compat ((<>))
 import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce
+
+#if !MIN_VERSION_base(4,7,0)
+-- A kludge to work around the fact that Data.Fixed isn't very fast and
+-- previously didn't give me access to the MkFixed constructor.
+
+mkPico :: Integer -> Pico
+mkPico = unsafeCoerce
+
+fromPico :: Pico -> Integer
+fromPico = unsafeCoerce
+#else
+import Data.Fixed(Fixed(MkFixed))
+
+mkPico :: Integer -> Pico
+mkPico = MkFixed
+
+fromPico :: Pico -> Integer
+fromPico (MkFixed x) = x
+#endif
+
 
 data Unbounded a
    = NegInfinity
@@ -124,9 +144,8 @@ getTimeOfDay = do
     decimal secs = do
         _      <- A.satisfy (\c -> c == '.' || c == ',')
         digits <- B.take 12 <$> A.takeWhile1 A.isDigit
-        -- A kludge to work around the fact that Data.Fixed isn't very fast and
-        -- doesn't give me access to the MkFixed constructor.
-        return $! unsafeCoerce (toNum_ secs digits * 10^(12 - B.length digits))
+
+        return $! mkPico (toNum_ secs digits * 10^(12 - B.length digits))
 
 getLocalTime :: A.Parser LocalTime
 getLocalTime = LocalTime <$> getDay <*> (todSeparator *> getTimeOfDay)
@@ -274,9 +293,9 @@ nominalDiffTimeToBuilder xyz
     | yz < 500000 = sign <> integerDec x
     | otherwise   = sign <> integerDec x <> char8 '.' <>  showD6 y
   where
-    -- A kludge to work around the fact that Data.Fixed isn't very fast and
-    -- doesn't give me access to the MkFixed constructor.
     sign = if xyz >= 0 then mempty else char8 '-'
+    -- A kludge to work around the fact that Data.Fixed isn't very fast and
+    -- NominalDiffTime doesn't give the MkNominalDiffTime constructor.
     (x,yz) = ((unsafeCoerce (abs xyz) :: Integer) + 500000)  `quotRem` 1000000000000
     (fromIntegral -> y, _z) = yz `quotRem` 1000000
 
@@ -286,9 +305,7 @@ showSeconds xyz
     | z  == 0   = pad2 x <> char8 '.' <>  showD6 y
     | otherwise = pad2 x <> char8 '.' <>  pad6   y <> showD6 z
   where
-    -- A kludge to work around the fact that Data.Fixed isn't very fast and
-    -- doesn't give me access to the MkFixed constructor.
-    (x_,yz) = (unsafeCoerce xyz :: Integer)     `quotRem` 1000000000000
+    (x_,yz) = fromPico xyz `quotRem` 1000000000000
     x = fromIntegral x_ :: Int
     (fromIntegral -> y, fromIntegral -> z) = yz `quotRem` 1000000
 
