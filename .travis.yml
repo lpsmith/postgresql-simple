@@ -8,4 +8,4 @@ addons:
   postgresql: "9.3"
 
 before_install:
-  - createdb `whoami`
+  - createdb `whoami` || true
