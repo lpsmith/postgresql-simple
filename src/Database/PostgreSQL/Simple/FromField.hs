@@ -218,7 +218,7 @@ typename field = typname <$> typeInfo field
 
 typeInfo :: Field -> Conversion TypeInfo
 typeInfo Field{..} = Conversion $ \conn -> do
-                       Ok <$> (getTypeInfo conn =<< PQ.ftype result column)
+                       Ok <$> (getTypeInfo conn typeOid)
 
 typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
 typeInfoByOid oid = Conversion $ \conn -> do
