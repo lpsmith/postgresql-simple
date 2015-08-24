@@ -7,6 +7,8 @@ module Database.PostgreSQL.Simple.Compat
     , unsafeDupablePerformIO
     , toByteString
     , scientificBuilder
+    , toPico
+    , fromPico
     ) where
 
 import qualified Control.Exception as E
@@ -29,6 +31,12 @@ import GHC.IO (unsafeDupablePerformIO)
 import GHC.IOBase (unsafeDupablePerformIO)
 #endif
 
+import Data.Fixed (Pico)
+#if MIN_VERSION_base(4,7,0)
+import Data.Fixed (Fixed(MkFixed))
+#else
+import Unsafe.Coerce (unsafeCoerce)
+#endif
 
 -- | Like 'E.mask', but backported to base before version 4.3.0.
 --
@@ -57,3 +65,21 @@ infixr 6 <>
 
 toByteString :: Builder -> ByteString
 toByteString x = toStrict (toLazyByteString x)
+
+#if MIN_VERSION_base(4,7,0)
+
+toPico :: Integer -> Pico
+toPico = MkFixed
+
+fromPico :: Pico -> Integer
+fromPico (MkFixed i) = i
+
+#else
+
+toPico :: Integer -> Pico
+toPico = unsafeCoerce
+
+fromPico :: Pico -> Integer
+fromPico = unsafeCoerce
+
+#endif
