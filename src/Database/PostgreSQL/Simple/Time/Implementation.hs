@@ -23,11 +23,13 @@ import Data.ByteString.Internal (c2w, w2c)
 import Data.Time hiding (getTimeZone, getZonedTime)
 import Data.Typeable
 import Data.Word(Word8)
+import Data.Maybe (fromMaybe)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Database.PostgreSQL.Simple.Compat ((<>))
 import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce
+import qualified Database.PostgreSQL.Simple.Time.Parser as TP
 
 #if !MIN_VERSION_base(4,7,0)
 -- A kludge to work around the fact that Data.Fixed isn't very fast and
@@ -107,79 +109,30 @@ getUnbounded getFinite
       <|> (Finite <$> getFinite)
 
 getDay :: A.Parser Day
-getDay = do
-    yearStr <- A.takeWhile A.isDigit
-    when (B.length yearStr < 4) (fail "year must consist of at least 4 digits")
-
-    let !year = toNum yearStr
-    _       <- A.char '-'
-    !month  <- digits "month"
-    _       <- A.char '-'
-    day     <- digits "day"
-
-    case fromGregorianValid year month day of
-      Nothing -> fail "invalid date"
-      Just x  -> return $! x
+getDay = TP.day
 
 getDate :: A.Parser Date
 getDate = getUnbounded getDay
 
 getTimeOfDay :: A.Parser TimeOfDay
-getTimeOfDay = do
-    !hour  <- digits "hours"
-    _      <- A.char ':'
-    minute <- digits "minutes"
-    sec    <- (A.char ':' *> getSeconds) <|> pure 0
-
-    case makeTimeOfDayValid hour minute sec of
-      Nothing -> fail "invalid time of day"
-      Just x  -> return $! x
-  where
-    getSeconds :: A.Parser Pico
-    getSeconds = do
-        secs <- digits "seconds"
-        decimal secs <|> (return $! fromInteger secs)
-
-    decimal :: Integer -> A.Parser Pico
-    decimal secs = do
-        _      <- A.satisfy (\c -> c == '.' || c == ',')
-        digits <- B.take 12 <$> A.takeWhile1 A.isDigit
-
-        return $! mkPico (toNum_ secs digits * 10^(12 - B.length digits))
+getTimeOfDay = TP.timeOfDay
 
 getLocalTime :: A.Parser LocalTime
-getLocalTime = LocalTime <$> getDay <*> (todSeparator *> getTimeOfDay)
-  where todSeparator = A.satisfy (\c -> c == ' ' || c == 'T')
+getLocalTime = TP.localTime
 
 getLocalTimestamp :: A.Parser LocalTimestamp
 getLocalTimestamp = getUnbounded getLocalTime
 
 getTimeZone :: A.Parser TimeZone
-getTimeZone = do
-    !sign  <- A.satisfy (\c -> c == '+' || c == '-' || c == 'Z')
-    if sign == 'Z'
-    then return utc
-    else do
-      !hours <- digits "timezone"
-      !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
-      let !absset = 60 * hours + mins
-          !offset = if sign == '+' then absset else -absset
-      return $! minutesToTimeZone offset
+getTimeZone = fromMaybe utc <$> TP.timeZone
 
 type TimeZoneHMS = (Int,Int,Int)
 
 getTimeZoneHMS :: A.Parser TimeZoneHMS
-getTimeZoneHMS = do
-    !sign  <- A.satisfy (\c -> c == '+' || c == '-' || c == 'Z')
-    if sign == 'Z'
-    then return (0,0,0)
-    else do
-      !hours <- digits "timezone"
-      !mins  <- (A.char ':' *> digits "timezone minutes") <|> pure 0
-      !secs  <- (A.char ':' *> digits "timezone seconds") <|> pure 0
-      if sign == '+'
-      then return $! (hours, mins, secs)
-      else return $! (\ !h !m !s -> (h,m,s)) (-hours) (-mins) (-secs)
+getTimeZoneHMS = munge <$> TP.timeZoneHMS
+  where
+    munge Nothing = (0,0,0)
+    munge (Just (TP.UTCOffsetHMS h m s)) = (h,m,s)
 
 localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
 localToUTCTimeOfDayHMS (dh, dm, ds) (TimeOfDay h m s) =
@@ -200,21 +153,13 @@ localToUTCTimeOfDayHMS (dh, dm, ds) (TimeOfDay h m s) =
         | otherwise = (h'     ,  0)
 
 getZonedTime :: A.Parser ZonedTime
-getZonedTime = ZonedTime <$> getLocalTime <*> getTimeZone
+getZonedTime = TP.zonedTime
 
 getZonedTimestamp :: A.Parser ZonedTimestamp
 getZonedTimestamp = getUnbounded getZonedTime
 
 getUTCTime :: A.Parser UTCTime
-getUTCTime = do
-    day  <- getDay
-    _    <- A.char ' '
-    time <- getTimeOfDay
-    zone <- getTimeZoneHMS
-    let !(dayDelta,time') = localToUTCTimeOfDayHMS zone time
-    let !day' = addDays dayDelta day
-    let !time'' = timeOfDayToTime time'
-    return $! UTCTime day' time''
+getUTCTime = TP.utcTime
 
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime

@@ -49,6 +49,7 @@ Library
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.HStore.Implementation
      Database.PostgreSQL.Simple.Time.Implementation
+     Database.PostgreSQL.Simple.Time.Parser
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
