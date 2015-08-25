@@ -366,3 +366,11 @@ instance ToRow a => ToField (Values a) where
                                 (litC ',')
                                 rest
                                 vals
+
+instance ToField (Double, Double) where
+    toField (x, y) = Many $
+        (Plain (byteString "point(")) :
+        (toField x) :
+        (Plain (char8 ',')) :
+        (toField y) :
+        [Plain (char8 ')')]

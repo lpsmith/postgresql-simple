@@ -580,6 +580,25 @@ instance FromField a => FromField (IORef a) where
 instance FromField a => FromField (MVar a) where
     fromField f v = liftConversion . newMVar =<< fromField f v
 
+instance FromField (Double, Double) where
+    fromField f v =
+        if typeOid f /= $(inlineTypoid TI.point)
+        then returnError Incompatible f ""
+        else case v of
+               Nothing -> returnError UnexpectedNull f ""
+               Just bs ->
+                   case parseOnly parser bs of
+                     Left  err -> returnError ConversionFailed f err
+                     Right val -> pure val
+      where
+        parser = do
+            string "("
+            x <- double
+            string ","
+            y <- double
+            string ")"
+            return (x, y)
+
 type Compat = PQ.Oid -> Bool
 
 okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
