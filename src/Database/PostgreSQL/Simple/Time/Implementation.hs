@@ -8,7 +8,7 @@
 --
 ------------------------------------------------------------------------------
 
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, CPP #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveFunctor #-}
 
 module Database.PostgreSQL.Simple.Time.Implementation where
 
@@ -16,7 +16,6 @@ import Prelude hiding (take)
 import Data.ByteString.Builder(Builder, byteString, char8, integerDec)
 import Control.Arrow((***))
 import Control.Applicative
-import Control.Monad(when)
 import Data.Bits((.&.))
 import qualified Data.ByteString as B
 import Data.ByteString.Internal (c2w, w2c)
@@ -30,26 +29,7 @@ import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce
 import qualified Database.PostgreSQL.Simple.Time.Parser as TP
-
-#if !MIN_VERSION_base(4,7,0)
--- A kludge to work around the fact that Data.Fixed isn't very fast and
--- previously didn't give me access to the MkFixed constructor.
-
-mkPico :: Integer -> Pico
-mkPico = unsafeCoerce
-
-fromPico :: Pico -> Integer
-fromPico = unsafeCoerce
-#else
-import Data.Fixed(Fixed(MkFixed))
-
-mkPico :: Integer -> Pico
-mkPico = MkFixed
-
-fromPico :: Pico -> Integer
-fromPico (MkFixed x) = x
-#endif
-
+import Database.PostgreSQL.Simple.Compat (fromPico)
 
 data Unbounded a
    = NegInfinity
@@ -135,22 +115,8 @@ getTimeZoneHMS = munge <$> TP.timeZoneHMS
     munge (Just (TP.UTCOffsetHMS h m s)) = (h,m,s)
 
 localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
-localToUTCTimeOfDayHMS (dh, dm, ds) (TimeOfDay h m s) =
-    (\ !a !b -> (a,b)) dday (TimeOfDay h'' m'' s'')
-  where
-    s' = s - fromIntegral ds
-    (!s'', m')
-        | s' < 0    = (s' + 60, m - dm - 1)
-        | s' >= 60  = (s' - 60, m - dm + 1)
-        | otherwise = (s'     , m - dm    )
-    (!m'', h')
-        | m' < 0    = (m' + 60, h - dh - 1)
-        | m' >= 60  = (m' - 60, h - dh + 1)
-        | otherwise = (m'     , h - dh    )
-    (!h'', dday)
-        | h' < 0    = (h' + 24, -1)
-        | h' >= 24  = (h' - 24,  1)
-        | otherwise = (h'     ,  0)
+localToUTCTimeOfDayHMS (dh, dm, ds) tod = 
+    TP.localToUTCTimeOfDayHMS (TP.UTCOffsetHMS dh dm ds) tod
 
 getZonedTime :: A.Parser ZonedTime
 getZonedTime = TP.zonedTime
