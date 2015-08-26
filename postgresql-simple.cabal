@@ -42,6 +42,7 @@ Library
      Database.PostgreSQL.Simple.TypeInfo.Static
      Database.PostgreSQL.Simple.Types
      Database.PostgreSQL.Simple.Errors
+     Database.PostgreSQL.Simple.Geometry
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
 

@@ -137,6 +137,7 @@ import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
 import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays as Arrays
+import           Database.PostgreSQL.Simple.Geometry
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
@@ -580,7 +581,7 @@ instance FromField a => FromField (IORef a) where
 instance FromField a => FromField (MVar a) where
     fromField f v = liftConversion . newMVar =<< fromField f v
 
-instance FromField (Double, Double) where
+instance FromField Point where
     fromField f v =
         if typeOid f /= $(inlineTypoid TI.point)
         then returnError Incompatible f ""
@@ -597,7 +598,7 @@ instance FromField (Double, Double) where
             string ","
             y <- double
             string ")"
-            return (x, y)
+            return $ point x y
 
 type Compat = PQ.Oid -> Bool
 
