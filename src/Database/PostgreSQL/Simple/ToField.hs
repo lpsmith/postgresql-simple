@@ -52,7 +52,6 @@ import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple.Time
-import           Database.PostgreSQL.Simple.Geometry
 import           Data.Scientific (Scientific)
 #if MIN_VERSION_scientific(0,3,0)
 import           Data.Text.Lazy.Builder.Scientific (scientificBuilder)
@@ -367,11 +366,3 @@ instance ToRow a => ToField (Values a) where
                                 (litC ',')
                                 rest
                                 vals
-
-instance ToField Point where
-    toField p = Many $
-        (Plain (byteString "point(")) :
-        (toField $ pointX p) :
-        (Plain (char8 ',')) :
-        (toField $ pointY p) :
-        [Plain (char8 ')')]

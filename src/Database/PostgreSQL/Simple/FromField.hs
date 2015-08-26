@@ -137,7 +137,6 @@ import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
 import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays as Arrays
-import           Database.PostgreSQL.Simple.Geometry
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Char8 as B8
@@ -580,25 +579,6 @@ instance FromField a => FromField (IORef a) where
 --   the local process on the local machine.
 instance FromField a => FromField (MVar a) where
     fromField f v = liftConversion . newMVar =<< fromField f v
-
-instance FromField Point where
-    fromField f v =
-        if typeOid f /= $(inlineTypoid TI.point)
-        then returnError Incompatible f ""
-        else case v of
-               Nothing -> returnError UnexpectedNull f ""
-               Just bs ->
-                   case parseOnly parser bs of
-                     Left  err -> returnError ConversionFailed f err
-                     Right val -> pure val
-      where
-        parser = do
-            string "("
-            x <- double
-            string ","
-            y <- double
-            string ")"
-            return $ point x y
 
 type Compat = PQ.Oid -> Bool
 
