@@ -7,8 +7,8 @@ Maintainer  : Leon P Smith <leon@melding-monads.com>
 Stability   : experimental
 -}
 
-{-# LANGUAGE AutoDeriveTypeable #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Database.PostgreSQL.Simple.Geometry (
 
@@ -19,6 +19,7 @@ module Database.PostgreSQL.Simple.Geometry (
     ) where
 
 import           Control.Applicative
+import           Data.Typeable
 import           Data.Attoparsec.ByteString.Char8 hiding (Result, char8)
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
@@ -34,6 +35,7 @@ import           Data.ByteString.Builder (byteString, char8)
 
 
 data Point = Point {-# UNPACK #-} !Double {-# UNPACK #-} !Double
+  deriving (Eq, Ord, Typeable)
 
 pointX :: Point -> Double
 pointX (Point x _) = x
