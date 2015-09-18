@@ -63,8 +63,6 @@ timeOfDay = do
     then return (Local.TimeOfDay h m s)
     else fail "invalid time"
 
-data T = T {-# UNPACK #-} !Int {-# UNPACK #-} !Int64
-
 -- | Parse a count of seconds, with the integer part being two digits
 -- long.
 seconds :: Parser Pico
@@ -78,16 +76,15 @@ seconds = do
     _ -> return $! fromIntegral real
  where
   parsePicos a0 t = toPico (fromIntegral (t' * 10^n))
-    where T n t'  = B8.foldl' step (T 12 (fromIntegral a0)) t
-          step ma@(T m a) c
-              | m <= 0    = ma
-              | otherwise = T (m-1) (10 * a + fromIntegral (ord c) .&. 15)
+    where n  = 12 - B8.length t
+          t' = B8.foldl' (\a c -> 10 * a + fromIntegral (ord c) .&. 15) a0
+                         (B8.take 12 t)
 
 -- | Parse a time zone, and return 'Nothing' if the offset from UTC is
 -- zero. (This makes some speedups possible.)
 timeZone :: Parser (Maybe Local.TimeZone)
 timeZone = do
-  ch <- satisfy $ \c -> c == 'Z' || c == '+' || c == '-'
+  ch <- satisfy $ \c -> c == '+' || c == '-' || c == 'Z'
   if ch == 'Z'
     then return Nothing
     else do
@@ -114,7 +111,7 @@ data UTCOffsetHMS = UTCOffsetHMS {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNP
 -- zero. (This makes some speedups possible.)
 timeZoneHMS :: Parser (Maybe UTCOffsetHMS)
 timeZoneHMS = do
-  ch <- satisfy $ \c -> c == 'Z' || c == '+' || c == '-'
+  ch <- satisfy $ \c -> c == '+' || c == '-' || c == 'Z'
   if ch == 'Z'
     then return Nothing
     else do
@@ -163,7 +160,7 @@ localToUTCTimeOfDayHMS (UTCOffsetHMS dh dm ds) (Local.TimeOfDay h m s) =
 -- followed by a fractional component.
 localTime :: Parser Local.LocalTime
 localTime = Local.LocalTime <$> day <* daySep <*> timeOfDay
-  where daySep = satisfy (\c -> c == 'T' || c == ' ')
+  where daySep = satisfy (\c -> c == ' ' || c == 'T')
 
 -- | Behaves as 'zonedTime', but converts any time zone offset into a
 -- UTC time.
