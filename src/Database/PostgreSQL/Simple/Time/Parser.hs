@@ -72,12 +72,13 @@ seconds = do
   case mc of
     Just '.' -> do
       t <- anyChar *> takeWhile1 isDigit
-      return $! parsePicos real t
+      return $! parsePicos (fromIntegral real) t
     _ -> return $! fromIntegral real
  where
+  parsePicos :: Int64 -> B8.ByteString -> Pico
   parsePicos a0 t = toPico (fromIntegral (t' * 10^n))
-    where n  = 12 - B8.length t
-          t' = B8.foldl' (\a c -> 10 * a + fromIntegral (ord c) .&. 15) a0
+    where n  = max 0 (12 - B8.length t)
+          t' = B8.foldl' (\a c -> 10 * a + fromIntegral (ord c .&. 15)) a0
                          (B8.take 12 t)
 
 -- | Parse a time zone, and return 'Nothing' if the offset from UTC is
