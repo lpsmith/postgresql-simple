@@ -1,16 +1,16 @@
 Version 0.5.0.0
-  * Removed the deprecated BuiltinTypes module
+  * Removed the deprecated BuiltinTypes module.
 
   * Modified the SQL quasiquoter so that it returns a Query,  not
     an overloaded string,  and so that the OverloadedStrings language
-    extension is no longer necessary,  thanks to Mike Ledger
+    extension is no longer necessary,  thanks to Mike Ledger.
 
   * Moved away from blaze-builder in favor of bytestring-builder.  This
     shouldn't affect very many people, but does reduce the transitive
-    dependencies.
+    dependencies.  
 
   * Added support for exclusion violations to the ConstraintViolation
-    type in the Errors module,  thanks to Joao Cristovao.
+    type in the Errors module,  thanks to João Cristóvão.
 
   * Moved away from the uuid package in favor of the uuid-types package,
     thanks to Bardur Arantsson.  This shouldn't affect anybody, but does
@@ -27,17 +27,26 @@ Version 0.5.0.0
   * Added the foldWith, forEachWith, and returningWith families of functions
     courtesy of Travis Staton.
 
-  * Support for Ranged types.
+  * Support for Ranged types,  with thanks to Leonid Onokhov for his
+    contributions.
 
   * The FromField instance for JSON now allows for top-level values that
-    are not objects or arrays.
+    are not objects or arrays,  thanks to Sam Rijs.
 
-  * The timestamp parsers are now slightly more flexible in what they accept.
-    Thanks goes to Janne Hellsten for his contributions to this issue.
+  * The timestamp parsers and printers have been replaced with those
+    now in Aeson.   Janne Hellsten adapted the old parsers from
+    postgresql-simple for inclusion in Aeson;  Bryan O'Sullivan
+    rewrote those parsers to be faster,  with some tweaks contributed
+    by myself.   And now to bring the effort full circle,  the result
+    has been brought back to postgresql-simple,  with some adaptations.
 
-  * Optimized the parsing of timestamps with fractional seconds,  shaving
-    approximately 17% off the time taken.
+  * Fixed a bug in the typeinfo system where postgresql's _record type
+    was being reported as a basic type and not an array type.   Thanks to
+    Nickolay Kolev for helping to expose this issue.
 
+  * Fixed a bug with the `typeInfo` operator, thanks to Timmy Tofu.  In the
+    case of parsing subfields of arrays and composites,  it would fetch the
+    `TypeInfo` of the array or composite type and not the subtype.
 
 Version 0.4.10.0 (2015-02-26)
   * Added a blurb about SSL/TLS in the documentation for connectPostgreSQL
