@@ -1,4 +1,4 @@
-Version 0.5.0.0
+Version 0.5.0.0 (2015-09-19)
   * Removed the deprecated BuiltinTypes module.
 
   * Modified the SQL quasiquoter so that it returns a Query,  not
@@ -7,7 +7,11 @@ Version 0.5.0.0
 
   * Moved away from blaze-builder in favor of bytestring-builder.  This
     shouldn't affect very many people, but does reduce the transitive
-    dependencies.  
+    dependencies.
+
+  * Rewrote the timestamp printers to use the new `Prim`
+    infrastructure in bytestring-builder.   The new printers should
+    be a fair bit faster.
 
   * Added support for exclusion violations to the ConstraintViolation
     type in the Errors module,  thanks to João Cristóvão.
@@ -18,8 +22,9 @@ Version 0.5.0.0
 
   * Postgresql-simple now explicitly assumes the UTF8 character encoding
     for communication between the client and server.   All database encodings
-    support UTF8 except for Mule Internal Code.   An exception should be
-    raised upon connecting to a database by the backend if the backend cannot
+    support UTF8 except for Mule Internal Code,  the Multilingual
+    Extensions for Emacs.   An exception should be raised upon
+    connecting to a database by the backend if the backend cannot
     accomodate this requirement.
 
   * Added Eq and Typeable instance for Connection.
@@ -33,12 +38,12 @@ Version 0.5.0.0
   * The FromField instance for JSON now allows for top-level values that
     are not objects or arrays,  thanks to Sam Rijs.
 
-  * The timestamp parsers and printers have been replaced with those
-    now in Aeson.   Janne Hellsten adapted the old parsers from
-    postgresql-simple for inclusion in Aeson;  Bryan O'Sullivan
-    rewrote those parsers to be faster,  with some tweaks contributed
-    by myself.   And now to bring the effort full circle,  the result
-    has been brought back to postgresql-simple,  with some adaptations.
+  * The timestamp parsers have been replaced with those now in Aeson.
+    Janne Hellsten adapted the old parsers from postgresql-simple for
+    inclusion in Aeson;  Bryan O'Sullivan rewrote those parsers to be
+    faster,  with some tweaks contributed by myself.   And now to
+    bring the effort full circle,  the result has been brought back to
+    postgresql-simple,  with some adaptations.
 
   * Fixed a bug in the typeinfo system where postgresql's _record type
     was being reported as a basic type and not an array type.   Thanks to

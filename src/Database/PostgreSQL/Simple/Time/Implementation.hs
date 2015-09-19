@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Time.Implementation
--- Copyright:   (c) 2012 Leon P Smith
+-- Copyright:   (c) 2012-2015 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
