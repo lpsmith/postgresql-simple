@@ -1,17 +1,16 @@
 {-# LANGUAGE BangPatterns, ScopedTypeVariables #-}
 
 -- |
--- Module:      Database.PostgreSQL.Simple.Time.Parser
+-- Module:      Database.PostgreSQL.Simple.Time.Internal.Parser
 -- Copyright:   (c) 2012-2015 Leon P Smith
 --              (c) 2015 Bryan O'Sullivan
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
--- Portability: portable
 --
 -- Parsers for parsing dates and times.
 
-module Database.PostgreSQL.Simple.Time.Parser
+module Database.PostgreSQL.Simple.Time.Internal.Parser
     (
       day
     , localTime

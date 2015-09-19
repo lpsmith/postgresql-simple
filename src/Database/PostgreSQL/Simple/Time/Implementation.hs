@@ -28,7 +28,7 @@ import Database.PostgreSQL.Simple.Compat ((<>))
 import Data.Monoid(Monoid(..))
 import Data.Fixed (Pico)
 import Unsafe.Coerce
-import qualified Database.PostgreSQL.Simple.Time.Parser as TP
+import qualified Database.PostgreSQL.Simple.Time.Internal.Parser as TP
 import Database.PostgreSQL.Simple.Compat (fromPico)
 
 data Unbounded a
@@ -130,6 +130,7 @@ getUTCTime = TP.utcTime
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
+{--
 toNum :: Num n => B.ByteString -> n
 toNum = toNum_ 0
 {-# INLINE toNum #-}
@@ -149,6 +150,7 @@ digits msg = do
   then return $! (10 * digit (c2w x) + digit (c2w y))
   else fail (msg <> " is not 2 digits")
 {-# INLINE digits #-}
+--}
 
 dayToBuilder :: Day -> Builder
 dayToBuilder (toGregorian -> (y,m,d)) = do
@@ -205,8 +207,8 @@ nominalDiffTimeToBuilder xyz
     | otherwise   = sign <> integerDec x <> char8 '.' <>  showD6 y
   where
     sign = if xyz >= 0 then mempty else char8 '-'
-    -- A kludge to work around the fact that Data.Fixed isn't very fast and
-    -- NominalDiffTime doesn't give the MkNominalDiffTime constructor.
+    -- A kludge to work around the fact that Data.Fixed isn't very fast and 
+   -- NominalDiffTime doesn't give the MkNominalDiffTime constructor.
     (x,yz) = ((unsafeCoerce (abs xyz) :: Integer) + 500000)  `quotRem` 1000000000000
     (fromIntegral -> y, _z) = yz `quotRem` 1000000
 
