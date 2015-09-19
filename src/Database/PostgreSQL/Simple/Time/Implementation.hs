@@ -13,23 +13,18 @@
 module Database.PostgreSQL.Simple.Time.Implementation where
 
 import Prelude hiding (take)
-import Data.ByteString.Builder(Builder, byteString, char8, integerDec)
+import Data.ByteString.Builder(Builder, byteString)
+import Data.ByteString.Builder.Prim(primBounded)
 import Control.Arrow((***))
 import Control.Applicative
-import Data.Bits((.&.))
 import qualified Data.ByteString as B
-import Data.ByteString.Internal (c2w, w2c)
 import Data.Time hiding (getTimeZone, getZonedTime)
 import Data.Typeable
-import Data.Word(Word8)
 import Data.Maybe (fromMaybe)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Database.PostgreSQL.Simple.Compat ((<>))
-import Data.Monoid(Monoid(..))
-import Data.Fixed (Pico)
-import Unsafe.Coerce
-import qualified Database.PostgreSQL.Simple.Time.Internal.Parser as TP
-import Database.PostgreSQL.Simple.Compat (fromPico)
+import qualified Database.PostgreSQL.Simple.Time.Internal.Parser  as TP
+import qualified Database.PostgreSQL.Simple.Time.Internal.Printer as TPP
 
 data Unbounded a
    = NegInfinity
@@ -115,7 +110,7 @@ getTimeZoneHMS = munge <$> TP.timeZoneHMS
     munge (Just (TP.UTCOffsetHMS h m s)) = (h,m,s)
 
 localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
-localToUTCTimeOfDayHMS (dh, dm, ds) tod = 
+localToUTCTimeOfDayHMS (dh, dm, ds) tod =
     TP.localToUTCTimeOfDayHMS (TP.UTCOffsetHMS dh dm ds) tod
 
 getZonedTime :: A.Parser ZonedTime
@@ -130,57 +125,23 @@ getUTCTime = TP.utcTime
 getUTCTimestamp :: A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
-{--
-toNum :: Num n => B.ByteString -> n
-toNum = toNum_ 0
-{-# INLINE toNum #-}
-
-toNum_ :: Num n => n -> B.ByteString -> n
-toNum_ = B.foldl' (\a c -> 10*a + digit c)
-
-digit :: Num n => Word8 -> n
-digit c = fromIntegral (c .&. 0x0f)
-{-# INLINE digit #-}
-
-digits :: Num n => String -> A.Parser n
-digits msg = do
-  x <- A.anyChar
-  y <- A.anyChar
-  if A.isDigit x && A.isDigit y
-  then return $! (10 * digit (c2w x) + digit (c2w y))
-  else fail (msg <> " is not 2 digits")
-{-# INLINE digits #-}
---}
-
 dayToBuilder :: Day -> Builder
-dayToBuilder (toGregorian -> (y,m,d)) = do
-    pad4 y <> char8 '-' <> pad2 m <> char8 '-' <> pad2 d
+dayToBuilder = primBounded TPP.day
 
 timeOfDayToBuilder :: TimeOfDay -> Builder
-timeOfDayToBuilder (TimeOfDay h m s) = do
-    pad2 h <> char8 ':' <> pad2 m <> char8 ':' <> showSeconds s
+timeOfDayToBuilder = primBounded TPP.timeOfDay
 
 timeZoneToBuilder :: TimeZone -> Builder
-timeZoneToBuilder tz
-    | m == 0     =  sign h <> pad2 (abs h)
-    | otherwise  =  sign h <> pad2 (abs h) <> char8 ':' <> pad2 (abs m)
-  where
-    (h,m) = timeZoneMinutes tz `quotRem` 60
-    sign h | h >= 0    = char8 '+'
-           | otherwise = char8 '-'
+timeZoneToBuilder = primBounded TPP.timeZone
 
 utcTimeToBuilder :: UTCTime -> Builder
-utcTimeToBuilder (UTCTime day time) =
-    dayToBuilder day <> char8 ' '
-    <> timeOfDayToBuilder (timeToTimeOfDay time) <> byteString "+00"
+utcTimeToBuilder = primBounded TPP.utcTime
 
 zonedTimeToBuilder :: ZonedTime -> Builder
-zonedTimeToBuilder (ZonedTime localTime tz) =
-    localTimeToBuilder localTime <> timeZoneToBuilder tz
+zonedTimeToBuilder = primBounded TPP.zonedTime
 
 localTimeToBuilder :: LocalTime -> Builder
-localTimeToBuilder (LocalTime day tod) =
-    dayToBuilder day <> char8 ' ' <> timeOfDayToBuilder tod
+localTimeToBuilder = primBounded TPP.localTime
 
 unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
 unboundedToBuilder finiteToBuilder unbounded
@@ -202,62 +163,4 @@ dateToBuilder  :: Date -> Builder
 dateToBuilder  = unboundedToBuilder dayToBuilder
 
 nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
-nominalDiffTimeToBuilder xyz
-    | yz < 500000 = sign <> integerDec x
-    | otherwise   = sign <> integerDec x <> char8 '.' <>  showD6 y
-  where
-    sign = if xyz >= 0 then mempty else char8 '-'
-    -- A kludge to work around the fact that Data.Fixed isn't very fast and 
-   -- NominalDiffTime doesn't give the MkNominalDiffTime constructor.
-    (x,yz) = ((unsafeCoerce (abs xyz) :: Integer) + 500000)  `quotRem` 1000000000000
-    (fromIntegral -> y, _z) = yz `quotRem` 1000000
-
-showSeconds :: Pico -> Builder
-showSeconds xyz
-    | yz == 0   = pad2 x
-    | z  == 0   = pad2 x <> char8 '.' <>  showD6 y
-    | otherwise = pad2 x <> char8 '.' <>  pad6   y <> showD6 z
-  where
-    (x_,yz) = fromPico xyz `quotRem` 1000000000000
-    x = fromIntegral x_ :: Int
-    (fromIntegral -> y, fromIntegral -> z) = yz `quotRem` 1000000
-
-pad6 :: Int -> Builder
-pad6 xy = let (x,y) = xy `quotRem` 1000
-           in pad3 x <> pad3 y
-
-showD6 :: Int -> Builder
-showD6 xy = case xy `quotRem` 1000 of
-              (x,0) -> showD3 x
-              (x,y) -> pad3 x <> showD3 y
-
-pad3 :: Int -> Builder
-pad3 abc = let (ab,c) = abc `quotRem` 10
-               (a,b)  = ab  `quotRem` 10
-            in p a <> p b <> p c
-
-showD3 :: Int -> Builder
-showD3 abc = case abc `quotRem` 100 of
-              (a, 0) -> p a
-              (a,bc) -> case bc `quotRem` 10 of
-                          (b,0) -> p a <> p b
-                          (b,c) -> p a <> p b <> p c
-
--- | p assumes its input is in the range [0..9]
-p :: Integral n => n -> Builder
-p n = char8 (w2c (fromIntegral (n + 48)))
-{-# INLINE p #-}
-
--- | pad2 assumes its input is in the range [0..99]
-pad2 :: Integral n => n -> Builder
-pad2 n = let (a,b) = n `quotRem` 10 in p a <> p b
-{-# INLINE pad2 #-}
-
--- | pad4 assumes its input is positive
-pad4 :: Integer -> Builder
-pad4 abcd | abcd >= 10000 = integerDec abcd
-          | otherwise     = p a <> p b <> p c <> p d
-  where (ab,cd) = abcd `quotRem` 100
-        (a,b)   = ab   `quotRem` 10
-        (c,d)   = cd   `quotRem` 10
-{-# INLINE pad4 #-}
+nominalDiffTimeToBuilder = TPP.nominalDiffTime

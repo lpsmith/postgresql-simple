@@ -50,6 +50,7 @@ Library
      Database.PostgreSQL.Simple.HStore.Implementation
      Database.PostgreSQL.Simple.Time.Implementation
      Database.PostgreSQL.Simple.Time.Internal.Parser
+     Database.PostgreSQL.Simple.Time.Internal.Printer
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
