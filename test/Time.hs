@@ -110,7 +110,6 @@ checkRoundTrips TestEnv{..} limit = do
       assertBool "UTCTime did not round-trip from SQL to Haskell and back" $
                  res == [Only True]
 
-
   yxs :: [(ZonedTime, Int)] <- query conn [sql| 
               SELECT y, x FROM testtime WHERE y > ? 
            |] (Only limit)
