@@ -47,15 +47,15 @@ testTime :: TestEnv -> Test
 testTime env@TestEnv{..} = TestCase $ do
   initializeTable env
   execute_ conn "SET timezone TO 'UTC'"
-  checkRoundTrips env
+  checkRoundTrips env "1860-01-01 00:00:00+00"
   execute_ conn "SET timezone TO 'America/Chicago'"   -- -5:00
-  checkRoundTrips env
+  checkRoundTrips env "1883-11-18 12:00:00-06"
   execute_ conn "SET timezone TO 'Asia/Tokyo'"        -- +9:00
-  checkRoundTrips env
+  checkRoundTrips env "1888-01-01 00:00:00+09"
   execute_ conn "SET timezone TO 'Asia/Kathmandu'"    -- +5:45
-  checkRoundTrips env
+  checkRoundTrips env "1919-12-31 23:48:44+05:30"
   execute_ conn "SET timezone TO 'America/St_Johns'"  -- -3:30
-  checkRoundTrips env
+  checkRoundTrips env "1935-03-30 00:00:52-03:30"
 
 initializeTable :: TestEnv -> IO ()
 initializeTable TestEnv{..} = withTransaction conn $ do
@@ -102,10 +102,19 @@ initializeTable TestEnv{..} = withTransaction conn $ do
   pop "100 milliseconds" 6.3113904e10
   pop   "1 second"       6.3113904e9
 
-checkRoundTrips :: TestEnv -> IO ()
-checkRoundTrips TestEnv{..} = do
+checkRoundTrips :: TestEnv -> ByteString -> IO ()
+checkRoundTrips TestEnv{..} limit = do
   yxs :: [(UTCTime, Int)] <- query_ conn [sql| SELECT y, x FROM testtime |]
   forM_ yxs $ \yx -> do
       res <- query conn [sql| SELECT y=? FROM testtime WHERE x=? |] yx
       assertBool "UTCTime did not round-trip from SQL to Haskell and back" $
+                 res == [Only True]
+
+
+  yxs :: [(ZonedTime, Int)] <- query conn [sql| 
+              SELECT y, x FROM testtime WHERE y > ? 
+           |] (Only limit)
+  forM_ yxs $ \yx -> do
+      res <- query conn [sql| SELECT y=? FROM testtime WHERE x=? |] yx
+      assertBool "ZonedTime did not round-trip from SQL to Haskell and back" $
                  res == [Only True]
