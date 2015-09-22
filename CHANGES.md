@@ -1,3 +1,7 @@
+Version 0.5.0.1 (2015-09-21)
+  * Fixed a bug when printing a `ZonedTime` with a negative offset 
+    that is not a whole number of hours.
+
 Version 0.5.0.0 (2015-09-19)
   * Removed the deprecated BuiltinTypes module.
 
