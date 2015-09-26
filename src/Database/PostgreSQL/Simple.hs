@@ -508,7 +508,7 @@ fold_ :: (FromRow r) =>
       -> IO a
 fold_ = foldWithOptions_ defaultFoldOptions
 
--- | A version of 'foldWith' taking a parser as an argument
+-- | A version of 'fold_' taking a parser as an argument
 foldWith_ :: RowParser r
           -> Connection
           -> Query
