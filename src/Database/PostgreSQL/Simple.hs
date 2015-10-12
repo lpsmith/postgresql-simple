@@ -122,7 +122,7 @@ import           Data.ByteString.Builder
                    ( Builder, byteString, char8, intDec )
 import           Control.Applicative ((<$>))
 import           Control.Exception as E
-import           Control.Monad (foldM, unless, when, forM_)
+import           Control.Monad (unless)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
@@ -142,7 +142,6 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
-import qualified Control.Monad.Trans.State.Strict as SL
 import           Control.Monad.IO.Class (liftIO)
 
 
@@ -581,22 +580,26 @@ doFold FoldOptions{..} parser conn _template q a0 f = do
                                <> byteString " FROM "
                                <> byteString name
                               )
-             loop = do
+             loop a = do
                  result <- liftIO (exec conn q)
                  status <- liftIO (PQ.resultStatus result)
                  case status of
                      PQ.TuplesOk -> do
                          nrows <- liftIO (PQ.ntuples result)
                          ncols <- liftIO (PQ.nfields result)
-                         when (nrows > 0) $ do
-                             forM_ [0..(nrows-1)] $ \row -> do
-                                 x <- liftIO (getRowWith parser row ncols conn (Query q) result)
-                                 a <- get
-                                 a' <- liftIO (f a x)
-                                 put a'
-                             loop
+                         if nrows > 0
+                         then do
+                             a' <- innerLoop 0 nrows ncols result a
+                             loop a'
+                         else return a
                      _   -> liftIO (throwResultError "fold" result status)
-          in SL.execStateT loop a0
+             innerLoop row nrows ncols result a
+                 | row < nrows = do
+                     x <- getRowWith parser row ncols conn result
+                     a' <- f a x
+                     innerLoop (row+1) nrows ncols result a'
+                 | otherwise = return a
+          in loop a0
 
 -- FIXME: choose the Automatic chunkSize more intelligently
 --   One possibility is to use the type of the results,  although this
@@ -670,7 +673,7 @@ finishQueryWith parser conn q result = do
         nrows <- PQ.ntuples result
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row ->
-            getRowWith parser row ncols conn q result
+            getRowWith parser row ncols conn result
     PQ.CopyOut ->
         throwIO $ QueryError "query: COPY TO is not supported" q
     PQ.CopyIn ->
@@ -679,8 +682,8 @@ finishQueryWith parser conn q result = do
     PQ.NonfatalError -> throwResultError "query" result status
     PQ.FatalError    -> throwResultError "query" result status
 
-getRowWith :: RowParser r -> PQ.Row -> PQ.Column -> Connection -> Query -> PQ.Result -> IO r
-getRowWith parser row ncols conn q result = do
+getRowWith :: RowParser r -> PQ.Row -> PQ.Column -> Connection -> PQ.Result -> IO r
+getRowWith parser row ncols conn result = do
   let rw = Row row result
   let unCol (PQ.Col x) = fromIntegral x :: Int
   okvc <- runConversion (runStateT (runReaderT (unRP parser) rw) 0) conn
