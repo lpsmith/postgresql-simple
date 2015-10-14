@@ -57,7 +57,7 @@ Library
     aeson >= 0.6,
     attoparsec >= 0.10.3,
     base < 5,
-    bytestring >= 0.9,
+    bytestring >= 0.10,
     bytestring-builder,
     case-insensitive,
     containers,
