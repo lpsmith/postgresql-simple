@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -23,6 +24,7 @@ import System.Exit (exitFailure)
 import System.IO
 import qualified Data.Vector as V
 import Data.Aeson
+import GHC.Generics (Generic)
 
 import Notify
 import Serializable
@@ -44,6 +46,10 @@ tests =
     , TestLabel "Values"        . testValues
     , TestLabel "Copy"          . testCopy
     , TestLabel "Double"        . testDouble
+    , TestLabel "0-ary generic" . testGeneric0
+    , TestLabel "1-ary generic" . testGeneric1
+    , TestLabel "2-ary generic" . testGeneric2
+    , TestLabel "3-ary generic" . testGeneric3
     ]
 
 testBytea :: TestEnv -> Test
@@ -317,6 +323,49 @@ testDouble TestEnv{..} = TestCase $ do
     [Only (x :: Double)] <- query_ conn "SELECT '-Infinity'::float8"
     x @?= (-1 / 0)
 
+testGeneric0 :: TestEnv -> Test
+testGeneric0 TestEnv{..} = TestCase $ do
+    let x0 = Gen0
+    r <- query conn "SELECT ?::int" x0
+    r @?= [x0]
+
+testGeneric1 :: TestEnv -> Test
+testGeneric1 TestEnv{..} = TestCase $ do
+    let x0 = Gen1 123
+    r <- query conn "SELECT ?::int" x0
+    r @?= [x0]
+
+testGeneric2 :: TestEnv -> Test
+testGeneric2 TestEnv{..} = TestCase $ do
+    let x0 = Gen2 123 "asdf"
+    r <- query conn "SELECT ?::int" x0
+    r @?= [x0]
+
+testGeneric3 :: TestEnv -> Test
+testGeneric3 TestEnv{..} = TestCase $ do
+    let x0 = Gen3 123 "asdf" True
+    r <- query conn "SELECT ?::int" x0
+    r @?= [x0]
+
+data Gen0 = Gen0
+            deriving (Show,Eq,Generic)
+instance FromRow Gen0
+instance ToRow   Gen0
+
+data Gen1 = Gen1 Int
+            deriving (Show,Eq,Generic)
+instance FromRow Gen1
+instance ToRow   Gen1
+
+data Gen2 = Gen2 Int Text
+            deriving (Show,Eq,Generic)
+instance FromRow Gen2
+instance ToRow   Gen2
+
+data Gen3 = Gen3 Int Text Bool
+            deriving (Show,Eq,Generic)
+instance FromRow Gen3
+instance ToRow   Gen3
 
 data TestException
   = TestException
