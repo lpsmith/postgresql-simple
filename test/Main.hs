@@ -326,7 +326,7 @@ testDouble TestEnv{..} = TestCase $ do
 testGeneric0 :: TestEnv -> Test
 testGeneric0 TestEnv{..} = TestCase $ do
     let x0 = Gen0
-    r <- query conn "SELECT ?::int" x0
+    r <- query conn "SELECT" x0
     r @?= [x0]
 
 testGeneric1 :: TestEnv -> Test
@@ -338,13 +338,13 @@ testGeneric1 TestEnv{..} = TestCase $ do
 testGeneric2 :: TestEnv -> Test
 testGeneric2 TestEnv{..} = TestCase $ do
     let x0 = Gen2 123 "asdf"
-    r <- query conn "SELECT ?::int" x0
+    r <- query conn "SELECT ?::int, ?::text" x0
     r @?= [x0]
 
 testGeneric3 :: TestEnv -> Test
 testGeneric3 TestEnv{..} = TestCase $ do
     let x0 = Gen3 123 "asdf" True
-    r <- query conn "SELECT ?::int" x0
+    r <- query conn "SELECT ?::int, ?::text, ?::bool" x0
     r @?= [x0]
 
 data Gen0 = Gen0
