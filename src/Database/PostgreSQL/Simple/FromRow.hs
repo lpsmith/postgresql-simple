@@ -1,4 +1,6 @@
-{-# LANGUAGE RecordWildCards, FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards, FlexibleInstances, DefaultSignatures #-}
+
 
 ------------------------------------------------------------------------------
 -- |
@@ -27,7 +29,7 @@ module Database.PostgreSQL.Simple.FromRow
      ) where
 
 import           Prelude hiding (null)
-import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>))
+import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>), liftA2)
 import           Control.Monad (replicateM, replicateM_)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
@@ -44,6 +46,9 @@ import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types ((:.)(..), Null)
 import           Database.PostgreSQL.Simple.TypeInfo
+
+import           GHC.Generics
+
 
 -- | A collection type that can be converted from a sequence of fields.
 -- Instances are provided for tuples up to 10 elements and lists of any length.
@@ -68,6 +73,8 @@ import           Database.PostgreSQL.Simple.TypeInfo
 
 class FromRow a where
     fromRow :: RowParser a
+    default fromRow :: (Generic a, GFromRow (Rep a)) => RowParser a
+    fromRow = to <$> gfromRow
 
 getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
 getvalue result row col = unsafeDupablePerformIO (PQ.getvalue' result row col)
@@ -252,3 +259,21 @@ instance FromField a => FromRow (Maybe (Vector a)) where
 
 instance (FromRow a, FromRow b) => FromRow (a :. b) where
     fromRow = (:.) <$> fromRow <*> fromRow
+
+
+
+-- Type class for default implementation of FromRow using generics
+class GFromRow f where
+    gfromRow :: RowParser (f p)
+
+instance GFromRow f => GFromRow (M1 c i f) where
+    gfromRow = M1 <$> gfromRow
+
+instance (GFromRow f, GFromRow g) => GFromRow (f :*: g) where
+    gfromRow = liftA2 (:*:) gfromRow gfromRow
+
+instance (FromField a) => GFromRow (K1 R a) where
+    gfromRow = K1 <$> field
+
+instance GFromRow U1 where
+    gfromRow = pure U1
