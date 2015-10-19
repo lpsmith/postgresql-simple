@@ -142,7 +142,6 @@ import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
-import           Control.Monad.IO.Class (liftIO)
 
 
 -- | Format a query string.
@@ -581,24 +580,20 @@ doFold FoldOptions{..} parser conn _template q a0 f = do
                                <> byteString name
                               )
              loop a = do
-                 result <- liftIO (exec conn q)
-                 status <- liftIO (PQ.resultStatus result)
+                 result <- exec conn q
+                 status <- PQ.resultStatus result
                  case status of
                      PQ.TuplesOk -> do
-                         nrows <- liftIO (PQ.ntuples result)
-                         ncols <- liftIO (PQ.nfields result)
+                         nrows <- PQ.ntuples result
+                         ncols <- PQ.nfields result
                          if nrows > 0
                          then do
-                             a' <- innerLoop 0 nrows ncols result a
-                             loop a'
+                             let inner a row = do
+                                   x <- getRowWith parser row ncols conn result
+                                   f a x
+                             foldM' inner a 0 (nrows - 1) >>= loop
                          else return a
-                     _   -> liftIO (throwResultError "fold" result status)
-             innerLoop row nrows ncols result a
-                 | row < nrows = do
-                     x <- getRowWith parser row ncols conn result
-                     a' <- f a x
-                     innerLoop (row+1) nrows ncols result a'
-                 | otherwise = return a
+                     _   -> throwResultError "fold" result status
           in loop a0
 
 -- FIXME: choose the Automatic chunkSize more intelligently
@@ -657,9 +652,17 @@ forM' lo hi m = loop hi []
       | otherwise = do
            a <- m n
            loop (n-1) (a:as)
+{-# INLINE forM' #-}
 
-finishQuery :: FromRow r => Connection -> Query -> PQ.Result -> IO [r]
-finishQuery = finishQueryWith fromRow
+foldM' :: (Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
+foldM' f a lo hi = loop a lo
+  where
+    loop a !n
+      | n > hi = return a
+      | otherwise = do
+           a' <- f a n
+           loop a' (n+1)
+{-# INLINE foldM' #-}
 
 finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
 finishQueryWith parser conn q result = do
