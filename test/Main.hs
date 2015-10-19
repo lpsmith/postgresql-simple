@@ -327,7 +327,7 @@ testDouble TestEnv{..} = TestCase $ do
 
 testGeneric1 :: TestEnv -> Test
 testGeneric1 TestEnv{..} = TestCase $ do
-    roundTrip (Gen1 123)
+    roundTrip conn (Gen1 123)
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int" (x0 :: Gen1)
