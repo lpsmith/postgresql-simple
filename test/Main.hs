@@ -327,21 +327,27 @@ testDouble TestEnv{..} = TestCase $ do
 
 testGeneric1 :: TestEnv -> Test
 testGeneric1 TestEnv{..} = TestCase $ do
-    let x0 = Gen1 123
-    r <- query conn "SELECT ?::int" x0
-    r @?= [x0]
+    roundTrip (Gen1 123)
+  where
+    roundTrip conn x0 = do
+        r <- query conn "SELECT ?::int" (x0 :: Gen1)
+        r @?= [x0]
 
 testGeneric2 :: TestEnv -> Test
 testGeneric2 TestEnv{..} = TestCase $ do
-    let x0 = Gen2 123 "asdf"
-    r <- query conn "SELECT ?::int, ?::text" x0
-    r @?= [x0]
+    roundTrip conn (Gen2 123 "asdf")
+  where
+    roundTrip conn x0 = do
+        r <- query conn "SELECT ?::int, ?::text" x0
+        r @?= [x0]
 
 testGeneric3 :: TestEnv -> Test
 testGeneric3 TestEnv{..} = TestCase $ do
-    let x0 = Gen3 123 "asdf" True
-    r <- query conn "SELECT ?::int, ?::text, ?::bool" x0
-    r @?= [x0]
+    roundTrip conn (Gen3 123 "asdf" True)
+  where
+    roundTrip conn x0 = do
+        r <- query conn "SELECT ?::int, ?::text, ?::bool" x0
+        r @?= [x0]
 
 data Gen1 = Gen1 Int
             deriving (Show,Eq,Generic)
