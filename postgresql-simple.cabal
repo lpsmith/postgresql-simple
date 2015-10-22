@@ -71,6 +71,10 @@ Library
     scientific,
     vector
 
+  if !impl(ghc >= 7.6)
+    Build-depends:
+      ghc-prim
+
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
               TypeOperators
 
@@ -116,3 +120,7 @@ test-suite test
                , text
                , time
                , vector
+
+  if !impl(ghc >= 7.6)
+    build-depends:
+      ghc-prim

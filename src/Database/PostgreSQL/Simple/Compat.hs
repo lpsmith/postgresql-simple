@@ -14,7 +14,12 @@ module Database.PostgreSQL.Simple.Compat
 import qualified Control.Exception as E
 import Data.Monoid
 import Data.ByteString         (ByteString)
+#if MIN_VERSION_bytestring(0,10,0)
 import Data.ByteString.Lazy    (toStrict)
+#else
+import qualified Data.ByteString as B
+import Data.ByteString.Lazy    (toChunks)
+#endif
 import Data.ByteString.Builder (Builder, toLazyByteString)
 
 #if MIN_VERSION_scientific(0,3,0)
@@ -64,7 +69,11 @@ infixr 6 <>
 #endif
 
 toByteString :: Builder -> ByteString
+#if MIN_VERSION_bytestring(0,10,0)
 toByteString x = toStrict (toLazyByteString x)
+#else
+toByteString x = B.concat (toChunks (toLazyByteString x))
+#endif
 
 #if MIN_VERSION_base(4,7,0)
 
