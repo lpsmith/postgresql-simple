@@ -1,26 +1,35 @@
-Version 0.5.0.1 (2015-09-21)
-  * Fixed a bug when printing a `ZonedTime` with a negative offset 
+### Version 0.5.1.0 (2015-10-22)
+  * Optimized the implementation of the streaming operators to avoid
+    creating intermediate lists of rows,  thanks to Timo von Holtz.
+
+  * Added default instances for `ToRow` and `FromRow` that depend on
+    Generics,  thanks to Alexey Khudyakov.
+
+  * Fixed support for bytestring-0.9 and GHC 7.4.
+
+### Version 0.5.0.1 (2015-09-21)
+  * Fixed a bug when printing a `ZonedTime` with a negative offset
     that is not a whole number of hours.
 
-Version 0.5.0.0 (2015-09-19)
-  * Removed the deprecated BuiltinTypes module.
+### Version 0.5.0.0 (2015-09-19)
+  * Removed the deprecated `BuiltinTypes` module.
 
-  * Modified the SQL quasiquoter so that it returns a Query,  not
-    an overloaded string,  and so that the OverloadedStrings language
+  * Modified the SQL quasiquoter so that it returns a `Query`,  not
+    an overloaded string,  and so that the `OverloadedStrings` language
     extension is no longer necessary,  thanks to Mike Ledger.
 
-  * Moved away from blaze-builder in favor of bytestring-builder.  This
+  * Moved away from `blaze-builder` in favor of `bytestring-builder`.  This
     shouldn't affect very many people, but does reduce the transitive
     dependencies.
 
   * Rewrote the timestamp printers to use the new `Prim`
-    infrastructure in bytestring-builder.   The new printers should
+    infrastructure in `bytestring-builder`.   The new printers should
     be a fair bit faster.
 
-  * Added support for exclusion violations to the ConstraintViolation
+  * Added support for exclusion violations to the `ConstraintViolation`
     type in the Errors module,  thanks to João Cristóvão.
 
-  * Moved away from the uuid package in favor of the uuid-types package,
+  * Moved away from the `uuid` package in favor of the `uuid-types` package,
     thanks to Bardur Arantsson.  This shouldn't affect anybody, but does
     reduce the transitive dependencies.
 
@@ -31,15 +40,15 @@ Version 0.5.0.0 (2015-09-19)
     connecting to a database by the backend if the backend cannot
     accomodate this requirement.
 
-  * Added Eq and Typeable instance for Connection.
+  * Added `Eq` and `Typeable` instances for `Connection`.
 
-  * Added the foldWith, forEachWith, and returningWith families of functions
-    courtesy of Travis Staton.
+  * Added the `foldWith`, `forEachWith`, and `returningWith` families
+    of functions courtesy of Travis Staton.
 
   * Support for Ranged types,  with thanks to Leonid Onokhov for his
     contributions.
 
-  * The FromField instance for JSON now allows for top-level values that
+  * The `FromField` instance for JSON now allows for top-level values that
     are not objects or arrays,  thanks to Sam Rijs.
 
   * The timestamp parsers have been replaced with those now in Aeson.
@@ -49,7 +58,7 @@ Version 0.5.0.0 (2015-09-19)
     bring the effort full circle,  the result has been brought back to
     postgresql-simple,  with some adaptations.
 
-  * Fixed a bug in the typeinfo system where postgresql's _record type
+  * Fixed a bug in the typeinfo system where postgresql's `_record` type
     was being reported as a basic type and not an array type.   Thanks to
     Nickolay Kolev for helping to expose this issue.
 
@@ -57,13 +66,13 @@ Version 0.5.0.0 (2015-09-19)
     case of parsing subfields of arrays and composites,  it would fetch the
     `TypeInfo` of the array or composite type and not the subtype.
 
-Version 0.4.10.0 (2015-02-26)
+### Version 0.4.10.0 (2015-02-26)
   * Added a blurb about SSL/TLS in the documentation for connectPostgreSQL
 
   * Moved some functions into the Internal module,  courtesy of Aleksey
     Uimanov.
 
-Version 0.4.9.0 (2014-12-27)
+### Version 0.4.9.0 (2014-12-27)
   * Made the fromField method for PGArray available as pgArrayFieldParser,
     outside of the typeclass courtesy of Tom Ellis.
 
@@ -71,13 +80,13 @@ Version 0.4.9.0 (2014-12-27)
 
   * Fixed deprecation warnings, courtesy of Simon Hengel.
 
-Version 0.4.8.0 (2014-11-24)
+### Version 0.4.8.0 (2014-11-24)
   * Added support for postgresql's citext type extension via the
     case-insensitive package.
 
   * Added the function parseHStoreList to the HStore module.
 
-Version 0.4.7.0 (2014-10-27)
+### Version 0.4.7.0 (2014-10-27)
   * Added support for very old timestamps to UTCTime.   Depending on time
     zone,  very old timestamps can be returned with a offset from UTC that
     contains seconds.
@@ -97,24 +106,24 @@ Version 0.4.7.0 (2014-10-27)
 
     Thanks to Michael Snoyman for his assistance with this issue.
 
-Version 0.4.6.0 (2014-10-07)
+### Version 0.4.6.0 (2014-10-07)
   * Added an instance ToField NominalDiffTime.
 
-Version 0.4.5.0 (2014-09-26)
+### Version 0.4.5.0 (2014-09-26)
   * Added support for retrieving NaN and ±Infinity floating point values
     from postgres to the FromField instances for Float, Double, and Rational.
     The instance for Scientific is unchanged due to the fact it has no
     way of representing these special values.  Thanks goes to Tom Nielsen
     for reporting the issue.
 
-Version 0.4.4.1 (2014-09-07)
+### Version 0.4.4.1 (2014-09-07)
   * Fixed a rather serious bug that prevented the COPY module from working
     at all on unix clients since version 0.4.3.0.   Thanks goes to
     Dmitry Dzhus for reporting the issue.
 
   * Added a regression test for the COPY module to the test suite.
 
-Version 0.4.4.0 (2014-08-26)
+### Version 0.4.4.0 (2014-08-26)
   * Added the jsonb type debuting in PostgreSQL 9.4 to the TypeInfo.Static
     and Builtin tables, and extended the out-of-box json instances to
     be compatible with the new type.   Thanks to Tobias Florek for the
@@ -123,7 +132,7 @@ Version 0.4.4.0 (2014-08-26)
   * Ported some expanded documentation from mysql-simple,  and fixed
     a documentation typo.
 
-Version 0.4.3.0 (2014-07-10)
+### Version 0.4.3.0 (2014-07-10)
   * connect and exec now use libpq asynchronously on non-Windows platforms.
     This means we are using threadWaitRead and threadWaitWrite to
     have GHC's IO manager schedule non-blocking C calls to libpq,
@@ -137,7 +146,7 @@ Version 0.4.3.0 (2014-07-10)
     that originate from client-side code.    However,  this goal
     isn't perfectly achieved as of yet.
 
-Version 0.4.2.3 (2014-06-04)
+### Version 0.4.2.3 (2014-06-04)
   * This is strictly a documentation release,  with no code changes.
 
   * Fixed several documentation typos,  thanks to Chris Allen and remdezx.
@@ -148,13 +157,13 @@ Version 0.4.2.3 (2014-06-04)
 
   * De-emphasized connect and ConnectInfo in favor of connectPostgreSQL.
 
-Version 0.4.2.2 (2014-05-15)
+### Version 0.4.2.2 (2014-05-15)
   * Fixed compatibility with scientific-0.3.*,  thanks to Adam Bergmark
 
   * Improved documentation of the FromField module, as well as the fold,
     foldWithOptions, executeMany,  and returning operators.
 
-Version 0.4.2.1 (2014-03-27)
+### Version 0.4.2.1 (2014-03-27)
   * Fixed bug in Values syntax generation
 
   * Improved documentation,  including examples of multi-row update,
@@ -162,7 +171,7 @@ Version 0.4.2.1 (2014-03-27)
     floating point numbers from the database,  and the IsString instance
     for QualifiedIdentifier.
 
-Version 0.4.2.0 (2014-03-22)
+### Version 0.4.2.0 (2014-03-22)
   * Added ToField and FromField instances for the scientific package
 
   * Changed the Identifier and QualifiedIdentifier to use Text in
@@ -172,7 +181,7 @@ Version 0.4.2.0 (2014-03-22)
   * Removed non-exhaustive cases in the ToField instance for Values,
     and tweaked error messages.
 
-Version 0.4.1.0 (2014-03-22)
+### Version 0.4.1.0 (2014-03-22)
   * Fixed the parsing of arrays containing null values, courtesy of
     Francesco Mazzoli
 
@@ -184,17 +193,17 @@ Version 0.4.1.0 (2014-03-22)
     more general than executeMany and returning.   See the
     Database.PostgreSQL.Simple.Types.Values data type.
 
-Version 0.4.0.2 (2014-01-12)
+### Version 0.4.0.2 (2014-01-12)
   * Tweaked C preprocessor directive to be more portable
 
   * Tweaked testsuite for compatibility with aeson-0.7
 
-Version 0.4.0.1 (2013-12-21)
+### Version 0.4.0.1 (2013-12-21)
   * Relaxed dependency on aeson to >= 0.6
 
   * Update the documentation of `fromField`
 
-Version 0.4.0.0 (2013-12-21)
+### Version 0.4.0.0 (2013-12-21)
   * Changed the calling code of `fromField` so that it always sends
     a copy of the raw data.  This should be a small but significant
     performance bump for most people most of the time;  however it
@@ -210,15 +219,15 @@ Version 0.4.0.0 (2013-12-21)
 
   * Added FromField instances for IORef, MVar, and IOVector.
 
-Version 0.3.10.0 (2013-12-17)
+### Version 0.3.10.0 (2013-12-17)
   * Added the queryWith function, courtesy of Leonid Onokhov
 
   * Added the Default type,  for representing postgresql's default values
 
-Version 0.3.9.1 (2013-10-28)
+### Version 0.3.9.1 (2013-10-28)
   * Removed dependency on hashable
 
-Version 0.3.9.0 (2013-10-27)
+### Version 0.3.9.0 (2013-10-27)
   * Added FromField and ToField instances for the `uuid` package,
     courtesy of Bas van Dijk.
 
@@ -228,16 +237,16 @@ Version 0.3.9.0 (2013-10-27)
   * Added the fromBinary, fromHStoreMap, and fromHStoreList newtype
     unwrapper functions, courtesy of Bas van Dijk.
 
-Version 0.3.8.0 (2013-10-11)
+### Version 0.3.8.0 (2013-10-11)
   * Fixed the example code in `FromField`, thanks to Adam Bergmark.
 
   * Added `Notification.getBackendPID`.
 
-Version 0.3.7.1 (2013-09-12)
+### Version 0.3.7.1 (2013-09-12)
   * Relaxed the dependency on bytestring-0.10 back to bytestring-0.9,
     courtesy of Michael Snoyman
 
-Version 0.3.7.0 (2013-09-11)
+### Version 0.3.7.0 (2013-09-11)
   * Added `aeson` as a dependency.
 
   * Added ToField and FromField instances for aeson's JSON.Value type,
@@ -258,7 +267,7 @@ Version 0.3.7.0 (2013-09-11)
 
   * Various documentation fixes.
 
-Version 0.3.6.0 (2013-08-19)
+### Version 0.3.6.0 (2013-08-19)
   * Added the json type to BuiltinTypes and TypeInfo.Static, courtesy of
     Manuel Gómez.
 
@@ -269,14 +278,14 @@ Version 0.3.6.0 (2013-08-19)
     months from now.  Fixed the example code in FromField to reflect
     this change.
 
-Version 0.3.5.0 (2013-08-09)
+### Version 0.3.5.0 (2013-08-09)
   * Added an FromRow instance for Vector,  semantically identical to the
     existing FromRow instance for [],  courtesy of Doug Beardsley
 
   * Reworked the documentation for the Copy module,  and tweaked the
     documentation for the LargeObjects module.
 
-Version 0.3.4.0 (2013-07-23)
+### Version 0.3.4.0 (2013-07-23)
   * Added direct support for COPY IN and COPY OUT,  without having
     to use raw postgresql-libpq calls and postgresql-simple's Internal
     module.
@@ -285,43 +294,43 @@ Version 0.3.4.0 (2013-07-23)
     exception instead of an ErrorCall exception when it fails to fetch
     the connection's file descriptor from libpq.
 
-Version 0.3.3.2 (2013-06-18)
+### Version 0.3.3.2 (2013-06-18)
   * Optimized the definition of `mconcat` in the Monoid instance for
     the Query type,  courtesy of Joey Adams.
 
-Version 0.3.3.1 (2013-06-06)
+### Version 0.3.3.1 (2013-06-06)
   * `getNotification` now works on Windows,  albeit using a one-second
     polling loop,  courtesy of Joey Adams.
 
-Version 0.3.3.0 (2013-05-29)
+### Version 0.3.3.0 (2013-05-29)
   * Fixed two issues with the fold operator:  fold would raise the wrong
     exception,  and gave the database cursor a static name preventing
     folds from being nested.  Thanks to Joey Adams for his
     work on these issues.
 
-Version 0.3.2.0 (2013-05-20)
+### Version 0.3.2.0 (2013-05-20)
   * Added a savepoint abstraction to the Transaction module, courtesy
     of Joey Adams
 
-Version 0.3.1.2 (2013-04-29)
+### Version 0.3.1.2 (2013-04-29)
   * Fixed hstore parser to not unnecessarily reverse the key-value pairs
 
-Version 0.3.1.1 (2013-04-29)
+### Version 0.3.1.1 (2013-04-29)
   * Fixed hstore parser to recognize empty hstores, courtesy of Simon
     Meier
 
-Version 0.3.1.0 (2013-04-26)
+### Version 0.3.1.0 (2013-04-26)
   * Added support for Range and Composite types to the TypeInfo system.
 
   * Added support for hstore types in the Simple.HStore module.
 
   * Improved documentation of the FromField module.
 
-Version 0.3.0.1 (2013-03-26)
+### Version 0.3.0.1 (2013-03-26)
   * A large chunk of the documentation inside the FromField module had
     silently failed to render in Haddock.
 
-Version 0.3.0.0 (2013-03-25)
+### Version 0.3.0.0 (2013-03-25)
   * Added support for PostgreSQL's Array Types.  Thanks to Jason Dusek
     for his work on this feature.
 
@@ -363,33 +372,33 @@ Version 0.3.0.0 (2013-03-25)
     now stripped out.
 
 
-Version 0.2.4.1 (2012-08-29)
+### Version 0.2.4.1 (2012-08-29)
   * Fixed the documentation of `In`.   Thanks to rekado and dstcruz for
     pointing this out.
 
-Version 0.2.4.0 (2012-08-23)
+### Version 0.2.4.0 (2012-08-23)
   * Added the `withTransactionSerializable` and `withTransactionModeRetry`
     operators,  thanks to Joey Adams.
 
-Version 0.2.3.0 (2012-08-09)
+### Version 0.2.3.0 (2012-08-09)
   * Added the `returning` operator, thanks to Jason Dusek
 
-Version 0.2.2.0 (2012-07-26)
+### Version 0.2.2.0 (2012-07-26)
   * Added a ToRow instance for the (:.) type, courtesy of Leonid Onokhov
 
   * Added the type oid for PostgreSQL's `uuid` type to BuiltinTypes
 
-Version 0.2.1.0 (2012-07-23)
+### Version 0.2.1.0 (2012-07-23)
   * Added the FromRow.fieldWith operator, thanks to Leonid Onokhov
 
   * Added a type synonym for FieldParser
 
-Version 0.2.0.1 (2012-06-21)
+### Version 0.2.0.1 (2012-06-21)
   * Fixed a compatibility problem with PostgreSQL 8.1,  which does not allow
     clients to set their own value for `standard_conforming_strings`.  This
     connection variable is still set to `on` for PostgreSQL 8.2 and later.
 
-Version 0.2: (2012-06-19)
+### Version 0.2: (2012-06-19)
   * Removed the conversion from `timestamp` to `UTCTime`.  Some code will be
     broken even though it will still compile.
 
@@ -398,16 +407,16 @@ Version 0.2: (2012-06-19)
   * Exported ToRow/FromRow from Database.PostgreSQL.Simple
 
 
-Version 0.1.4.3: (2012-06-10)
+### Version 0.1.4.3: (2012-06-10)
   * Fix language extensions for compatibility with GHC 7.0
 
-Version 0.1.4.2: (2012-06-10)
+### Version 0.1.4.2: (2012-06-10)
   * Fix a wayward dependency on Text.
 
-Version 0.1.4.1: (2012-06-10)
+### Version 0.1.4.1: (2012-06-10)
   * Added support for timezones with minutes in their UTC offset.
 
-Version 0.1.4: (2012-06-10)
+### Version 0.1.4: (2012-06-10)
   * Removed pcre-light dependency,  courtesy of Joey Adams.
 
   * Reworked support for the Time types.
@@ -432,13 +441,13 @@ Version 0.1.4: (2012-06-10)
       * Renaming some of the type names in `BuiltinTypes`.
 
 
-Version 0.1.3: (2012-05-30)
+### Version 0.1.3: (2012-05-30)
   * Made ZonedTime an instance of FromField and ToField
 
   * Added getNotificationNonBlocking
 
 
-Version 0.1.2: (2012-05-09)
+### Version 0.1.2: (2012-05-09)
   * Switched to libpq-based escaping for bytea types;  Binary now works with
     PostgreSQL 8 courtesy of Joey Adams.
 
@@ -451,7 +460,7 @@ Version 0.1.2: (2012-05-09)
   * Exported (:.) from Database.PostgreSQL.Simple
 
 
-Version 0.1.1: (2012-05-06)
+### Version 0.1.1: (2012-05-06)
   * Added some preliminary documentation for the Ok, Notification, and
     LargeObjects modules
 
@@ -460,7 +469,7 @@ Version 0.1.1: (2012-05-06)
   * Fixed a bug relating to handling the transaction level
 
 
-Version 0.1:   (2012-05-04)
+### Version 0.1:   (2012-05-04)
   * Renamed several modules, typeclasses, and functions:
 
         QueryParams  (renderParams)   -> ToRow   (toRow)
