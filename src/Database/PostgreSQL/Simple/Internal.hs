@@ -155,8 +155,11 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 
 -- | Attempt to make a connection based on a libpq connection string.
 --   See <http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING>
---   for more information.  Here is an example with some
---   of the most commonly used parameters:
+--   for more information.  Also note that environment variables also affect
+--   parameters not provided, parameters provided as the empty string, and a
+--   few other things; see <http://www.postgresql.org/docs/9.3/static/libpq-envars.html>
+--   for details.  Here is an example with some of the most commonly used
+--   parameters:
 --
 -- > host='db.somedomain.com' port=5432 ...
 --
