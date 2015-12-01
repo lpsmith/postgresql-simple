@@ -335,7 +335,7 @@ execute conn template qs = do
 --        SET sometable.y = upd.y
 --       FROM (VALUES (?,?)) as upd(x,y)
 --      WHERE sometable.x = upd.x
---  |] [(1, \"hello\"),(2, \"world\")
+--  |] [(1, \"hello\"),(2, \"world\")]
 -- @
 
 executeMany :: (ToRow q) => Connection -> Query -> [q] -> IO Int64
