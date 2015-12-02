@@ -1,5 +1,3 @@
-{-# OPTIONS_HADDOCK hide #-}
-
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.HStore.Internal
