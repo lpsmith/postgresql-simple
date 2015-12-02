@@ -1,3 +1,21 @@
+### Version 0.5.1.1 (2015-12-02)
+  * This is a documentation-only release
+
+  * The documentation of the `Time` module has been completely
+    rewritten, and is far longer and more informative.  It contains
+    a brief overview of civil time, the semantics of postgresql's
+    time types,  and their relation to Haskell's time types via
+    postgresql-simple.
+
+  * The documentation of `connectPostgreSQL` has been modified to
+    mention the effects of environment variables on the connection
+    string parameters.
+
+  * The documentation of `HStore.Internal` has been unhidden from
+    haddock.
+
+  * A typo in example code was fixed courtesy of Levi Notik.
+
 ### Version 0.5.1.0 (2015-10-22)
   * Optimized the implementation of the streaming operators to avoid
     creating intermediate lists of rows,  thanks to Timo von Holtz.
