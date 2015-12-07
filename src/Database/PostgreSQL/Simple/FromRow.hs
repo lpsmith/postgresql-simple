@@ -56,7 +56,8 @@ import           GHC.Generics
 -- Note that instances can be defined outside of postgresql-simple,  which is
 -- often useful.   For example, here's an instance for a user-defined pair:
 --
--- @data User = User { name :: String, fileQuota :: Int }
+-- @
+-- data User = User { name :: String, fileQuota :: Int }
 --
 -- instance 'FromRow' User where
 --     fromRow = User \<$\> 'field' \<*\> 'field'
