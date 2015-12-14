@@ -272,12 +272,15 @@ instance ToField NominalDiffTime where
     {-# INLINE toField #-}
 
 instance (ToField a) => ToField (PGArray a) where
-    toField xs = Many $
-        Plain (byteString "ARRAY[") :
-        (intersperse (Plain (char8 ',')) . map toField $ fromPGArray xs) ++
-        [Plain (char8 ']')]
-        -- Because the ARRAY[...] input syntax is being used, it is possible
-        -- that the use of type-specific separator characters is unnecessary.
+    toField pgArray =
+      case fromPGArray pgArray of
+        [] -> Plain (byteString "'{}'")
+        xs -> Many $
+          Plain (byteString "ARRAY[") :
+          (intersperse (Plain (char8 ',')) . map toField $ xs) ++
+          [Plain (char8 ']')]
+          -- Because the ARRAY[...] input syntax is being used, it is possible
+          -- that the use of type-specific separator characters is unnecessary.
 
 instance (ToField a) => ToField (Vector a) where
     toField = toField . PGArray . V.toList
