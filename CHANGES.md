@@ -1,3 +1,10 @@
+### Version 0.5.1.2 (2015-12-14)
+  * The syntax generated for empty arrays was changed so that
+    postgresql's type inference would work better,  thanks to
+    Amit Levy.
+
+  * Further revision and expansion of the new Time documentation.
+
 ### Version 0.5.1.1 (2015-12-02)
   * This is a documentation-only release
 
