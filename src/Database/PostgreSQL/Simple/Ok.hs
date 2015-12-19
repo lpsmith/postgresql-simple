@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE CPP                #-}
 
 ------------------------------------------------------------------------------
 -- |
 -- Module      :  Database.PostgreSQL.Simple.Ok
--- Copyright   :  (c) 2012 Leon P Smith
+-- Copyright   :  (c) 2012-2015 Leon P Smith
 -- License     :  BSD3
 --
 -- Maintainer  :  leon@melding-monads.com
@@ -69,7 +70,9 @@ instance MonadPlus Ok where
     mplus = (<|>)
 
 instance Monad Ok where
-    return = Ok
+#if !(MIN_VERSION_base(4,8,0))
+    return = pure
+#endif
 
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a

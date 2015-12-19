@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Internal
--- Copyright:   (c) 2011-2012 Leon P Smith
+-- Copyright:   (c) 2011-2015 Leon P Smith
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>
 -- Stability:   experimental
@@ -476,7 +476,9 @@ instance Alternative Conversion where
                      Errors _ -> (oka <|>) <$> runConversion mb conn
 
 instance Monad Conversion where
-   return a = Conversion $ \_conn -> return (return a)
+#if !(MIN_VERSION_base(4,8,0))
+   return = pure
+#endif
    m >>= f = Conversion $ \conn -> do
                  oka <- runConversion m conn
                  case oka of
