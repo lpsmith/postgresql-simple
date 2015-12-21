@@ -67,7 +67,7 @@ import           GHC.Generics
 -- in a single row of the query result.  Otherwise,  a 'ConversionFailed'
 -- exception will be thrown.
 --
--- Note that 'field' evaluates it's result to WHNF, so the caveats listed in
+-- Note that 'field' evaluates its result to WHNF, so the caveats listed in
 -- mysql-simple and very early versions of postgresql-simple no longer apply.
 -- Instead, look at the caveats associated with user-defined implementations
 -- of 'fromField'.
