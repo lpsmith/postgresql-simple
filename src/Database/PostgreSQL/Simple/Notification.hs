@@ -55,9 +55,9 @@ import           Control.Concurrent ( threadWaitReadSTM )
 #endif
 
 data Notification = Notification
-   { notificationPid     :: !CPid
-   , notificationChannel :: !B.ByteString
-   , notificationData    :: !B.ByteString
+   { notificationPid     :: {-# UNPACK #-} !CPid
+   , notificationChannel :: {-# UNPACK #-} !B.ByteString
+   , notificationData    :: {-# UNPACK #-} !B.ByteString
    }
 
 convertNotice :: PQ.Notify -> Notification
