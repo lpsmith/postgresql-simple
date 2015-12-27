@@ -68,6 +68,10 @@ convertNotice PQ.Notify{..}
 
 -- | Returns a single notification.   If no notifications are available,
 --   'getNotification' blocks until one arrives.
+--
+--   It is safe to call 'getNotification' on a connection that is concurrently
+--   being used for other purposes,   note however that PostgreSQL does not
+--   deliver notifications while a connection is inside a transaction.
 
 getNotification :: Connection -> IO Notification
 getNotification conn = join $ withConnection conn fetch
