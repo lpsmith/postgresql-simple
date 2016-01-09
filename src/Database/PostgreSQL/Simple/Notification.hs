@@ -37,7 +37,7 @@ module Database.PostgreSQL.Simple.Notification
      ) where
 
 import           Control.Monad ( join, void )
-import           Control.Exception ( throwIO, try )
+import           Control.Exception ( throwIO, catch )
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import           Database.PostgreSQL.Simple.Internal
@@ -107,10 +107,8 @@ getNotification conn = join $ withConnection conn fetch
                 -- unlucky,  then we could end up waiting a long time.
                 Just fd  -> do
                   return $ do
-                    merr <- try (threadWaitRead fd)
-                    case merr of
-                      Left  err -> throwIO $! setLoc err
-                      Right _   -> loop
+                    threadWaitRead fd `catch` (throwIO . setIOErrorLocation)
+                    loop
 #else
                 -- This case fixes the race condition above.   By registering
                 -- our interest in the descriptor before we drop the lock,
@@ -124,18 +122,16 @@ getNotification conn = join $ withConnection conn fetch
                 Just fd  -> do
                   (waitRead, _) <- threadWaitReadSTM fd
                   return $ do
-                    merr <- try (atomically waitRead)
-                    case merr of
-                      Left  err -> throwIO $! setLoc err
-                      Right _   -> loop
+                    atomically waitRead `catch` (throwIO . setIOErrorLocation)
+                    loop
 #endif
 
     loop = join $ withConnection conn $ \c -> do
              void $ PQ.consumeInput c
              fetch c
 
-    setLoc :: IOError -> IOError
-    setLoc err = err { ioe_location = B8.unpack funcName }
+    setIOErrorLocation :: IOError -> IOError
+    setIOErrorLocation err = err { ioe_location = B8.unpack funcName }
 
 
 -- | Non-blocking variant of 'getNotification'.   Returns a single notification,
