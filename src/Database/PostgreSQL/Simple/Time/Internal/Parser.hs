@@ -52,12 +52,15 @@ twoDigits = do
   let c2d c = ord c .&. 15
   return $! c2d a * 10 + c2d b
 
--- | Parse a time of the form @HH:MM:SS[.SSS]@.
+-- | Parse a time of the form @HH:MM[:SS[.SSS]]@.
 timeOfDay :: Parser Local.TimeOfDay
 timeOfDay = do
   h <- twoDigits <* char ':'
-  m <- twoDigits <* char ':'
-  s <- seconds
+  m <- twoDigits
+  mc <- peekChar
+  s <- case mc of
+         Just ':' -> anyChar *> seconds
+         _   -> return 0
   if h < 24 && m < 60 && s <= 60
     then return (Local.TimeOfDay h m s)
     else fail "invalid time"
