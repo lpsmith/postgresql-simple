@@ -96,13 +96,13 @@ timeOfDay = f >$< (hh_mm_ >*< ss)
          (liftB (fromIntegral >$< digits2) >*< frac)
 
 timeZone :: BoundedPrim TimeZone
-timeZone = ((`quotRem` 60) . timeZoneMinutes) >$< (liftB tzh >*< tzm)
+timeZone = timeZoneMinutes >$< tz
   where
-    f h = if h >= 0 then ('+', h) else (,) '-' $! (-h)
+    tz  = condB (>= 0) ((,) '+' >$< tzh) ((,) '-' . negate >$< tzh)
 
-    tzh = f >$< (char8 >*< digits2)
+    tzh = liftB char8 >*< ((`quotRem` 60) >$< (liftB digits2 >*< tzm))
 
-    tzm = condB (==0) emptyB ((,) ':' . abs >$< liftB (char8 >*< digits2))
+    tzm = condB (==0) emptyB ((,) ':' >$< liftB (char8 >*< digits2))
 
 utcTime :: BoundedPrim UTCTime
 utcTime = f >$< (day >*< liftB char8 >*< timeOfDay >*< liftB char8)
