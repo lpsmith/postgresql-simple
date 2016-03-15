@@ -21,7 +21,7 @@
 -- commonly-used type and typeclass included in @base@.
 --
 -- Extending the failure case to a list of 'SomeException's enables a
--- more sensible 'Alternative' instance definitions:   '<|>' concatinates
+-- more sensible 'Alternative' instance definitions:   '<|>' concatenates
 -- the list of exceptions when both cases fail,  and 'empty' is defined as
 -- 'Errors []'.   Though '<|>' one could pick one of two exceptions, and
 -- throw away the other,  and have 'empty' provide a generic exception,
