@@ -198,7 +198,9 @@ doCopyIn funcName action = loop
     loop pqconn = do
       stat <- action pqconn
       case stat of
-        PQ.CopyInOk    -> return ()
+        PQ.CopyInOk    -> do
+            res <- PQ.getResult pqconn
+            maybe (fail errCmdStatus) (const $ return ()) res
         PQ.CopyInError -> do
             mmsg <- PQ.errorMessage pqconn
             throwIO SqlError {
@@ -215,6 +217,7 @@ doCopyIn funcName action = loop
               Just fd -> do
                   threadWaitWrite fd
                   loop pqconn
+    errCmdStatus    = B.unpack funcName ++ ": failed to fetch command status"
 {-# INLINE doCopyIn #-}
 
 getCopyCommandTag :: B.ByteString -> PQ.Connection -> IO Int64
