@@ -118,7 +118,7 @@ newtype Only a = Only {
 --
 -- > query c "select * from whatever where id in ?" (Only (In [3,4,5]))
 --
--- Note that @IN []@ expands to @(null)@, which works as expected in
+-- Note that @In []@ expands to @(null)@, which works as expected in
 -- the query above, but evaluates to the logical null value on every
 -- row instead of @TRUE@.  This means that changing the query above
 -- to @... id NOT in ?@ and supplying the empty list as the parameter
@@ -126,27 +126,27 @@ newtype Only a = Only {
 --
 -- Since postgresql doesn't seem to provide a syntax for actually specifying
 -- an empty list,  which could solve this completely,  there are two
--- workarounds worth mentioning,  namely:
+-- workarounds particularly worth mentioning,  namely:
 --
--- 1.  Use postgresql-simple's 'Values' instead,  which can handle the
+-- 1.  Use postgresql-simple's 'Values' type instead,  which can handle the
 --     empty case correctly.  Note however that while specifying the
 --     postgresql type @"int4"@ is mandatory in the empty case,  specifying
---     the haskell type @[Int]@ would not normally be needed in realistic
---     use cases.
+--     the haskell type @[Only Int]@ would not normally be needed in
+--     realistic use cases.
 --
--- > query c "select * from whatever where id not in ?"
--- >         (Only (Values "int4") ([] :: [Int]))
+--     > query c "select * from whatever where id not in ?"
+--     >         (Only (Values "int4") ([] :: [Only Int]))
 --
 --
 -- 2.  Use sql's @COALESCE@ operator to turn a logical @null@ into the correct
 --     boolean.  Note however that the correct boolean depends on the use
 --     case:
 --
--- > query c "select * from whatever where coalesce(id NOT in ?, TRUE)"
--- >         (Only (In ([] :: [Int])))
+--     > query c "select * from whatever where coalesce(id NOT in ?, TRUE)"
+--     >         (Only (In ([] :: [Int])))
 --
--- > query c "select * from whatever where coalesce(id IN ?, FALSE)"
--- >         (Only (In ([] :: [Int])))
+--     > query c "select * from whatever where coalesce(id IN ?, FALSE)"
+--     >         (Only (In ([] :: [Int])))
 newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
