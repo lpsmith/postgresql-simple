@@ -1,3 +1,21 @@
+### Version 0.5.1.3 (2016-04-30)
+  * Implemented the Monad of No Return proposal, future-proofing
+    postgresql-simple against future releases of GHC.
+
+  * Fixed a rare and usually benign race condition where
+    @getNotification@ could end up waiting on a newly reallocated
+    file descriptor index, potentially leading to deadlock if the
+    descriptor does not become readable promptly.  This fix only
+    applies to GHC 7.8 or later, as it depends on @threadWaitReadSTM@.
+
+  * Tweaked the time parsers to accept times of day of the form hh:mm,
+    omitting seconds,  following changes made to Aeson.
+
+  * Updated the documentation of the @In@ type to point out a gotcha
+    when using the SQL fragment @... NOT IN ?@ with @In []@.  Thanks
+    goes to Simon Michael and Dan Haraj for bringing this issue to
+    my attention.
+
 ### Version 0.5.1.2 (2015-12-14)
   * The syntax generated for empty arrays was changed so that
     postgresql's type inference would work better,  thanks to
