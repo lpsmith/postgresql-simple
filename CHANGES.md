@@ -3,16 +3,16 @@
     postgresql-simple against future releases of GHC.
 
   * Fixed a rare and usually benign race condition where
-    @getNotification@ could end up waiting on a newly reallocated
+    `getNotification` could end up waiting on a newly reallocated
     file descriptor index, potentially leading to deadlock if the
     descriptor does not become readable promptly.  This fix only
-    applies to GHC 7.8 or later, as it depends on @threadWaitReadSTM@.
+    applies to GHC 7.8 or later, as it depends on `threadWaitReadSTM`.
 
-  * Tweaked the time parsers to accept times of day of the form hh:mm,
-    omitting seconds,  following changes made to Aeson.
+  * Tweaked the time parsers to accept times of day of the form `hh:mm`,
+    omitting seconds,  following changes made to aeson.
 
-  * Updated the documentation of the @In@ type to point out a gotcha
-    when using the SQL fragment @... NOT IN ?@ with @In []@.  Thanks
+  * Updated the documentation of the `In` type to point out a gotcha
+    when using the SQL fragment `... NOT IN ?` with `In []`.  Thanks
     goes to Simon Michael and Dan Haraj for bringing this issue to
     my attention.
 
