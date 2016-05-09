@@ -131,11 +131,11 @@ newtype Only a = Only {
 -- 1.  Use postgresql-simple's 'Values' type instead,  which can handle the
 --     empty case correctly.  Note however that while specifying the
 --     postgresql type @"int4"@ is mandatory in the empty case,  specifying
---     the haskell type @[Only Int]@ would not normally be needed in
+--     the haskell type @Values (Only Int)@ would not normally be needed in
 --     realistic use cases.
 --
 --     > query c "select * from whatever where id not in ?"
---     >         (Only (Values "int4") ([] :: [Only Int]))
+--     >         (Only (Values ["int4"] [] :: Values (Only Int)))
 --
 --
 -- 2.  Use sql's @COALESCE@ operator to turn a logical @null@ into the correct
@@ -147,6 +147,14 @@ newtype Only a = Only {
 --
 --     > query c "select * from whatever where coalesce(id IN ?, FALSE)"
 --     >         (Only (In ([] :: [Int])))
+--
+--     Note that at as of PostgreSQL 9.4 at least,  the query planner cannot
+--     see inside the @COALESCE@ operator,  so if you have an index on @id@
+--     then you probably don't want to write the last example with @COALESCE@,
+--     which would result in a table scan.   There are further caveats if
+--     @id@ can be null or you want null treated sensibly as a component
+--     of @IN@ or @NOT IN@.
+
 newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
