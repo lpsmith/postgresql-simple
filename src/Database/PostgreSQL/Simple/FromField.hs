@@ -571,6 +571,16 @@ instance FromField JSON.Value where
 --
 -- The 'Typeable' constraint is required to show more informative
 -- error messages when parsing fails.
+--
+-- Note that @fromJSONField :: FieldParser ('Maybe' Foo)@ will return
+-- @'Nothing'@ on the json @null@ value, and return an exception on SQL @null@
+-- value.  Alternatively,  one could write @'optionalField' fromJSONField@
+-- that will return @Nothing@ on SQL @null@,  and otherwise will call
+-- @fromJSONField :: FieldParser Foo@ and then return @'Just'@ the
+-- result value,  or return its exception.  If one would
+-- like to return @Nothing@ on both the SQL @null@ and json @null@ values,
+-- one way to do it would be to write
+-- @\\f mv -> 'Control.Monad.join' '<$>' optionalField fromJSONField f mv@
 fromJSONField :: (JSON.FromJSON a, Typeable a) => FieldParser a
 fromJSONField f mbBs = do
     value <- fromField f mbBs
