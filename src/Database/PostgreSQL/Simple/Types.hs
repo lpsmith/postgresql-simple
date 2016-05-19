@@ -143,17 +143,17 @@ newtype Only a = Only {
 --     case:
 --
 --     > query c "select * from whatever where coalesce(id NOT in ?, TRUE)"
---     >         (Only (In ([] :: [Int])))
+--     >         (Only (In [] :: In [Int]))
 --
 --     > query c "select * from whatever where coalesce(id IN ?, FALSE)"
---     >         (Only (In ([] :: [Int])))
+--     >         (Only (In [] :: In [Int]))
 --
---     Note that at as of PostgreSQL 9.4 at least,  the query planner cannot
---     see inside the @COALESCE@ operator,  so if you have an index on @id@
---     then you probably don't want to write the last example with @COALESCE@,
---     which would result in a table scan.   There are further caveats if
---     @id@ can be null or you want null treated sensibly as a component
---     of @IN@ or @NOT IN@.
+--     Note that at as of PostgreSQL 9.4,  the query planner cannot see inside
+--     the @COALESCE@ operator,  so if you have an index on @id@ then you
+--     probably don't want to write the last example with @COALESCE@,  which
+--     would result in a table scan.   There are further caveats if @id@ can
+--     be null or you want null treated sensibly as a component of @IN@ or
+--     @NOT IN@.
 
 newtype In a = In a
     deriving (Eq, Ord, Read, Show, Typeable, Functor)
@@ -218,7 +218,7 @@ newtype Savepoint = Savepoint Query
     deriving (Eq, Ord, Show, Read, Typeable)
 
 -- | Represents a @VALUES@ table literal,  usable as an alternative
---   to @executeMany@ and @returning@.  The main advantage is that
+--   to 'executeMany' and 'returning'.  The main advantage is that
 --   you can parametrize more than just a single @VALUES@ expression.
 --   For example,  here's a query to insert a thing into one table
 --   and some attributes of that thing into another,   returning the
@@ -231,7 +231,7 @@ newtype Savepoint = Savepoint Query
 -- >     ), new_attributes AS (
 -- >       INSERT INTO thing_attributes
 -- >          SELECT new_thing.id, attrs.*
--- >            FROM new_thing JOIN ? attrs
+-- >            FROM new_thing JOIN ? attrs ON TRUE
 -- >     ) SELECT * FROM new_thing
 -- >  |] ("foo", Values [  "int4", "text"    ]
 -- >                    [ ( 1    , "hello" )
@@ -257,7 +257,8 @@ newtype Savepoint = Savepoint Query
 --   is turned into a properly quoted identifier,  the type name is case
 --   sensitive and must be as it appears in the @pg_type@ table.   Thus,
 --   you must write @timestamptz@ instead of @timestamp with time zone@,
---   @int4@ instead of @integer@, @_int8@ instead of @bigint[]@, etcetera.
+--   @int4@ instead of @integer@ or @serial@, @_int8@ instead of @bigint[]@,
+--   etcetera.
 --
 --   You may omit the type names,  however,  if you do so the list
 --   of values must be non-empty,  and postgresql must be able to infer
