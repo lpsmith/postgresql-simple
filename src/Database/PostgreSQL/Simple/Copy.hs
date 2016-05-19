@@ -224,7 +224,9 @@ getCopyCommandTag funcName pqconn = do
     consumeResults pqconn
     let rowCount =   P.string "COPY " *> (P.decimal <* P.endOfInput)
     case P.parseOnly rowCount cmdStat of
-      Left  _ -> fail errCmdStatusFmt
+      Left  _ -> do mmsg <- PQ.errorMessage pqconn
+                    fail $ errCmdStatusFmt
+                        ++ maybe "" (\msg -> "\nConnection error: "++B.unpack msg) mmsg
       Right n -> return $! n
   where
     errCmdStatus    = B.unpack funcName ++ ": failed to fetch command status"
