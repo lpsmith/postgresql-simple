@@ -107,6 +107,7 @@ module Database.PostgreSQL.Simple.FromField
     , PQ.Format(..)
     , pgArrayFieldParser
 
+    , optionalField
     , fromJSONField
     ) where
 
@@ -268,9 +269,20 @@ instance FromField () where
 --   compatible with type @a@.  Note that the type is not checked if
 --   the value is null, although it is inadvisable to rely on this
 --   behavior.
-instance (FromField a) => FromField (Maybe a) where
-    fromField _ Nothing = pure Nothing
-    fromField f bs      = Just <$> fromField f bs
+instance FromField a => FromField (Maybe a) where
+    fromField = optionalField fromField
+
+-- | For dealing with SQL @null@ values outside of the 'FromField' class.
+--   Alternatively, one could use 'Control.Applicative.optional',  but that
+--   also turns type and conversion errors into 'Nothing',  whereas this is
+--   more specific and turns only @null@ values into 'Nothing'.
+
+optionalField :: FieldParser a -> FieldParser (Maybe a)
+optionalField p f mv =
+    case mv of
+      Nothing -> pure Nothing
+      Just _  -> Just <$> p f mv
+{-# INLINE optionalField #-}
 
 -- | compatible with any data type,  but the value must be null
 instance FromField Null where
@@ -566,7 +578,6 @@ fromJSONField f mbBs = do
         JSON.Error err -> returnError ConversionFailed f $
                             "JSON decoding error: " ++ err
         JSON.Success x -> pure x
-
 
 -- | Compatible with the same set of types as @a@.  Note that
 --   modifying the 'IORef' does not have any effects outside
