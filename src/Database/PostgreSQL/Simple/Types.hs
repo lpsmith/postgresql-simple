@@ -217,8 +217,9 @@ infixr 3 :.
 newtype Savepoint = Savepoint Query
     deriving (Eq, Ord, Show, Read, Typeable)
 
--- | Represents a @VALUES@ table literal,  usable as an alternative
---   to 'executeMany' and 'returning'.  The main advantage is that
+-- | Represents a @VALUES@ table literal,  usable as an alternative to
+--   'Database.PostgreSQL.Simple.executeMany' and
+--   'Database.PostgreSQL.Simple.returning'.  The main advantage is that
 --   you can parametrize more than just a single @VALUES@ expression.
 --   For example,  here's a query to insert a thing into one table
 --   and some attributes of that thing into another,   returning the
