@@ -154,10 +154,11 @@ connect :: ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
 
 -- | Attempt to make a connection based on a libpq connection string.
---   See <http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING>
+--   See <https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING>
 --   for more information.  Also note that environment variables also affect
 --   parameters not provided, parameters provided as the empty string, and a
---   few other things; see <http://www.postgresql.org/docs/9.3/static/libpq-envars.html>
+--   few other things; see
+--   <https://www.postgresql.org/docs/9.5/static/libpq-envars.html>
 --   for details.  Here is an example with some of the most commonly used
 --   parameters:
 --
@@ -188,7 +189,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   Omitting @password@ will default to an appropriate password found
 --   in the @pgpass@ file,  or no password at all if a matching line is
 --   not found.   See
---   <http://www.postgresql.org/docs/9.3/static/libpq-pgpass.html> for
+--   <https://www.postgresql.org/docs/9.5/static/libpq-pgpass.html> for
 --   more information regarding this file.
 --
 --   As all parameters are optional and the defaults are sensible,  the
@@ -206,18 +207,20 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   or production machines, or you will need to use a @pgpass@ file
 --   with the @password@ or @md5@ authentication methods.
 --
---   See <http://www.postgresql.org/docs/9.3/static/client-authentication.html>
+--   See <https://www.postgresql.org/docs/9.5/static/client-authentication.html>
 --   for more information regarding the authentication process.
 --
 --   SSL/TLS will typically "just work" if your postgresql server supports or
 --   requires it.  However,  note that libpq is trivially vulnerable to a MITM
---   attack without setting additional SSL parameters in the connection string.
---   In particular,  @sslmode@ needs to be set to @require@, @verify-ca@, or
+--   attack without setting additional SSL connection parameters.  In
+--   particular,  @sslmode@ needs to be set to @require@, @verify-ca@, or
 --   @verify-full@ in order to perform certificate validation.  When @sslmode@
 --   is @require@,  then you will also need to specify a @sslrootcert@ file,
 --   otherwise no validation of the server's identity will be performed.
 --   Client authentication via certificates is also possible via the
---   @sslcert@ and @sslkey@ parameters.
+--   @sslcert@ and @sslkey@ parameters.   See
+--   <https://www.postgresql.org/docs/9.5/static/libpq-ssl.html>
+--   for detailed information regarding libpq and SSL.
 
 connectPostgreSQL :: ByteString -> IO Connection
 connectPostgreSQL connstr = do
