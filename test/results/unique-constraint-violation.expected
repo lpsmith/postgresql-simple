@@ -1,0 +1,5 @@
+user error (Database.PostgreSQL.Simple.Copy.putCopyEnd: failed to parse command status
+Connection error: ERROR:  duplicate key value violates unique constraint "copy_unique_constraint_error_test_pkey"
+DETAIL:  Key (x)=(1) already exists.
+CONTEXT:  COPY copy_unique_constraint_error_test, line 3
+)

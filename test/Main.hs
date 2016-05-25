@@ -12,6 +12,7 @@ import qualified Database.PostgreSQL.Simple.Transaction as ST
 import Control.Applicative
 import Control.Exception as E
 import Control.Monad
+import Data.Char
 import Data.List (sort)
 import Data.IORef
 import Data.Typeable
@@ -20,13 +21,16 @@ import GHC.Generics (Generic)
 import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text(Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
+import System.FilePath
 
 import Test.Tasty
+import Test.Tasty.Golden
 import Notify
 import Serializable
 import Time
@@ -47,6 +51,7 @@ tests env = testGroup "tests"
     , testCase "Unicode"       . testUnicode
     , testCase "Values"        . testValues
     , testCase "Copy"          . testCopy
+    , testCopyFailures
     , testCase "Double"        . testDouble
     , testCase "1-ary generic" . testGeneric1
     , testCase "2-ary generic" . testGeneric2
@@ -316,6 +321,35 @@ testCopy TestEnv{..} = do
       case mrow of
         CopyOutDone _   -> return rows
         CopyOutRow  row -> loop (row:rows)
+
+testCopyFailures :: TestEnv -> TestTree
+testCopyFailures env = testGroup "Copy failures"
+    $ map ($ env)
+    [ testCopyUniqueConstraintError ]
+
+goldenTest :: TestName -> IO BL.ByteString -> TestTree
+goldenTest testName =
+    goldenVsString testName (resultsDir </> fileName<.>"expected")
+  where
+    resultsDir = "test" </> "results"
+    fileName = map normalize testName
+    normalize c | not (isAlpha c) = '-'
+                | otherwise       = c
+
+-- | Test that we provide a sensible error message on failure
+testCopyUniqueConstraintError :: TestEnv -> TestTree
+testCopyUniqueConstraintError TestEnv{..} =
+    goldenTest "unique constraint violation"
+    $ handle (\(SomeException exc) -> return $ BL.pack $ show exc) $ do
+        execute_ conn "CREATE TEMPORARY TABLE copy_unique_constraint_error_test (x int PRIMARY KEY, y text)"
+        copy_ conn "COPY copy_unique_constraint_error_test FROM STDIN (FORMAT CSV)"
+        mapM_ (putCopyData conn) copyRows
+        _n <- putCopyEnd conn
+        return BL.empty
+  where
+    copyRows  = ["1,foo\n"
+                ,"2,bar\n"
+                ,"1,baz\n"]
 
 testDouble :: TestEnv -> Assertion
 testDouble TestEnv{..} = do
