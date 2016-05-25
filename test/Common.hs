@@ -1,6 +1,6 @@
 module Common (
     module Database.PostgreSQL.Simple,
-    module Test.HUnit,
+    module Test.Tasty.HUnit,
     TestEnv(..),
     md5,
 ) where
@@ -8,7 +8,7 @@ module Common (
 import Data.ByteString              (ByteString)
 import Data.Text                    (Text)
 import Database.PostgreSQL.Simple
-import Test.HUnit
+import Test.Tasty.HUnit
 
 import qualified Crypto.Hash.MD5        as MD5
 import qualified Data.ByteString.Base16 as Base16

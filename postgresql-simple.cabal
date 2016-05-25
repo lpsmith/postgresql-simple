@@ -115,6 +115,10 @@ test-suite test
                , bytestring
                , containers
                , cryptohash
+               , filepath
+               , tasty
+               , tasty-hunit
+               , tasty-golden
                , HUnit
                , postgresql-simple
                , text

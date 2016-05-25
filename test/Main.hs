@@ -8,51 +8,58 @@ import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
 import Database.PostgreSQL.Simple.Copy
 import qualified Database.PostgreSQL.Simple.Transaction as ST
+
 import Control.Applicative
 import Control.Exception as E
 import Control.Monad
-import Data.ByteString (ByteString)
+import Data.Char
+import Data.List (sort)
 import Data.IORef
 import Data.Typeable
+import GHC.Generics (Generic)
+
+import Data.Aeson
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Map (Map)
-import Data.List (sort)
 import qualified Data.Map as Map
 import Data.Text(Text)
 import qualified Data.Text.Encoding as T
-import System.Exit (exitFailure)
-import System.IO
 import qualified Data.Vector as V
-import Data.Aeson
-import GHC.Generics (Generic)
+import System.FilePath
 
+import Test.Tasty
+import Test.Tasty.Golden
 import Notify
 import Serializable
 import Time
 
-tests :: [TestEnv -> Test]
-tests =
-    [ TestLabel "Bytea"         . testBytea
-    , TestLabel "ExecuteMany"   . testExecuteMany
-    , TestLabel "Fold"          . testFold
-    , TestLabel "Notify"        . testNotify
-    , TestLabel "Serializable"  . testSerializable
-    , TestLabel "Time"          . testTime
-    , TestLabel "Array"         . testArray
-    , TestLabel "HStore"        . testHStore
-    , TestLabel "JSON"          . testJSON
-    , TestLabel "Savepoint"     . testSavepoint
-    , TestLabel "Unicode"       . testUnicode
-    , TestLabel "Values"        . testValues
-    , TestLabel "Copy"          . testCopy
-    , TestLabel "Double"        . testDouble
-    , TestLabel "1-ary generic" . testGeneric1
-    , TestLabel "2-ary generic" . testGeneric2
-    , TestLabel "3-ary generic" . testGeneric3
+tests :: TestEnv -> TestTree
+tests env = testGroup "tests"
+    $ map ($ env)
+    [ testBytea
+    , testCase "ExecuteMany"   . testExecuteMany
+    , testCase "Fold"          . testFold
+    , testCase "Notify"        . testNotify
+    , testCase "Serializable"  . testSerializable
+    , testCase "Time"          . testTime
+    , testCase "Array"         . testArray
+    , testCase "HStore"        . testHStore
+    , testCase "JSON"          . testJSON
+    , testCase "Savepoint"     . testSavepoint
+    , testCase "Unicode"       . testUnicode
+    , testCase "Values"        . testValues
+    , testCase "Copy"          . testCopy
+    , testCopyFailures
+    , testCase "Double"        . testDouble
+    , testCase "1-ary generic" . testGeneric1
+    , testCase "2-ary generic" . testGeneric2
+    , testCase "3-ary generic" . testGeneric3
     ]
 
-testBytea :: TestEnv -> Test
-testBytea TestEnv{..} = TestList
+testBytea :: TestEnv -> TestTree
+testBytea TestEnv{..} = testGroup "Bytea"
     [ testStr "empty"                  []
     , testStr "\"hello\""              $ map (fromIntegral . fromEnum) ("hello" :: String)
     , testStr "ascending"              [0..255]
@@ -61,7 +68,7 @@ testBytea TestEnv{..} = TestList
     , testStr "descending, doubled up" $ doubleUp [255,254..0]
     ]
   where
-    testStr label bytes = TestLabel label $ TestCase $ do
+    testStr label bytes = testCase label $ do
         let bs = B.pack bytes
 
         [Only h] <- query conn "SELECT md5(?::bytea)" [Binary bs]
@@ -72,8 +79,8 @@ testBytea TestEnv{..} = TestList
 
     doubleUp = concatMap (\x -> [x, x])
 
-testExecuteMany :: TestEnv -> Test
-testExecuteMany TestEnv{..} = TestCase $ do
+testExecuteMany :: TestEnv -> Assertion
+testExecuteMany TestEnv{..} = do
     execute_ conn "CREATE TEMPORARY TABLE tmp_executeMany (i INT, t TEXT, b BYTEA)"
 
     let rows :: [(Int, String, Binary ByteString)]
@@ -90,8 +97,8 @@ testExecuteMany TestEnv{..} = TestCase $ do
 
     return ()
 
-testFold :: TestEnv -> Test
-testFold TestEnv{..} = TestCase $ do
+testFold :: TestEnv -> Assertion
+testFold TestEnv{..} = do
     xs <- fold_ conn "SELECT generate_series(1,10000)"
             [] $ \xs (Only x) -> return (x:xs)
     reverse xs @?= ([1..10000] :: [Int])
@@ -160,8 +167,8 @@ queryFailure conn q resultType = do
                               ++ show (typeOf resultType)
                               ++ " -> " ++ show val)
 
-testArray :: TestEnv -> Test
-testArray TestEnv{..} = TestCase $ do
+testArray :: TestEnv -> Assertion
+testArray TestEnv{..} = do
     xs <- query_ conn "SELECT '{1,2,3,4}'::_int4"
     xs @?= [Only (V.fromList [1,2,3,4 :: Int])]
     xs <- query_ conn "SELECT '{{1,2},{3,4}}'::_int4"
@@ -170,8 +177,8 @@ testArray TestEnv{..} = TestCase $ do
     queryFailure conn "SELECT '{1,2,3,4}'::_int4" (undefined :: V.Vector Bool)
     queryFailure conn "SELECT '{{1,2},{3,4}}'::_int4" (undefined :: V.Vector Int)
 
-testHStore :: TestEnv -> Test
-testHStore TestEnv{..} = TestCase $ do
+testHStore :: TestEnv -> Assertion
+testHStore TestEnv{..} = do
     execute_ conn "CREATE EXTENSION IF NOT EXISTS hstore"
     roundTrip []
     roundTrip [("foo","bar"),("bar","baz"),("baz","hello")]
@@ -183,8 +190,8 @@ testHStore TestEnv{..} = TestCase $ do
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
 
-testJSON :: TestEnv -> Test
-testJSON TestEnv{..} = TestCase $ do
+testJSON :: TestEnv -> Assertion
+testJSON TestEnv{..} = do
     roundTrip (Map.fromList [] :: Map Text Text)
     roundTrip (Map.fromList [("foo","bar"),("bar","baz"),("baz","hello")] :: Map Text Text)
     roundTrip (Map.fromList [("fo\"o","bar"),("b\\ar","baz"),("baz","\"value\\with\"escapes")] :: Map Text Text)
@@ -198,8 +205,8 @@ testJSON TestEnv{..} = TestCase $ do
       js' <- query conn "SELECT ?::json" js
       [js] @?= js'
 
-testSavepoint :: TestEnv -> Test
-testSavepoint TestEnv{..} = TestCase $ do
+testSavepoint :: TestEnv -> Assertion
+testSavepoint TestEnv{..} = do
     True <- expectError ST.isNoActiveTransactionError $
             withSavepoint conn $ return ()
 
@@ -259,8 +266,8 @@ testSavepoint TestEnv{..} = TestCase $ do
 
     return ()
 
-testUnicode :: TestEnv -> Test
-testUnicode TestEnv{..} = TestCase $ do
+testUnicode :: TestEnv -> Assertion
+testUnicode TestEnv{..} = do
     let q = Query . T.encodeUtf8  -- Handle encoding ourselves to ensure
                                   -- the table gets created correctly.
     let messages = map Only ["привет","мир"] :: [Only Text]
@@ -269,8 +276,8 @@ testUnicode TestEnv{..} = TestCase $ do
     messages' <- query_ conn "SELECT сообщение FROM ру́сский"
     sort messages @?= sort messages'
 
-testValues :: TestEnv -> Test
-testValues TestEnv{..} = TestCase $ do
+testValues :: TestEnv -> Assertion
+testValues TestEnv{..} = do
     execute_ conn "CREATE TEMPORARY TABLE values_test (x int, y text)"
     test (Values ["int4","text"] [])
     test (Values ["int4","text"] [(1,"hello")])
@@ -287,8 +294,8 @@ testValues TestEnv{..} = TestCase $ do
       sort vals @?= sort vals'
 
 
-testCopy :: TestEnv -> Test
-testCopy TestEnv{..} = TestCase $ do
+testCopy :: TestEnv -> Assertion
+testCopy TestEnv{..} = do
     execute_ conn "CREATE TEMPORARY TABLE copy_test (x int, y text)"
     copy_ conn "COPY copy_test FROM STDIN (FORMAT CSV)"
     mapM_ (putCopyData conn) copyRows
@@ -315,8 +322,53 @@ testCopy TestEnv{..} = TestCase $ do
         CopyOutDone _   -> return rows
         CopyOutRow  row -> loop (row:rows)
 
-testDouble :: TestEnv -> Test
-testDouble TestEnv{..} = TestCase $ do
+testCopyFailures :: TestEnv -> TestTree
+testCopyFailures env = testGroup "Copy failures"
+    $ map ($ env)
+    [ testCopyUniqueConstraintError
+    , testCopyMalformedError
+    ]
+
+goldenTest :: TestName -> IO BL.ByteString -> TestTree
+goldenTest testName =
+    goldenVsString testName (resultsDir </> fileName<.>"expected")
+  where
+    resultsDir = "test" </> "results"
+    fileName = map normalize testName
+    normalize c | not (isAlpha c) = '-'
+                | otherwise       = c
+
+-- | Test that we provide a sensible error message on failure
+testCopyUniqueConstraintError :: TestEnv -> TestTree
+testCopyUniqueConstraintError TestEnv{..} =
+    goldenTest "unique constraint violation"
+    $ handle (\(SomeException exc) -> return $ BL.pack $ show exc) $ do
+        execute_ conn "CREATE TEMPORARY TABLE copy_unique_constraint_error_test (x int PRIMARY KEY, y text)"
+        copy_ conn "COPY copy_unique_constraint_error_test FROM STDIN (FORMAT CSV)"
+        mapM_ (putCopyData conn) copyRows
+        _n <- putCopyEnd conn
+        return BL.empty
+  where
+    copyRows  = ["1,foo\n"
+                ,"2,bar\n"
+                ,"1,baz\n"]
+
+testCopyMalformedError :: TestEnv -> TestTree
+testCopyMalformedError TestEnv{..} =
+    goldenTest "malformed input"
+    $ handle (\(SomeException exc) -> return $ BL.pack $ show exc) $ do
+        execute_ conn "CREATE TEMPORARY TABLE copy_malformed_input_error_test (x int PRIMARY KEY, y text)"
+        copy_ conn "COPY copy_unique_constraint_error_test FROM STDIN (FORMAT CSV)"
+        mapM_ (putCopyData conn) copyRows
+        _n <- putCopyEnd conn
+        return BL.empty
+  where
+    copyRows  = ["1,foo\n"
+                ,"2,bar\n"
+                ,"z,baz\n"]
+
+testDouble :: TestEnv -> Assertion
+testDouble TestEnv{..} = do
     [Only (x :: Double)] <- query_ conn "SELECT 'NaN'::float8"
     assertBool "expected NaN" (isNaN x)
     [Only (x :: Double)] <- query_ conn "SELECT 'Infinity'::float8"
@@ -325,24 +377,24 @@ testDouble TestEnv{..} = TestCase $ do
     x @?= (-1 / 0)
 
 
-testGeneric1 :: TestEnv -> Test
-testGeneric1 TestEnv{..} = TestCase $ do
+testGeneric1 :: TestEnv -> Assertion
+testGeneric1 TestEnv{..} = do
     roundTrip conn (Gen1 123)
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int" (x0 :: Gen1)
         r @?= [x0]
 
-testGeneric2 :: TestEnv -> Test
-testGeneric2 TestEnv{..} = TestCase $ do
+testGeneric2 :: TestEnv -> Assertion
+testGeneric2 TestEnv{..} = do
     roundTrip conn (Gen2 123 "asdf")
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int, ?::text" x0
         r @?= [x0]
 
-testGeneric3 :: TestEnv -> Test
-testGeneric3 TestEnv{..} = TestCase $ do
+testGeneric3 :: TestEnv -> Assertion
+testGeneric3 TestEnv{..} = do
     roundTrip conn (Gen3 123 "asdf" True)
   where
     roundTrip conn x0 = do
@@ -401,8 +453,4 @@ withTestEnv cb =
     withConn = bracket testConnect close
 
 main :: IO ()
-main = do
-    mapM_ (`hSetBuffering` LineBuffering) [stdout, stderr]
-    Counts{cases, tried, errors, failures} <-
-        withTestEnv $ \env -> runTestTT $ TestList $ map ($ env) tests
-    when (cases /= tried || errors /= 0 || failures /= 0) $ exitFailure
+main = withTestEnv $ defaultMain . tests
