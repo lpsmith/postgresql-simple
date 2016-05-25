@@ -325,7 +325,9 @@ testCopy TestEnv{..} = do
 testCopyFailures :: TestEnv -> TestTree
 testCopyFailures env = testGroup "Copy failures"
     $ map ($ env)
-    [ testCopyUniqueConstraintError ]
+    [ testCopyUniqueConstraintError
+    , testCopyMalformedError
+    ]
 
 goldenTest :: TestName -> IO BL.ByteString -> TestTree
 goldenTest testName =
@@ -350,6 +352,20 @@ testCopyUniqueConstraintError TestEnv{..} =
     copyRows  = ["1,foo\n"
                 ,"2,bar\n"
                 ,"1,baz\n"]
+
+testCopyMalformedError :: TestEnv -> TestTree
+testCopyMalformedError TestEnv{..} =
+    goldenTest "malformed input"
+    $ handle (\(SomeException exc) -> return $ BL.pack $ show exc) $ do
+        execute_ conn "CREATE TEMPORARY TABLE copy_malformed_input_error_test (x int PRIMARY KEY, y text)"
+        copy_ conn "COPY copy_unique_constraint_error_test FROM STDIN (FORMAT CSV)"
+        mapM_ (putCopyData conn) copyRows
+        _n <- putCopyEnd conn
+        return BL.empty
+  where
+    copyRows  = ["1,foo\n"
+                ,"2,bar\n"
+                ,"z,baz\n"]
 
 testDouble :: TestEnv -> Assertion
 testDouble TestEnv{..} = do

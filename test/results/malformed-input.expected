@@ -1,0 +1,4 @@
+user error (Database.PostgreSQL.Simple.Copy.putCopyEnd: failed to parse command status
+Connection error: ERROR:  invalid input syntax for integer: "z"
+CONTEXT:  COPY copy_unique_constraint_error_test, line 3, column x: "z"
+)
