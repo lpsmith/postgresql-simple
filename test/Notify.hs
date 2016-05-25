@@ -14,9 +14,8 @@ import qualified Data.ByteString as B
 -- TODO: Test with payload, but only for PostgreSQL >= 9.0
 -- (when that feature was introduced).
 
-testNotify :: TestEnv -> Test
+testNotify :: TestEnv -> Assertion
 testNotify TestEnv{..} =
-    TestCase $
     withConn $ \conn2 -> do
         execute_ conn "LISTEN foo"
         execute_ conn "LISTEN bar"

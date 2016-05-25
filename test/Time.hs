@@ -43,8 +43,8 @@ import Database.PostgreSQL.Simple.SqlQQ
 numTests :: Int
 numTests = 200
 
-testTime :: TestEnv -> Test
-testTime env@TestEnv{..} = TestCase $ do
+testTime :: TestEnv -> Assertion
+testTime env@TestEnv{..} = do
   initializeTable env
   execute_ conn "SET timezone TO 'UTC'"
   checkRoundTrips env "1860-01-01 00:00:00+00"

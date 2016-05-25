@@ -23,9 +23,8 @@ putCounter conn n = do
     1 <- execute conn "UPDATE testSerializableCounter SET n=?" (Only n)
     return ()
 
-testSerializable :: TestEnv -> Test
+testSerializable :: TestEnv -> Assertion
 testSerializable TestEnv{..} =
-    TestCase $
     withConn $ \conn2 -> do
         initCounter conn
 
