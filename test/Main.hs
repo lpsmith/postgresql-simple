@@ -8,21 +8,23 @@ import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
 import Database.PostgreSQL.Simple.Copy
 import qualified Database.PostgreSQL.Simple.Transaction as ST
+
 import Control.Applicative
 import Control.Exception as E
 import Control.Monad
-import Data.ByteString (ByteString)
+import Data.List (sort)
 import Data.IORef
 import Data.Typeable
+import GHC.Generics (Generic)
+
+import Data.Aeson
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Map (Map)
-import Data.List (sort)
 import qualified Data.Map as Map
 import Data.Text(Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
-import Data.Aeson
-import GHC.Generics (Generic)
 
 import Test.Tasty
 import Notify
