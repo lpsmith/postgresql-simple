@@ -124,7 +124,7 @@ parseMaybe p b = either (const Nothing) Just $ parseOnly p b
 ------------------------------------------------------------------------
 -- Error predicates
 --
--- http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+-- https://www.postgresql.org/docs/9.5/static/errcodes-appendix.html
 
 isSerializationError :: SqlError -> Bool
 isSerializationError = isSqlState "40001"

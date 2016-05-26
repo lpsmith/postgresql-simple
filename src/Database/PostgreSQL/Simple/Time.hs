@@ -11,7 +11,7 @@ infinity,  as well as some functions for converting to and from strings.
 Also, this module also contains commentary regarding postgresql's timestamp
 types,  civil timekeeping in general,  and how it relates to
 postgresql-simple. You can read more about PostgreSQL's date and time types
-at <http://www.postgresql.org/docs/9.1/static/datatype-datetime.html>,
+at <https://www.postgresql.org/docs/9.5/static/datatype-datetime.html>,
 and the IANA time zone database at <https://en.wikipedia.org/wiki/Tz_database>.
 
 Stack Overflow also has some excellent commentary on time,  if it is a

@@ -14,7 +14,7 @@
 --
 -- Support for receiving asynchronous notifications via PostgreSQL's
 -- Listen/Notify mechanism.  See
--- <http://www.postgresql.org/docs/9.1/static/sql-notify.html> for more
+-- <https://www.postgresql.org/docs/9.5/static/sql-notify.html> for more
 -- information.
 --
 -- Note that on Windows,  @getNotification@ currently uses a polling loop
@@ -25,7 +25,7 @@
 -- Notifications do not create any extra work for the backend,  and are
 -- likely cheaper on the client side as well.
 --
--- <http://hackage.haskell.org/trac/ghc/ticket/7353>
+-- <https://hackage.haskell.org/trac/ghc/ticket/7353>
 --
 -----------------------------------------------------------------------------
 

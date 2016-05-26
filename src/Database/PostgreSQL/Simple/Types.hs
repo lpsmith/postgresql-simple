@@ -268,7 +268,7 @@ newtype Savepoint = Savepoint Query
 --   without issuing the query.   In the second case,  the postgres server
 --   will return an error which will be turned into a @SqlError@ exception.
 --
---   See <http://www.postgresql.org/docs/9.3/static/sql-values.html> for
+--   See <https://www.postgresql.org/docs/9.5/static/sql-values.html> for
 --   more information.
 data Values a = Values [QualifiedIdentifier] [a]
     deriving (Eq, Ord, Show, Read, Typeable)

@@ -45,7 +45,7 @@ import Database.PostgreSQL.Simple.Compat (mask, (<>))
 
 -- | Of the four isolation levels defined by the SQL standard,
 -- these are the three levels distinguished by PostgreSQL as of version 9.0.
--- See <http://www.postgresql.org/docs/9.1/static/transaction-iso.html>
+-- See <https://www.postgresql.org/docs/9.5/static/transaction-iso.html>
 -- for more information.   Note that prior to PostgreSQL 9.0, 'RepeatableRead'
 -- was equivalent to 'Serializable'.
 
@@ -203,7 +203,7 @@ beginMode mode conn = do
 -- be used inside of a transaction, and provides a sort of
 -- \"nested transaction\".
 --
--- See <http://www.postgresql.org/docs/current/static/sql-savepoint.html>
+-- See <https://www.postgresql.org/docs/9.5/static/sql-savepoint.html>
 withSavepoint :: Connection -> IO a -> IO a
 withSavepoint conn body =
   mask $ \restore -> do

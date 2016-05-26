@@ -9,7 +9,7 @@
 -- Stability:   experimental
 --
 -- mid-level support for COPY IN and COPY OUT.   See
--- <http://www.postgresql.org/docs/9.2/static/sql-copy.html> for
+-- <https://www.postgresql.org/docs/9.5/static/sql-copy.html> for
 -- more information.
 --
 -- To use this binding,  first call 'copy' with an appropriate

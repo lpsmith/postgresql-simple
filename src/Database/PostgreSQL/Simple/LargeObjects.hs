@@ -7,7 +7,7 @@
 -- Maintainer  :  leon@melding-monads.com
 --
 -- Support for PostgreSQL's Large Objects;  see
--- <http://www.postgresql.org/docs/9.1/static/largeobjects.html> for more
+-- <https://www.postgresql.org/docs/9.5/static/largeobjects.html> for more
 -- information.
 --
 -- Note that Large Object File Descriptors are only valid within a single
