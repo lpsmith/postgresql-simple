@@ -1,5 +1,15 @@
 {-# LANGUAGE RecordWildCards #-}
 
+------------------------------------------------------------------------------
+-- |
+-- Module:      Database.PostgreSQL.Simple.Transaction
+-- Copyright:   (c) 2011-2013 Leon P Smith
+--              (c) 2013 Joey Adams
+-- License:     BSD3
+-- Maintainer:  Leon P Smith <leon@melding-monads.com>
+--
+------------------------------------------------------------------------------
+
 module Database.PostgreSQL.Simple.Transaction
     (
     -- * Transaction handling
