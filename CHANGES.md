@@ -1,3 +1,19 @@
+### Version 0.5.2.0 (2016-05-25)
+  * Significantly improved the error reporting from
+    `Copy.putCopyData`, thanks to Ben Gamari.
+
+  * Moved the test suite to use `tasty`,  with a big thanks
+    to Ben Gamari.
+
+  * Added `FromField.optionalField`,  and updated the documentation
+    of `FromField.fromJSONField`, as inspired by an email conversation
+    with Ian Wagner.
+
+  * Updated all links in the haddocks to use https,  and added a link
+    to the documentation of `connectPostgreSQL`.
+
+  * Added a truncated changelog to the source distribution.
+
 ### Version 0.5.1.3 (2016-04-30)
   * Implemented the Monad of No Return proposal, future-proofing
     postgresql-simple against future releases of GHC.
