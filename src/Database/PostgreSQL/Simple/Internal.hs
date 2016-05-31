@@ -86,7 +86,7 @@ data SqlError = SqlError {
    , sqlErrorMsg    :: ByteString
    , sqlErrorDetail :: ByteString
    , sqlErrorHint   :: ByteString
-   } deriving (Show, Typeable)
+   } deriving (Eq, Show, Typeable)
 
 fatalError :: ByteString -> SqlError
 fatalError msg = SqlError "" FatalError msg "" ""
