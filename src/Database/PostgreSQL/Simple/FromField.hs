@@ -526,7 +526,7 @@ fromArray fieldParser typeInfo f = sequence . (parseIt <$>) <$> array delim
     fElem = f{ typeOid = typoid (typelem typeInfo) }
 
     parseIt item =
-        fieldParser f' $ if item' == "NULL" then Nothing else Just item'
+        fieldParser f' $ if item == Arrays.Plain "NULL" then Nothing else Just item'
       where
         item' = fmt delim item
         f' | Arrays.Array _ <- item = f
