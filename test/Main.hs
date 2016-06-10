@@ -39,23 +39,24 @@ tests :: TestEnv -> TestTree
 tests env = testGroup "tests"
     $ map ($ env)
     [ testBytea
-    , testCase "ExecuteMany"   . testExecuteMany
-    , testCase "Fold"          . testFold
-    , testCase "Notify"        . testNotify
-    , testCase "Serializable"  . testSerializable
-    , testCase "Time"          . testTime
-    , testCase "Array"         . testArray
-    , testCase "HStore"        . testHStore
-    , testCase "JSON"          . testJSON
-    , testCase "Savepoint"     . testSavepoint
-    , testCase "Unicode"       . testUnicode
-    , testCase "Values"        . testValues
-    , testCase "Copy"          . testCopy
+    , testCase "ExecuteMany"        . testExecuteMany
+    , testCase "Fold"               . testFold
+    , testCase "Notify"             . testNotify
+    , testCase "Serializable"       . testSerializable
+    , testCase "Time"               . testTime
+    , testCase "Array"              . testArray
+    , testCase "Array of nullables" . testNullableArray
+    , testCase "HStore"             . testHStore
+    , testCase "JSON"               . testJSON
+    , testCase "Savepoint"          . testSavepoint
+    , testCase "Unicode"            . testUnicode
+    , testCase "Values"             . testValues
+    , testCase "Copy"               . testCopy
     , testCopyFailures
-    , testCase "Double"        . testDouble
-    , testCase "1-ary generic" . testGeneric1
-    , testCase "2-ary generic" . testGeneric2
-    , testCase "3-ary generic" . testGeneric3
+    , testCase "Double"             . testDouble
+    , testCase "1-ary generic"      . testGeneric1
+    , testCase "2-ary generic"      . testGeneric2
+    , testCase "3-ary generic"      . testGeneric3
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -176,6 +177,14 @@ testArray TestEnv{..} = do
                               V.fromList [3,4 :: Int]])]
     queryFailure conn "SELECT '{1,2,3,4}'::_int4" (undefined :: V.Vector Bool)
     queryFailure conn "SELECT '{{1,2},{3,4}}'::_int4" (undefined :: V.Vector Int)
+
+testNullableArray :: TestEnv -> Assertion
+testNullableArray TestEnv{..} = do
+    xs <- query_ conn "SELECT '{sometext, \"NULL\"}'::_text"
+    xs @?= [Only (V.fromList ["sometext", "NULL" :: Text])]
+    xs <- query_ conn "SELECT '{sometext, NULL}'::_text"
+    xs @?= [Only (V.fromList [Just "sometext", Nothing :: Maybe Text])]
+    queryFailure conn "SELECT '{sometext, NULL}'::_text" (undefined :: V.Vector Text)
 
 testHStore :: TestEnv -> Assertion
 testHStore TestEnv{..} = do
