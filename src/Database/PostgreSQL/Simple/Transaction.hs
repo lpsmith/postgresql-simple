@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, ScopedTypeVariables #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -142,7 +142,7 @@ withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
 withTransactionMode mode conn act =
   mask $ \restore -> do
     beginMode mode conn
-    r <- restore act `E.onException` rollback conn
+    r <- restore act `E.onException` rollback_ conn
     commit conn
     return r
 
@@ -167,7 +167,7 @@ withTransactionModeRetry mode shouldRetry conn act =
         r <- act'
         case r of
             Left e -> do
-                rollback conn
+                rollback_ conn
                 case fmap shouldRetry (E.fromException e) of
                   Just True -> retryLoop act'
                   _ -> E.throwIO e
@@ -177,6 +177,10 @@ withTransactionModeRetry mode shouldRetry conn act =
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
 rollback conn = execute_ conn "ABORT" >> return ()
+
+-- | Rollback a transaction, ignoring any @IOErrors@
+rollback_ :: Connection -> IO ()
+rollback_ conn = rollback conn `E.catch` \(_ :: IOError) -> return ()
 
 -- | Commit a transaction.
 commit :: Connection -> IO ()
