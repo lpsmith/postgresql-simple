@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DoAndIfThenElse #-}
@@ -28,6 +29,8 @@ import Data.Text(Text)
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import System.FilePath
+import System.Timeout(timeout)
+import Data.Time(getCurrentTime, diffUTCTime)
 
 import Test.Tasty
 import Test.Tasty.Golden
@@ -57,6 +60,7 @@ tests env = testGroup "tests"
     , testCase "1-ary generic"      . testGeneric1
     , testCase "2-ary generic"      . testGeneric2
     , testCase "3-ary generic"      . testGeneric3
+    , testCase "Timeout"            . testTimeout
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -375,6 +379,22 @@ testCopyMalformedError TestEnv{..} =
     copyRows  = ["1,foo\n"
                 ,"2,bar\n"
                 ,"z,baz\n"]
+
+testTimeout :: TestEnv -> Assertion
+testTimeout TestEnv{..} =
+    withConn $ \c -> do
+      start_t <- getCurrentTime
+      res <- timeout 200000 $ do
+               withTransaction c $ do
+                 query_ c "SELECT pg_sleep(1)" :: IO [Only ()]
+      end_t <- getCurrentTime
+      assertBool "Timeout did not occur" (res == Nothing)
+#if !defined(mingw32_HOST_OS)
+-- At the moment, you cannot timely abandon queries with async exceptions on
+-- Windows.
+      let d = end_t `diffUTCTime` start_t
+      assertBool "Timeout didn't work in a timely fashion" (0.1 < d && d < 0.6)
+#endif
 
 testDouble :: TestEnv -> Assertion
 testDouble TestEnv{..} = do
