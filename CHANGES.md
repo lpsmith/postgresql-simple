@@ -1,3 +1,22 @@
+### Version 0.5.2.1 (2016-06-29)
+  * Bumped the lower bound for `base` to 4.6.   Thanks to Herbert
+    Valerio Riedel for reporting the issue.
+
+  * Added an `Eq` instance for `SqlError`, thanks to Chris Allen
+
+  * Fixed a bug where a all-caps `"NULL"` text value inside a
+    postgresql array would get parsed as the SQL null value.  Thanks
+    goes to Edgar Gomes and Silk for finding and fixing this mistake.
+
+  * Modified `withTransaction` and friends to ignore `IOError`s when
+    attempting to roll back the transaction.   This fixes a buggy
+    interaction between `withTransaction` and async exceptions (e.g.
+    `System.Timeout`) on unix platforms.  Thanks goes to Erik
+    Hesselink and Silk for providing the test case that exposed this
+    issue.
+
+  * Added the `testTimeout` regression test for the problem above.
+
 ### Version 0.5.2.0 (2016-05-25)
   * Significantly improved the error reporting from
     `Copy.putCopyData`, thanks to Ben Gamari.
