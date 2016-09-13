@@ -496,7 +496,7 @@ conversionMap :: (Ok a -> Ok b) -> Conversion a -> Conversion b
 conversionMap f m = Conversion $ \conn -> f <$> runConversion m conn
 
 conversionError :: Exception err => err -> Conversion a
-conversionError err = Conversion $ \_ -> return (Errors [SomeException err])
+conversionError err = Conversion $ \_ -> return (Errors [toException err])
 
 newTempName :: Connection -> IO Query
 newTempName Connection{..} = do
