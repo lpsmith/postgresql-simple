@@ -45,12 +45,13 @@ module Database.PostgreSQL.Simple.Transaction
     , isFailedTransactionError
     ) where
 
-import qualified Control.Exception as E
+import Control.Monad.IO.Class
+import Control.Monad.Catch as E
 import qualified Data.ByteString as B
 import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
 import Database.PostgreSQL.Simple.Errors
-import Database.PostgreSQL.Simple.Compat (mask, (<>))
+import Database.PostgreSQL.Simple.Compat ((<>))
 
 
 -- | Of the four isolation levels defined by the SQL standard,
@@ -138,13 +139,15 @@ withTransactionLevel lvl
     = withTransactionMode defaultTransactionMode { isolationLevel = lvl }
 
 -- | Execute an action inside a SQL transaction with a given transaction mode.
-withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
+withTransactionMode :: ( MonadIO m, MonadMask m )
+                    => TransactionMode -> Connection -> m a -> m a
 withTransactionMode mode conn act =
   mask $ \restore -> do
-    beginMode mode conn
-    r <- restore act `E.onException` rollback_ conn
-    commit conn
+    liftIO $ beginMode mode conn
+    r <- restore act `E.onException` liftIO (rollback_ conn)
+    liftIO $ commit conn
     return r
+{-# INLINEABLE withTransactionMode #-}
 
 -- | Like 'withTransactionMode', but also takes a custom callback to
 -- determine if a transaction should be retried if an 'SqlError' occurs.
@@ -170,7 +173,7 @@ withTransactionModeRetry mode shouldRetry conn act =
                 rollback_ conn
                 case fmap shouldRetry (E.fromException e) of
                   Just True -> retryLoop act'
-                  _ -> E.throwIO e
+                  _ -> E.throwM e
             Right a ->
                 return a
 
@@ -180,7 +183,7 @@ rollback conn = execute_ conn "ABORT" >> return ()
 
 -- | Rollback a transaction, ignoring any @IOErrors@
 rollback_ :: Connection -> IO ()
-rollback_ conn = rollback conn `E.catch` \(_ :: IOError) -> return ()
+rollback_ conn = rollback conn `catch` \(_ :: IOError) -> return ()
 
 -- | Commit a transaction.
 commit :: Connection -> IO ()
@@ -226,7 +229,7 @@ withSavepoint conn body =
     releaseSavepoint conn sp `E.catch` \err ->
         if isFailedTransactionError err
             then rollbackToAndReleaseSavepoint conn sp
-            else E.throwIO err
+            else E.throwM err
     return r
 
 -- | Create a new savepoint.  This may only be used inside of a transaction.
