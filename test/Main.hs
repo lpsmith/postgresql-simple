@@ -3,11 +3,15 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes #-}
+
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
-import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
+import Database.PostgreSQL.Simple.ToField (ToField)
+import Database.PostgreSQL.Simple.Types (Query(..), Values(..))
 import Database.PostgreSQL.Simple.HStore
 import Database.PostgreSQL.Simple.Copy
+import Database.PostgreSQL.Simple.SqlQQ (sql)
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 
 import Control.Applicative
@@ -42,25 +46,28 @@ tests :: TestEnv -> TestTree
 tests env = testGroup "tests"
     $ map ($ env)
     [ testBytea
-    , testCase "ExecuteMany"        . testExecuteMany
-    , testCase "Fold"               . testFold
-    , testCase "Notify"             . testNotify
-    , testCase "Serializable"       . testSerializable
-    , testCase "Time"               . testTime
-    , testCase "Array"              . testArray
-    , testCase "Array of nullables" . testNullableArray
-    , testCase "HStore"             . testHStore
-    , testCase "JSON"               . testJSON
-    , testCase "Savepoint"          . testSavepoint
-    , testCase "Unicode"            . testUnicode
-    , testCase "Values"             . testValues
-    , testCase "Copy"               . testCopy
+    , testCase "ExecuteMany"          . testExecuteMany
+    , testCase "Fold"                 . testFold
+    , testCase "Notify"               . testNotify
+    , testCase "Serializable"         . testSerializable
+    , testCase "Time"                 . testTime
+    , testCase "Array"                . testArray
+    , testCase "Array of nullables"   . testNullableArray
+    , testCase "HStore"               . testHStore
+    , testCase "JSON"                 . testJSON
+    , testCase "Savepoint"            . testSavepoint
+    , testCase "Unicode"              . testUnicode
+    , testCase "Values"               . testValues
+    , testCase "Copy"                 . testCopy
     , testCopyFailures
-    , testCase "Double"             . testDouble
-    , testCase "1-ary generic"      . testGeneric1
-    , testCase "2-ary generic"      . testGeneric2
-    , testCase "3-ary generic"      . testGeneric3
-    , testCase "Timeout"            . testTimeout
+    , testCase "Double"               . testDouble
+    , testCase "1-ary generic row"    . testGeneric1Row
+    , testCase "2-ary generic row"    . testGeneric2Row
+    , testCase "3-ary generic row"    . testGeneric3Row
+    , testCase "1-ary generic field"  . testGeneric1Field
+    , testCase "2-ary generic field"  . testGeneric2Field
+    , testCase "3-ary generic field"  . testGeneric3Field
+    , testCase "Timeout"              . testTimeout
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -406,44 +413,73 @@ testDouble TestEnv{..} = do
     x @?= (-1 / 0)
 
 
-testGeneric1 :: TestEnv -> Assertion
-testGeneric1 TestEnv{..} = do
+testGeneric1Row :: TestEnv -> Assertion
+testGeneric1Row TestEnv{..} = do
     roundTrip conn (Gen1 123)
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int" (x0 :: Gen1)
         r @?= [x0]
 
-testGeneric2 :: TestEnv -> Assertion
-testGeneric2 TestEnv{..} = do
+testGeneric2Row :: TestEnv -> Assertion
+testGeneric2Row TestEnv{..} = do
     roundTrip conn (Gen2 123 "asdf")
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int, ?::text" x0
         r @?= [x0]
 
-testGeneric3 :: TestEnv -> Assertion
-testGeneric3 TestEnv{..} = do
+testGeneric3Row :: TestEnv -> Assertion
+testGeneric3Row TestEnv{..} = do
     roundTrip conn (Gen3 123 "asdf" True)
   where
     roundTrip conn x0 = do
         r <- query conn "SELECT ?::int, ?::text, ?::bool" x0
         r @?= [x0]
 
+testGeneric1Field :: TestEnv -> Assertion
+testGeneric1Field TestEnv{..} = withTransaction conn $ do
+  -- It's not possible to simply roundtrip a 1-ary tuple
+  -- as PostgreSQL will treat it as a scalar value.
+  -- Therefore we will create a separate type for it.
+  execute_ conn "CREATE TYPE gen1 AS (x bigint)"
+  execute_ conn [sql|
+    CREATE FUNCTION test_gen1() RETURNS SETOF gen1 AS $$
+      (SELECT 1::bigint) UNION ALL (SELECT 2) UNION ALL (SELECT 3)
+    $$ LANGUAGE sql
+  |]
+  query_ conn "SELECT test_gen1()" >>= (@?= [Only (Gen1 1), Only (Gen1 2), Only (Gen1 3)])
+  rollback conn
+
+testGeneric2Field :: TestEnv -> Assertion
+testGeneric2Field TestEnv{..} = roundTripField conn (Gen2 123 "asdf")
+
+testGeneric3Field :: TestEnv -> Assertion
+testGeneric3Field TestEnv{..} = roundTripField conn (Gen3 123 "asdf" True)
+
+roundTripField :: (Show a, Eq a, FromField a, ToField a) => Connection -> a -> Assertion
+roundTripField conn x0 = query conn "SELECT ?" (Only x0) >>= (@?= [Only x0])
+
 data Gen1 = Gen1 Int
-            deriving (Show,Eq,Generic)
-instance FromRow Gen1
-instance ToRow   Gen1
+            deriving (Show, Eq, Generic, Typeable)
+instance FromRow   Gen1
+instance ToRow     Gen1
+instance FromField Gen1
+instance ToField   Gen1
 
 data Gen2 = Gen2 Int Text
-            deriving (Show,Eq,Generic)
-instance FromRow Gen2
-instance ToRow   Gen2
+            deriving (Show, Eq, Generic, Typeable)
+instance FromRow   Gen2
+instance ToRow     Gen2
+instance FromField Gen2
+instance ToField   Gen2
 
 data Gen3 = Gen3 Int Text Bool
-            deriving (Show,Eq,Generic)
-instance FromRow Gen3
-instance ToRow   Gen3
+            deriving (Show, Eq, Generic, Typeable)
+instance FromRow   Gen3
+instance ToRow     Gen3
+instance FromField Gen3
+instance ToField   Gen3
 
 data TestException
   = TestException

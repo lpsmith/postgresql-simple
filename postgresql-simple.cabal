@@ -74,7 +74,8 @@ Library
 
   if !impl(ghc >= 7.6)
     Build-depends:
-      ghc-prim
+      ghc-prim,
+      tagged >= 0.8
 
   extensions: DoAndIfThenElse, OverloadedStrings, BangPatterns, ViewPatterns
               TypeOperators

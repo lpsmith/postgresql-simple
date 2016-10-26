@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE DefaultSignatures, FlexibleContexts     #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -39,6 +40,7 @@ import Data.Word (Word, Word8, Word16, Word32, Word64)
 import {-# SOURCE #-} Database.PostgreSQL.Simple.ToRow
 import Database.PostgreSQL.Simple.Types
 import Database.PostgreSQL.Simple.Compat (toByteString)
+import GHC.Generics (Generic, Rep, D1, C1, S1, (:*:)(..), Rec0, from, unM1, unK1)
 
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
@@ -92,6 +94,8 @@ instance Show Action where
 -- | A type that may be used as a single parameter to a SQL query.
 class ToField a where
     toField :: a -> Action
+    default toField :: (Generic a, GToField (Rep a)) => a -> Action
+    toField = head . gtoField . from
     -- ^ Prepare a value for substitution into a query string.
 
 instance ToField Action where
@@ -369,3 +373,26 @@ instance ToRow a => ToField (Values a) where
                                 (litC ',')
                                 rest
                                 vals
+
+-- Type class for default implementation of ToField using generics.
+class GToField f where
+  gtoField :: f p -> [Action]
+
+instance GToField f => GToField (D1 i f) where
+  gtoField = gtoField . unM1
+
+instance GToField f => GToField (C1 i f) where
+  gtoField = (:[]) . Many . tupleWrap . gtoField . unM1
+
+instance (GToField f, GToField g) => GToField (f :*: g) where
+  gtoField (f :*: g) = gtoField f ++ gtoField g
+
+instance (GToField f) => GToField (S1 i f) where
+  gtoField = gtoField . unM1
+
+instance (ToField f) => GToField (Rec0 f) where
+  gtoField = (:[]) . toField . unK1
+
+tupleWrap :: [Action] -> [Action]
+tupleWrap xs = (Plain "("): (intersperse (Plain ",") xs) ++ [Plain ")"]
+
