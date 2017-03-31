@@ -58,7 +58,7 @@ data Notification = Notification
    { notificationPid     :: {-# UNPACK #-} !CPid
    , notificationChannel :: {-# UNPACK #-} !B.ByteString
    , notificationData    :: {-# UNPACK #-} !B.ByteString
-   }
+   } deriving (Show, Eq)
 
 convertNotice :: PQ.Notify -> Notification
 convertNotice PQ.Notify{..}
