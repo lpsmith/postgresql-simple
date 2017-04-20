@@ -118,16 +118,15 @@ module Database.PostgreSQL.Simple
     , formatQuery
     ) where
 
-import           Data.ByteString.Builder
-                   ( Builder, byteString, char8, intDec )
+import           Data.ByteString.Builder (Builder, byteString, char8)
 import           Control.Applicative ((<$>))
 import           Control.Exception as E
-import           Control.Monad (unless)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
-import           Database.PostgreSQL.Simple.Compat ( (<>), toByteString )
+import           Database.PostgreSQL.Simple.Compat ((<>), toByteString)
+import           Database.PostgreSQL.Simple.Cursor
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.ToField (Action(..))
@@ -559,39 +558,17 @@ doFold FoldOptions{..} parser conn _template q a0 f = do
       PQ.TransUnknown -> fail "foldWithOpts FIXME:  PQ.TransUnknown"
          -- Not sure what this means.
   where
-    declare = do
-        name <- newTempName conn
-        _ <- execute_ conn $ mconcat
-                 [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
-        return name
-    close name =
-        (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
-            -- Don't throw exception if CLOSE failed because the transaction is
-            -- aborted.  Otherwise, it will throw away the original error.
-            unless (isFailedTransactionError ex) $ throwIO ex
+    declare =
+      declareTemporaryCursor conn q
+    fetch cursor a =
+      fetchForwardWithParser cursor parser chunkSize f a
 
-    go = bracket declare close $ \(Query name) ->
-         let q = toByteString (byteString "FETCH FORWARD "
-                               <> intDec chunkSize
-                               <> byteString " FROM "
-                               <> byteString name
-                              )
-             loop a = do
-                 result <- exec conn q
-                 status <- PQ.resultStatus result
-                 case status of
-                     PQ.TuplesOk -> do
-                         nrows <- PQ.ntuples result
-                         ncols <- PQ.nfields result
-                         if nrows > 0
-                         then do
-                             let inner a row = do
-                                   x <- getRowWith parser row ncols conn result
-                                   f a x
-                             foldM' inner a 0 (nrows - 1) >>= loop
-                         else return a
-                     _   -> throwResultError "fold" result status
-          in loop a0
+    go = bracket declare closeCursor $ \cursor ->
+             let loop a = fetch cursor a >>=
+                            \r -> case r of
+                                    Left a -> return a
+                                    Right a -> loop a
+               in loop a0
 
 -- FIXME: choose the Automatic chunkSize more intelligently
 --   One possibility is to use the type of the results,  although this
@@ -640,16 +617,6 @@ forEachWith_ :: RowParser r
              -> IO ()
 forEachWith_ parser conn template = foldWith_ parser conn template () . const
 {-# INLINE forEachWith_ #-}
-
-foldM' :: (Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
-foldM' f a lo hi = loop a lo
-  where
-    loop a !n
-      | n > hi = return a
-      | otherwise = do
-           a' <- f a n
-           loop a' (n+1)
-{-# INLINE foldM' #-}
 
 
 -- $use
