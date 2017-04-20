@@ -298,16 +298,16 @@ instance FromField Bool where
       | bs == Just "f"                = pure False
       | otherwise                     = returnError ConversionFailed f ""
 
--- | \"char\"
+-- | \"char\", bpchar
 instance FromField Char where
     fromField f bs =
-        if typeOid f /= $(inlineTypoid TI.char)
-        then returnError Incompatible f ""
-        else case bs of
+        if $(mkCompats [TI.char,TI.bpchar]) (typeOid f)
+        then case bs of
                Nothing -> returnError UnexpectedNull f ""
                Just bs -> if B.length bs /= 1
                           then returnError ConversionFailed f "length not 1"
                           else return $! (B.head bs)
+        else returnError Incompatible f ""
 
 -- | int2
 instance FromField Int16 where
