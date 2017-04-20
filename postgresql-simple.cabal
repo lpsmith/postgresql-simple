@@ -45,6 +45,7 @@ Library
      Database.PostgreSQL.Simple.Errors
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
+     Database.PostgreSQL.Simple.Internal.PQResultUtils
 
   Other-modules:
      Database.PostgreSQL.Simple.Compat
