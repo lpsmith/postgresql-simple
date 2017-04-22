@@ -32,26 +32,22 @@ finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
 finishQueryWith parser conn q result = do
   status <- PQ.resultStatus result
   case status of
-    PQ.EmptyQuery ->
-        throwIO $ QueryError "query: Empty query" q
-    PQ.CommandOk ->
-        throwIO $ QueryError "query resulted in a command response" q
     PQ.TuplesOk -> do
         nrows <- PQ.ntuples result
         ncols <- PQ.nfields result
         forM' 0 (nrows-1) $ \row ->
             getRowWith parser row ncols conn result
-    PQ.CopyOut ->
-        throwIO $ QueryError "query: COPY TO is not supported" q
-    PQ.CopyIn ->
-        throwIO $ QueryError "query: COPY FROM is not supported" q
-    PQ.CopyBoth ->
-        throwIO $ QueryError "query: COPY BOTH is not supported" q
-    PQ.SingleTuple ->
-        throwIO $ QueryError "query: single-row mode is not supported" q
+    PQ.EmptyQuery    -> queryErr "query: Empty query"
+    PQ.CommandOk     -> queryErr "query resulted in a command response"
+    PQ.CopyOut       -> queryErr "query: COPY TO is not supported"
+    PQ.CopyIn        -> queryErr "query: COPY FROM is not supported"
+    PQ.CopyBoth      -> queryErr "query: COPY BOTH is not supported"
+    PQ.SingleTuple   -> queryErr "query: single-row mode is not supported"
     PQ.BadResponse   -> throwResultError "query" result status
     PQ.NonfatalError -> throwResultError "query" result status
     PQ.FatalError    -> throwResultError "query" result status
+  where
+    queryErr msg = throwIO $ QueryError msg q
 
 getRowWith :: RowParser r -> PQ.Row -> PQ.Column -> Connection -> PQ.Result -> IO r
 getRowWith parser row ncols conn result = do
