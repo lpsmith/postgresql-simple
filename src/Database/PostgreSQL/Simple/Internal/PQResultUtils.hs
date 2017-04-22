@@ -45,6 +45,10 @@ finishQueryWith parser conn q result = do
         throwIO $ QueryError "query: COPY TO is not supported" q
     PQ.CopyIn ->
         throwIO $ QueryError "query: COPY FROM is not supported" q
+    PQ.CopyBoth ->
+        throwIO $ QueryError "query: COPY BOTH is not supported" q
+    PQ.SingleTuple ->
+        throwIO $ QueryError "query: single-row mode is not supported" q
     PQ.BadResponse   -> throwResultError "query" result status
     PQ.NonfatalError -> throwResultError "query" result status
     PQ.FatalError    -> throwResultError "query" result status

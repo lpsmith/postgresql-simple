@@ -75,15 +75,18 @@ doCopy :: B.ByteString -> Connection -> Query -> B.ByteString -> IO ()
 doCopy funcName conn template q = do
     result <- exec conn q
     status <- PQ.resultStatus result
-    let err = throwIO $ QueryError
-                  (B.unpack funcName ++ " " ++ show status)
+    let errMsg msg = throwIO $ QueryError
+                  (B.unpack funcName ++ " " ++ msg)
                   template
+    let err = errMsg $ show status
     case status of
       PQ.EmptyQuery    -> err
       PQ.CommandOk     -> err
       PQ.TuplesOk      -> err
       PQ.CopyOut       -> return ()
       PQ.CopyIn        -> return ()
+      PQ.CopyBoth      -> errMsg "COPY BOTH is not supported"
+      PQ.SingleTuple   -> errMsg "single-row mode is not supported"
       PQ.BadResponse   -> throwResultError funcName result status
       PQ.NonfatalError -> throwResultError funcName result status
       PQ.FatalError    -> throwResultError funcName result status
