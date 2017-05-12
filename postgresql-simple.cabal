@@ -46,11 +46,11 @@ Library
      Database.PostgreSQL.Simple.Errors
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
-     Database.PostgreSQL.Simple.Internal.PQResultUtils
 
   Other-modules:
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.HStore.Implementation
+     Database.PostgreSQL.Simple.Internal.PQResultUtils
      Database.PostgreSQL.Simple.Time.Implementation
      Database.PostgreSQL.Simple.Time.Internal.Parser
      Database.PostgreSQL.Simple.Time.Internal.Printer
