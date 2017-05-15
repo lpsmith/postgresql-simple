@@ -24,6 +24,7 @@ import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
 import           Control.Monad(MonadPlus(..))
+import           Data.Aeson
 import           Data.ByteString(ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -120,6 +121,23 @@ data ConnectInfo = ConnectInfo {
     , connectPassword :: String
     , connectDatabase :: String
     } deriving (Eq,Read,Show,Typeable)
+
+instance ToJSON ConnectInfo where
+  toJSON ConnectInfo{..} = object
+    [ "host"      .= connectHost
+    , "port"      .= connectPort
+    , "user"      .= connectUser
+    , "password"  .= connectPassword
+    , "database"  .= connectDatabase ]
+
+instance FromJSON ConnectInfo where
+  parseJSON (Object o) = ConnectInfo
+    <$> o .: "host"
+    <*> o .: "port"
+    <*> o .: "user"
+    <*> o .: "password"
+    <*> o .: "database"
+  parseJSON _ = empty
 
 -- | Default information for setting up a connection.
 --
