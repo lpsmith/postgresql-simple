@@ -31,7 +31,7 @@ import           Data.ByteString.Builder
                    , floatDec, doubleDec
                    )
 import Data.Int (Int8, Int16, Int32, Int64)
-import Data.List (intersperse)
+import Data.List (intersperse, intercalate)
 import Data.Monoid (mappend)
 import Data.Time (Day, TimeOfDay, LocalTime, UTCTime, ZonedTime, NominalDiffTime)
 import Data.Typeable (Typeable)
@@ -369,3 +369,13 @@ instance ToRow a => ToField (Values a) where
                                 (litC ',')
                                 rest
                                 vals
+
+instance ToField Cube where
+    toField (Cube cs) = Many $
+        Plain (byteString "CUBE('") :
+        (intercalate [comma] $ map point cs) ++
+        [Plain (byteString "')")]
+            where comma = Plain (char8 ',')
+                  point lst = Plain (char8 '(') :
+                              (intersperse comma $ map toField lst) ++
+                              [Plain (char8 ')')]

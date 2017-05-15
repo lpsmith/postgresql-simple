@@ -60,6 +60,7 @@ module Database.PostgreSQL.Simple
     , ToRow
     , FromRow
     , In(..)
+    , Cube(..)
     , Binary(..)
     , Only(..)
     , (:.)(..)
@@ -132,7 +133,7 @@ import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.ToField (Action(..))
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
-                   ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
+                   ( Binary(..), In(..), Cube(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
 import           Database.PostgreSQL.Simple.Internal.PQResultUtils
 import           Database.PostgreSQL.Simple.Transaction
