@@ -24,6 +24,7 @@ Library
      Database.PostgreSQL.Simple
      Database.PostgreSQL.Simple.Arrays
      Database.PostgreSQL.Simple.Copy
+     Database.PostgreSQL.Simple.Cursor
      Database.PostgreSQL.Simple.FromField
      Database.PostgreSQL.Simple.FromRow
      Database.PostgreSQL.Simple.LargeObjects
@@ -49,6 +50,7 @@ Library
   Other-modules:
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.HStore.Implementation
+     Database.PostgreSQL.Simple.Internal.PQResultUtils
      Database.PostgreSQL.Simple.Time.Implementation
      Database.PostgreSQL.Simple.Time.Internal.Parser
      Database.PostgreSQL.Simple.Time.Internal.Printer

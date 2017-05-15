@@ -118,30 +118,26 @@ module Database.PostgreSQL.Simple
     , formatQuery
     ) where
 
-import           Data.ByteString.Builder
-                   ( Builder, byteString, char8, intDec )
+import           Data.ByteString.Builder (Builder, byteString, char8)
 import           Control.Applicative ((<$>))
 import           Control.Exception as E
-import           Control.Monad (unless)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.List (intersperse)
 import           Data.Monoid (mconcat)
-import           Database.PostgreSQL.Simple.Compat ( (<>), toByteString )
+import           Database.PostgreSQL.Simple.Compat ((<>), toByteString)
+import           Database.PostgreSQL.Simple.Cursor
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
-import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.ToField (Action(..))
 import           Database.PostgreSQL.Simple.ToRow (ToRow(..))
 import           Database.PostgreSQL.Simple.Types
                    ( Binary(..), In(..), Only(..), Query(..), (:.)(..) )
 import           Database.PostgreSQL.Simple.Internal as Base
+import           Database.PostgreSQL.Simple.Internal.PQResultUtils
 import           Database.PostgreSQL.Simple.Transaction
-import           Database.PostgreSQL.Simple.TypeInfo
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
-import           Control.Monad.Trans.Reader
-import           Control.Monad.Trans.State.Strict
 
 
 -- | Format a query string.
@@ -562,39 +558,17 @@ doFold FoldOptions{..} parser conn _template q a0 f = do
       PQ.TransUnknown -> fail "foldWithOpts FIXME:  PQ.TransUnknown"
          -- Not sure what this means.
   where
-    declare = do
-        name <- newTempName conn
-        _ <- execute_ conn $ mconcat
-                 [ "DECLARE ", name, " NO SCROLL CURSOR FOR ", q ]
-        return name
-    close name =
-        (execute_ conn ("CLOSE " <> name) >> return ()) `E.catch` \ex ->
-            -- Don't throw exception if CLOSE failed because the transaction is
-            -- aborted.  Otherwise, it will throw away the original error.
-            unless (isFailedTransactionError ex) $ throwIO ex
+    declare =
+      declareCursor conn q
+    fetch cursor a =
+      foldForwardWithParser cursor parser chunkSize f a
 
-    go = bracket declare close $ \(Query name) ->
-         let q = toByteString (byteString "FETCH FORWARD "
-                               <> intDec chunkSize
-                               <> byteString " FROM "
-                               <> byteString name
-                              )
-             loop a = do
-                 result <- exec conn q
-                 status <- PQ.resultStatus result
-                 case status of
-                     PQ.TuplesOk -> do
-                         nrows <- PQ.ntuples result
-                         ncols <- PQ.nfields result
-                         if nrows > 0
-                         then do
-                             let inner a row = do
-                                   x <- getRowWith parser row ncols conn result
-                                   f a x
-                             foldM' inner a 0 (nrows - 1) >>= loop
-                         else return a
-                     _   -> throwResultError "fold" result status
-          in loop a0
+    go = bracket declare closeCursor $ \cursor ->
+             let loop a = fetch cursor a >>=
+                            \r -> case r of
+                                    Left a -> return a
+                                    Right a -> loop a
+               in loop a0
 
 -- FIXME: choose the Automatic chunkSize more intelligently
 --   One possibility is to use the type of the results,  although this
@@ -643,76 +617,6 @@ forEachWith_ :: RowParser r
              -> IO ()
 forEachWith_ parser conn template = foldWith_ parser conn template () . const
 {-# INLINE forEachWith_ #-}
-
-forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
-forM' lo hi m = loop hi []
-  where
-    loop !n !as
-      | n < lo = return as
-      | otherwise = do
-           a <- m n
-           loop (n-1) (a:as)
-{-# INLINE forM' #-}
-
-foldM' :: (Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
-foldM' f a lo hi = loop a lo
-  where
-    loop a !n
-      | n > hi = return a
-      | otherwise = do
-           a' <- f a n
-           loop a' (n+1)
-{-# INLINE foldM' #-}
-
-finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
-finishQueryWith parser conn q result = do
-  status <- PQ.resultStatus result
-  case status of
-    PQ.EmptyQuery ->
-        throwIO $ QueryError "query: Empty query" q
-    PQ.CommandOk ->
-        throwIO $ QueryError "query resulted in a command response" q
-    PQ.TuplesOk -> do
-        nrows <- PQ.ntuples result
-        ncols <- PQ.nfields result
-        forM' 0 (nrows-1) $ \row ->
-            getRowWith parser row ncols conn result
-    PQ.CopyOut ->
-        throwIO $ QueryError "query: COPY TO is not supported" q
-    PQ.CopyIn ->
-        throwIO $ QueryError "query: COPY FROM is not supported" q
-    PQ.BadResponse   -> throwResultError "query" result status
-    PQ.NonfatalError -> throwResultError "query" result status
-    PQ.FatalError    -> throwResultError "query" result status
-
-getRowWith :: RowParser r -> PQ.Row -> PQ.Column -> Connection -> PQ.Result -> IO r
-getRowWith parser row ncols conn result = do
-  let rw = Row row result
-  let unCol (PQ.Col x) = fromIntegral x :: Int
-  okvc <- runConversion (runStateT (runReaderT (unRP parser) rw) 0) conn
-  case okvc of
-    Ok (val,col) | col == ncols -> return val
-                 | otherwise -> do
-                     vals <- forM' 0 (ncols-1) $ \c -> do
-                         tinfo <- getTypeInfo conn =<< PQ.ftype result c
-                         v <- PQ.getvalue result row c
-                         return ( tinfo
-                                , fmap ellipsis v       )
-                     throw (ConversionFailed
-                      (show (unCol ncols) ++ " values: " ++ show vals)
-                      Nothing
-                      ""
-                      (show (unCol col) ++ " slots in target type")
-                      "mismatch between number of columns to \
-                      \convert and number in target type")
-    Errors []  -> throwIO $ ConversionFailed "" Nothing "" "" "unknown error"
-    Errors [x] -> throwIO x
-    Errors xs  -> throwIO $ ManyErrors xs
-
-ellipsis :: ByteString -> ByteString
-ellipsis bs
-    | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
-    | otherwise        = bs
 
 
 -- $use
