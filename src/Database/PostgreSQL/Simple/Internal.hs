@@ -351,6 +351,7 @@ exec conn sql =
             Just res -> do
                 status <- PQ.resultStatus res
                 case status of
+                   -- FIXME: handle PQ.CopyBoth and PQ.SingleTuple
                    PQ.EmptyQuery    -> getResult h mres'
                    PQ.CommandOk     -> getResult h mres'
                    PQ.TuplesOk      -> getResult h mres'
@@ -371,6 +372,7 @@ finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
 finishExecute _conn q result = do
     status <- PQ.resultStatus result
     case status of
+      -- FIXME: handle PQ.CopyBoth and PQ.SingleTuple
       PQ.EmptyQuery -> throwIO $ QueryError "execute: Empty query" q
       PQ.CommandOk -> do
           ncols <- PQ.nfields result

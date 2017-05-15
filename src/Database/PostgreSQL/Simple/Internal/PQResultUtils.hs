@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -41,8 +42,12 @@ finishQueryWith parser conn q result = do
     PQ.CommandOk     -> queryErr "query resulted in a command response"
     PQ.CopyOut       -> queryErr "query: COPY TO is not supported"
     PQ.CopyIn        -> queryErr "query: COPY FROM is not supported"
+#if MIN_VERSION_postgresql_libpq(0,9,3)
     PQ.CopyBoth      -> queryErr "query: COPY BOTH is not supported"
+#endif
+#if MIN_VERSION_postgresql_libpq(0,9,2)
     PQ.SingleTuple   -> queryErr "query: single-row mode is not supported"
+#endif
     PQ.BadResponse   -> throwResultError "query" result status
     PQ.NonfatalError -> throwResultError "query" result status
     PQ.FatalError    -> throwResultError "query" result status
@@ -67,8 +72,7 @@ getRowWith parser row ncols conn result = do
                       Nothing
                       ""
                       (show (unCol col) ++ " slots in target type")
-                      "mismatch between number of columns to \
-                      \convert and number in target type")
+                      "mismatch between number of columns to convert and number in target type")
     Errors []  -> throwIO $ ConversionFailed "" Nothing "" "" "unknown error"
     Errors [x] -> throwIO x
     Errors xs  -> throwIO $ ManyErrors xs

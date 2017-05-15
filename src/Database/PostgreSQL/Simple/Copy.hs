@@ -85,8 +85,12 @@ doCopy funcName conn template q = do
       PQ.TuplesOk      -> err
       PQ.CopyOut       -> return ()
       PQ.CopyIn        -> return ()
+#if MIN_VERSION_postgresql_libpq(0,9,3)
       PQ.CopyBoth      -> errMsg "COPY BOTH is not supported"
+#endif
+#if MIN_VERSION_postgresql_libpq(0,9,2)
       PQ.SingleTuple   -> errMsg "single-row mode is not supported"
+#endif
       PQ.BadResponse   -> throwResultError funcName result status
       PQ.NonfatalError -> throwResultError funcName result status
       PQ.FatalError    -> throwResultError funcName result status
