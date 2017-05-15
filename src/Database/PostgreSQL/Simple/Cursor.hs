@@ -3,8 +3,7 @@
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.Cursor
--- Copyright:   (c) 2011 MailRank, Inc.
---              (c) 2011-2012 Leon P Smith
+-- Copyright:   (c) 2011-2012 Leon P Smith
 --              (c) 2017 Bardur Arantsson
 -- License:     BSD3
 -- Maintainer:  Leon P Smith <leon@melding-monads.com>

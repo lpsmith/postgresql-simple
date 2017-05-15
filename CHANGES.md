@@ -1,3 +1,22 @@
+### Version 0.5.3.0 (2017-05-15)
+  * Refactored some rudimentary cursor handling code out of the
+    implementation of the fold operators,  into a new
+    `Database.PostgreSQL.Simple.Cursor` module,  thanks to Bardur Arantsson.
+
+  * Made the `FromField` instance for `Char` compatible with
+    postgresql's `bpchar` type.  Thanks to Ivan Lazar Miljenovic for
+    reporting the issue.
+
+  * Added `Show` and `Eq` instances for `Notification`, thanks to
+    Matvey Aksenov.
+
+  * Fixed some example code, thanks to Matvey Aksenov.
+
+  * Fixed a problem with using `conversionError` to throw exceptions
+    of type `SomeException`.  Previously, the exception would be
+    wrapped in a second `SomeException` dynamic constructor which
+    would cause normal GHC typecase idioms over `SomeException` to fail.
+
 ### Version 0.5.2.1 (2016-06-29)
   * Bumped the lower bound for `base` to 4.6.   Thanks to Herbert
     Valerio Riedel for reporting the issue.
