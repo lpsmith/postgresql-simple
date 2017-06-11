@@ -50,6 +50,7 @@ tests env = testGroup "tests"
     , testCase "Array"              . testArray
     , testCase "Array of nullables" . testNullableArray
     , testCase "HStore"             . testHStore
+    , testCase "HStore with nulls"  . testHStoreWithNulls
     , testCase "JSON"               . testJSON
     , testCase "Savepoint"          . testSavepoint
     , testCase "Unicode"            . testUnicode
@@ -202,6 +203,12 @@ testHStore TestEnv{..} = do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+testHStoreWithNulls :: TestEnv -> Assertion
+testHStoreWithNulls TestEnv{..} = do
+  execute_ conn "CREATE EXTENSION IF NOT EXISTS hstore"
+  res <- query_ conn "SELECT '\"foo\" => \"bar\", \"fooNull\" => NULL, \"fooNull2\" => null' :: hstore"
+  res @?= [Only $ HStoreMap $ Map.fromList [("foo", "bar")]]
 
 testJSON :: TestEnv -> Assertion
 testJSON TestEnv{..} = do
@@ -469,6 +476,7 @@ isSyntaxError SqlError{..} = sqlState == "42601"
 -- Note that some tests, such as Notify, use multiple connections, and assume
 -- that 'testConnect' connects to the same database every time it is called.
 testConnect :: IO Connection
+-- testConnect = connectPostgreSQL "host=localhost port=5432 user=pgsimple password=pgsimple"
 testConnect = connectPostgreSQL ""
 
 withTestEnv :: (TestEnv -> IO a) -> IO a
