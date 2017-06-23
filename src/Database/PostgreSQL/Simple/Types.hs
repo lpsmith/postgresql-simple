@@ -40,6 +40,7 @@ import           Data.ByteString.Builder ( stringUtf8 )
 import qualified Data.ByteString as B
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Tuple.Only (Only(..))
 import           Database.PostgreSQL.LibPQ (Oid(..))
 import           Database.PostgreSQL.Simple.Compat (toByteString)
 
@@ -92,23 +93,6 @@ instance Monoid Query where
     mappend (Query a) (Query b) = Query (B.append a b)
     {-# INLINE mappend #-}
     mconcat xs = Query (B.concat (map fromQuery xs))
-
--- | A single-value \"collection\".
---
--- This is useful if you need to supply a single parameter to a SQL
--- query, or extract a single column from a SQL result.
---
--- Parameter example:
---
--- @query c \"select x from scores where x > ?\" ('Only' (42::Int))@
---
--- Result example:
---
--- @xs <- query_ c \"select id from users\"
---forM_ xs $ \\('Only' id) -> {- ... -}@
-newtype Only a = Only {
-      fromOnly :: a
-    } deriving (Eq, Ord, Read, Show, Typeable, Functor)
 
 -- | Wrap a list of values for use in an @IN@ clause.  Replaces a
 -- single \"@?@\" character with a parenthesized list of rendered

@@ -65,6 +65,7 @@ Library
     case-insensitive,
     containers,
     hashable,
+    Only,
     postgresql-libpq >= 0.9 && < 0.10,
     template-haskell,
     text >= 0.11.1,
