@@ -218,6 +218,8 @@ module Database.PostgreSQL.Simple.Time
      , UTCTimestamp
      , ZonedTimestamp
      , LocalTimestamp
+     , Interval(..)
+     , zeroInterval
      , parseDay
      , parseUTCTime
      , parseZonedTime
@@ -227,6 +229,7 @@ module Database.PostgreSQL.Simple.Time
      , parseUTCTimestamp
      , parseZonedTimestamp
      , parseLocalTimestamp
+     , parseInterval
      , dayToBuilder
      , utcTimeToBuilder
      , zonedTimeToBuilder
@@ -239,6 +242,8 @@ module Database.PostgreSQL.Simple.Time
      , localTimestampToBuilder
      , unboundedToBuilder
      , nominalDiffTimeToBuilder
+     , intervalBuilder
      ) where
 
 import Database.PostgreSQL.Simple.Time.Implementation
+import Database.PostgreSQL.Simple.Time.Interval

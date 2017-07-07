@@ -21,10 +21,13 @@ module Database.PostgreSQL.Simple.Time.Internal.Parser
     , localToUTCTimeOfDayHMS
     , utcTime
     , zonedTime
+    , interval
     ) where
 
+import Prelude as P
 import Control.Applicative ((<$>), (<*>), (<*), (*>))
 import Database.PostgreSQL.Simple.Compat (toPico)
+import Database.PostgreSQL.Simple.Time.Interval (Interval(..))
 import Data.Attoparsec.ByteString.Char8 as A
 import Data.Bits ((.&.))
 import Data.Char (ord)
@@ -193,3 +196,44 @@ zonedTime = Local.ZonedTime <$> localTime <*> (fromMaybe utc <$> timeZone)
 
 utc :: Local.TimeZone
 utc = Local.TimeZone 0 False ""
+
+
+-- | Parse an interval of the form @[A year[s][ ][B mon[s][ ]][C day[s][ ]][[-]XXX:YY:ZZ[.[Z[Z[Z[Z]]]]]]@.
+-- (PosgreSQL default interval output format.)
+interval :: Parser Interval
+interval = do
+  parsedYears <- option 0 $ signed decimal <* string " year" <* optionalS <* optionalSpace
+  parsedMonths <- option 0 $ signed decimal <* string " mon" <* optionalS <* optionalSpace
+  parsedDays <- option 0 $ signed decimal <* string " day" <* optionalS <* optionalSpace
+  parsedMicroseconds <- option 0 $ do
+    possibleNegativeSign <- peekChar'
+    normalizeSign <- case possibleNegativeSign of '-' -> anyChar *> return negate
+                                                  _   -> return id
+    parsedHours <- decimal <* char ':'
+    parsedMinutes <- twoDigits <* char ':'
+    microsecondsOfSeconds <- (*microsecondScale) <$> twoDigits
+    maybePartialSeconds <- option Nothing $ Just <$> do
+      partialSecondStr <- char '.' *> many1 digit
+      let partialSeconds = read $ P.take 6 $ partialSecondStr ++ repeat '0'
+      return partialSeconds
+
+    let minutesMicros = microsecondScale * 60 * fromIntegral parsedMinutes
+    let hoursMicros = microsecondScale * 3600 * parsedHours
+    let parsedMicroseconds = case maybePartialSeconds of Nothing ->
+                                                          microsecondsOfSeconds +
+                                                          minutesMicros +
+                                                          hoursMicros
+                                                         Just parsedPartialSecond ->
+                                                          microsecondsOfSeconds + parsedPartialSecond +
+                                                          minutesMicros +
+                                                          hoursMicros
+
+    return $ normalizeSign parsedMicroseconds
+
+  let allMonths = 12 * parsedYears + parsedMonths
+  return Interval { intervalMonths = allMonths,
+                    intervalDays = parsedDays,
+                    intervalMicroseconds = fromIntegral parsedMicroseconds}
+    where optionalS = option 's' (char 's')
+          optionalSpace = option ' ' space
+          microsecondScale = 1000000
