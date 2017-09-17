@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor, GeneralizedNewtypeDeriving #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -33,7 +33,9 @@ module Database.PostgreSQL.Simple.Types
 import           Control.Arrow (first)
 import           Data.ByteString (ByteString)
 import           Data.Hashable (Hashable(hashWithSalt))
+import           Data.Foldable (toList)
 import           Data.Monoid (Monoid(..))
+import           Data.Semigroup
 import           Data.String (IsString(..))
 import           Data.Typeable (Typeable)
 import           Data.ByteString.Builder ( stringUtf8 )
@@ -88,11 +90,16 @@ instance Read Query where
 instance IsString Query where
     fromString = Query . toByteString . stringUtf8
 
+instance Semigroup Query where
+    Query a <> Query b = Query (B.append a b)
+    {-# INLINE (<>) #-}
+    sconcat xs = Query (B.concat $ map fromQuery $ toList xs)
+
 instance Monoid Query where
     mempty = Query B.empty
-    mappend (Query a) (Query b) = Query (B.append a b)
-    {-# INLINE mappend #-}
-    mconcat xs = Query (B.concat (map fromQuery xs))
+#if !(MIN_VERSION_base(4,11,0))
+    mappend = (<>)
+#endif
 
 -- | Wrap a list of values for use in an @IN@ clause.  Replaces a
 -- single \"@?@\" character with a parenthesized list of rendered

@@ -34,6 +34,7 @@ import           Data.Text.Encoding.Error(UnicodeException)
 import qualified Data.Text.Lazy          as TL
 import           Data.Typeable
 import           Data.Monoid(Monoid(..))
+import           Data.Semigroup
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
 
@@ -59,19 +60,24 @@ toLazyByteString x = case x of
                        Empty -> BL.empty
                        Comma x -> BU.toLazyByteString x
 
-instance Monoid HStoreBuilder where
-    mempty = Empty
-    mappend Empty     x = x
-    mappend (Comma a) x
+instance Semigroup HStoreBuilder where
+    Empty   <> x = x
+    Comma a <> x
         = Comma (a `mappend` case x of
                                Empty   -> mempty
                                Comma b -> char8 ',' `mappend` b)
+
+instance Monoid HStoreBuilder where
+    mempty = Empty
+#if !(MIN_VERSION_base(4,11,0))
+    mappend = (<>)
+#endif
 
 class ToHStoreText a where
   toHStoreText :: a -> HStoreText
 
 -- | Represents escape text, ready to be the key or value to a hstore value
-newtype HStoreText = HStoreText Builder deriving (Typeable, Monoid)
+newtype HStoreText = HStoreText Builder deriving (Typeable, Semigroup, Monoid)
 
 instance ToHStoreText HStoreText where
   toHStoreText = id

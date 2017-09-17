@@ -73,6 +73,7 @@ Library
     transformers,
     uuid-types >= 1.0.0,
     scientific,
+    semigroups,
     vector
 
   if !impl(ghc >= 7.6)
