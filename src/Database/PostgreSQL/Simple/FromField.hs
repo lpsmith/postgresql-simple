@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE PatternGuards, ScopedTypeVariables      #-}
 {-# LANGUAGE RecordWildCards, TemplateHaskell        #-}
+{-# LANGUAGE MultiWayIf, DefaultSignatures           #-}
+{-# LANGUAGE FlexibleContexts                        #-}
 
 {- |
 Module:      Database.PostgreSQL.Simple.FromField
@@ -83,6 +85,7 @@ instances use 'typename' instead.
 module Database.PostgreSQL.Simple.FromField
     (
       FromField(..)
+    , genericFromField
     , FieldParser
     , Conversion()
 
@@ -113,16 +116,19 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
-import           Control.Applicative ( (<|>), (<$>), pure, (*>), (<*) )
+import           Control.Applicative ( Alternative(..), (<|>), (<$>), pure, (*>), (<*), liftA2 )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Parser as JSON (value')
 import           Data.Attoparsec.ByteString.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
+import           Data.ByteString.Builder (Builder, toLazyByteString, byteString)
 import qualified Data.ByteString.Char8 as B
+import           Data.Char (toLower)
 import           Data.Int (Int16, Int32, Int64)
 import           Data.IORef (IORef, newIORef)
+import           Data.Proxy (Proxy(..))
 import           Data.Ratio (Ratio)
 import           Data.Time ( UTCTime, ZonedTime, LocalTime, Day, TimeOfDay )
 import           Data.Typeable (Typeable, typeOf)
@@ -150,6 +156,7 @@ import qualified Data.CaseInsensitive as CI
 import           Data.UUID.Types   (UUID)
 import qualified Data.UUID.Types as UUID
 import           Data.Scientific (Scientific)
+import           GHC.Generics (Generic, Rep, M1(..), K1(..), D1, C1, S1, Rec0, Constructor, (:*:)(..), to, conName)
 import           GHC.Real (infinity, notANumber)
 
 -- | Exception thrown if conversion from a SQL value to a Haskell
@@ -188,6 +195,8 @@ type FieldParser a = Field -> Maybe ByteString -> Conversion a
 -- | A type that may be converted from a SQL type.
 class FromField a where
     fromField :: FieldParser a
+    default fromField :: (Generic a, Typeable a, GFromField (Rep a)) => FieldParser a
+    fromField = genericFromField (map toLower)
     -- ^ Convert a SQL value to a Haskell value.
     --
     -- Returns a list of exceptions if the conversion fails.  In the case of
@@ -292,7 +301,8 @@ instance FromField Null where
 -- | bool
 instance FromField Bool where
     fromField f bs
-      | typeOid f /= $(inlineTypoid TI.bool) = returnError Incompatible f ""
+      | typeOid f /= $(inlineTypoid TI.bool)
+        && typeOid f /= $(inlineTypoid TI.unknown) = returnError Incompatible f ""
       | bs == Nothing                 = returnError UnexpectedNull f ""
       | bs == Just "t"                = pure True
       | bs == Just "f"                = pure False
@@ -404,9 +414,9 @@ instance FromField (Binary SB.ByteString) where
 instance FromField (Binary LB.ByteString) where
     fromField f dat = Binary . LB.fromChunks . (:[]) . unBinary <$> fromField f dat
 
--- | name, text, \"char\", bpchar, varchar
+-- | name, text, \"char\", bpchar, varchar, unknown
 instance FromField ST.Text where
-    fromField f = doFromField f okText $ (either left pure . ST.decodeUtf8')
+    fromField f = doFromField f okText' $ (either left pure . ST.decodeUtf8')
     -- FIXME:  check character encoding
 
 -- | name, text, \"char\", bpchar, varchar
@@ -645,10 +655,93 @@ returnError mkErr f msg = do
 atto :: forall a. (Typeable a)
      => Compat -> Parser a -> Field -> Maybe ByteString
      -> Conversion a
-atto types p0 f dat = doFromField f types (go p0) dat
+atto types p0 f dat = doFromField f (\t -> types t || (t == $(inlineTypoid TI.unknown))) (go p0) dat
   where
     go :: Parser a -> ByteString -> Conversion a
     go p s =
         case parseOnly p s of
           Left err -> returnError ConversionFailed f err
           Right  v -> pure v
+
+
+-- | Type class for default implementation of FromField using generics.
+class GFromField f where
+  gfromField :: (Typeable p)
+    => Proxy p
+    -> (String -> String)
+    -> Field
+    -> [Maybe ByteString]
+    -> Conversion (f p)
+
+instance (GFromField f) => GFromField (D1 i f) where
+  gfromField w t f v = M1 <$> gfromField w t f v
+
+instance (GFromField f, Typeable f, Constructor i) => GFromField (C1 i f) where
+  gfromField w t f (v:[]) = let
+    tname = B8.pack . t . conName $ (undefined::(C1 i f t))
+    tcheck = (\t -> t /= "record" && t /= tname)
+    in tcheck <$> typename f >>= \b -> M1 <$> case b of
+      True  -> returnError Incompatible f ""
+      False -> maybe
+        (returnError UnexpectedNull f "")
+        (either
+          (returnError ConversionFailed f)
+          (gfromField w t f)
+          . (parseOnly record)) v
+  gfromField _ _ f _ = M1 <$> returnError ConversionFailed f errUnexpectedArgs
+
+instance (GFromField f, Typeable f, GFromField g) => GFromField (f :*: g) where
+  gfromField _ _ f []     = liftA2 (:*:) (returnError ConversionFailed f errTooFewValues) empty
+  gfromField w t f (v:vs) = liftA2 (:*:) (gfromField w t f [v]) (gfromField w t f vs)
+
+instance (GFromField f, Typeable f) => GFromField (S1 i f) where
+  gfromField _ _ f []     = M1 <$> returnError ConversionFailed f errTooFewValues
+  gfromField w t f (v:[]) = M1 <$> gfromField w t f [v]
+  gfromField _ _ f _      = M1 <$> returnError ConversionFailed f errTooManyValues
+
+instance (FromField f, Typeable f) => GFromField (Rec0 f) where
+  gfromField _ _ f [v] = K1 <$> fromField (f {typeOid = typoid TI.unknown}) v
+  gfromField _ _ f _   = K1 <$> returnError ConversionFailed f errUnexpectedArgs
+
+
+-- | Common error messages for GFromField instances.
+errTooFewValues, errTooManyValues, errUnexpectedArgs :: String
+errTooFewValues = "too few values"
+errTooManyValues = "too many values"
+errUnexpectedArgs = "unexpected arguments"
+
+-- | Parser of a postgresql record.
+record :: Parser [Maybe ByteString]
+record = (char '(') *> (recordField `sepBy` (char ',')) <* (char ')')
+
+-- | Parser of a postgresql record's field.
+recordField :: Parser (Maybe ByteString)
+recordField = (Just <$> quotedString) <|> (Just <$> unquotedString) <|> (pure Nothing) where
+  quotedString = unescape <$> (char '"' *> scan False updateState) where
+    updateState isBalanced c = if
+      | c == '"'             -> Just . not $ isBalanced
+      | not isBalanced       -> Just False
+      | c == ',' || c == ')' -> Nothing
+      | otherwise            -> fail $ "unexpected symbol: " ++ [c]
+
+    unescape = unescape' '\\' . unescape' '"' . B8.init where
+      unescape' c = halve c (byteString SB.empty) . groupByChar c
+
+      groupByChar c = B8.groupBy $ \a b -> (a == c) == (b == c)
+
+      halve :: Char -> Builder -> [ByteString] -> ByteString
+      halve _ b []     = LB.toStrict . toLazyByteString $ b
+      halve c b (s:ss) = halve c (b <> b') ss where
+        b' = if
+           | (/= c) . B8.head $ s -> byteString s
+           | otherwise            -> byteString . SB.take ((SB.length s) `div` 2) $ s
+
+  unquotedString = takeWhile1 (\c -> c /= ',' && c /= ')')
+
+-- | Function that creates fromField for a given type.
+genericFromField :: forall a. (Generic a, Typeable a, GFromField (Rep a))
+  => (String -> String) -- ^ How to transform constructor's name to match
+                        --   postgresql type's name.
+  -> FieldParser a
+genericFromField t f v = (to <$> (gfromField (Proxy :: Proxy a) t f [v]))
+
