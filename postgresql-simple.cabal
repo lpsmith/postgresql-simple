@@ -129,6 +129,7 @@ test-suite test
                , text
                , time
                , vector
+               , postgres-embedded >= 0.1.7 && <0.2
 
   if !impl(ghc >= 7.6)
     build-depends:

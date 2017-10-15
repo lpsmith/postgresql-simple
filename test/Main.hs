@@ -4,6 +4,7 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
+import Database.PostgreSQL.Embedded
 import Database.PostgreSQL.Simple.FromField (FromField)
 import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
@@ -469,7 +470,7 @@ isSyntaxError SqlError{..} = sqlState == "42601"
 -- Note that some tests, such as Notify, use multiple connections, and assume
 -- that 'testConnect' connects to the same database every time it is called.
 testConnect :: IO Connection
-testConnect = connectPostgreSQL ""
+testConnect = connectPostgreSQL "host=127.0.0.1 user=postgres dbname=postgres port=46782"
 
 withTestEnv :: (TestEnv -> IO a) -> IO a
 withTestEnv cb =
@@ -482,4 +483,10 @@ withTestEnv cb =
     withConn = bracket testConnect close
 
 main :: IO ()
-main = withTestEnv $ defaultMain . tests
+main = do
+    let sConfig = StartupConfig True (Version "9.6.5-1")
+    let dConfig = DBConfig 46782 "postgres"
+    rc <- startPostgres sConfig dConfig
+    withTestEnv $ defaultMain . tests
+    stopPostgres rc
+    return ()
