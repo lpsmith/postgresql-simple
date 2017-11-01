@@ -188,7 +188,8 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --
 --   Omitting @password@ will default to an appropriate password found
 --   in the @pgpass@ file,  or no password at all if a matching line is
---   not found.   See
+--   not found.  The path of the @pgpass@ file may be specified by setting
+--   the @PGPASSFILE@ environment variable. See
 --   <https://www.postgresql.org/docs/9.5/static/libpq-pgpass.html> for
 --   more information regarding this file.
 --
