@@ -60,14 +60,6 @@ mask io = do
 #endif
 {-# INLINE mask #-}
 
-#if !MIN_VERSION_base(4,5,0)
-infixr 6 <>
-
-(<>) :: Monoid m => m -> m -> m
-(<>) = mappend
-{-# INLINE (<>) #-}
-#endif
-
 toByteString :: Builder -> ByteString
 #if MIN_VERSION_bytestring(0,10,0)
 toByteString x = toStrict (toLazyByteString x)
