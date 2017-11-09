@@ -420,8 +420,7 @@ instance (FromField a, FromField b, FromField c, FromField d, FromField e,
 instance (FromField a, FromField b, FromField c, FromField d, FromField e,
           FromField f, FromField g, FromField h, FromField i, FromField j,
           FromField k, FromField l, FromField m, FromField n, FromField o,
-          FromField p, FromField q, FromField q, FromField r, FromField s,
-          FromField t) =>
+          FromField p, FromField q, FromField r, FromField s, FromField t) =>
     FromRow (Maybe (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t)) where
     fromRow =  (null *> null *> null *> null *> null *>
                 null *> null *> null *> null *> null *>
