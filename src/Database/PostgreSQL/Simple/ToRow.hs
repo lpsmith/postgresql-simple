@@ -89,6 +89,96 @@ instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
         [toField a, toField b, toField c, toField d, toField e, toField f,
          toField g, toField h, toField i, toField j]
 
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o, ToField p)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o, toField p]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o, ToField p, ToField q)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o, toField p, toField q]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o, ToField p, ToField q, ToField r)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o, toField p, toField q, toField r]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o, ToField p, ToField q, ToField r,
+          ToField s)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o, toField p, toField q, toField r,
+         toField s]
+
+instance (ToField a, ToField b, ToField c, ToField d, ToField e, ToField f,
+          ToField g, ToField h, ToField i, ToField j, ToField k, ToField l,
+          ToField m, ToField n, ToField o, ToField p, ToField q, ToField r,
+          ToField s, ToField t)
+    => ToRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) where
+    toRow (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) =
+        [toField a, toField b, toField c, toField d, toField e, toField f,
+         toField g, toField h, toField i, toField j, toField k, toField l,
+         toField m, toField n, toField o, toField p, toField q, toField r,
+         toField s, toField t]
+
 instance (ToField a) => ToRow [a] where
     toRow = map toField
 
