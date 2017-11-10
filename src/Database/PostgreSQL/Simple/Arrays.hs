@@ -18,10 +18,11 @@ import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import           Data.Monoid
 import           Data.Attoparsec.ByteString.Char8
+import GHC.Stack
 
 
 -- | Parse one of three primitive field formats: array, quoted and plain.
-arrayFormat :: Char -> Parser ArrayFormat
+arrayFormat :: (HasCallStack) => Char -> Parser ArrayFormat
 arrayFormat delim  =  Array  <$> array delim
                   <|> Plain  <$> plain delim
                   <|> Quoted <$> quoted
@@ -31,7 +32,7 @@ data ArrayFormat = Array [ArrayFormat]
                  | Quoted ByteString
                    deriving (Eq, Show, Ord)
 
-array :: Char -> Parser [ArrayFormat]
+array :: (HasCallStack) => Char -> Parser [ArrayFormat]
 array delim = char '{' *> option [] (arrays <|> strings) <* char '}'
   where
     strings = sepBy1 (Quoted <$> quoted <|> Plain <$> plain delim) (char delim)
@@ -39,7 +40,7 @@ array delim = char '{' *> option [] (arrays <|> strings) <* char '}'
     -- NB: Arrays seem to always be delimited by commas.
 
 -- | Recognizes a quoted string.
-quoted :: Parser ByteString
+quoted :: (HasCallStack) => Parser ByteString
 quoted  = char '"' *> option "" contents <* char '"'
   where
     esc = char '\\' *> (char '\\' <|> char '"')
@@ -48,7 +49,7 @@ quoted  = char '"' *> option "" contents <* char '"'
 
 -- | Recognizes a plain string literal, not containing quotes or brackets and
 --   not containing the delimiter character.
-plain :: Char -> Parser ByteString
+plain :: (HasCallStack) => Char -> Parser ByteString
 plain delim = takeWhile1 (notInClass (delim:"\"{}"))
 
 -- Mutually recursive 'fmt' and 'delimit' separate out value formatting
@@ -56,13 +57,13 @@ plain delim = takeWhile1 (notInClass (delim:"\"{}"))
 
 -- | Format an array format item, using the delimiter character if the item is
 --   itself an array.
-fmt :: Char -> ArrayFormat -> ByteString
+fmt :: (HasCallStack) => Char -> ArrayFormat -> ByteString
 fmt = fmt' False
 
 -- | Format a list of array format items, inserting the appropriate delimiter
 --   between them. When the items are arrays, they will be delimited with
 --   commas; otherwise, they are delimited with the passed-in-delimiter.
-delimit :: Char -> [ArrayFormat] -> ByteString
+delimit :: (HasCallStack) => Char -> [ArrayFormat] -> ByteString
 delimit _      [] = ""
 delimit c     [x] = fmt' True c x
 delimit c (x:y:z) = (fmt' True c x `B.snoc` c') `mappend` delimit c (y:z)
@@ -73,7 +74,7 @@ delimit c (x:y:z) = (fmt' True c x `B.snoc` c') `mappend` delimit c (y:z)
 -- | Format an array format item, using the delimiter character if the item is
 --   itself an array, optionally applying quoting rules. Creates copies for
 --   safety when used in 'FromField' instances.
-fmt' :: Bool -> Char -> ArrayFormat -> ByteString
+fmt' :: (HasCallStack) => Bool -> Char -> ArrayFormat -> ByteString
 fmt' quoting c x =
   case x of
     Array items          -> '{' `B.cons` (delimit c items `B.snoc` '}')
@@ -83,7 +84,7 @@ fmt' quoting c x =
     -- NB: The 'snoc' and 'cons' functions always copy.
 
 -- | Escape a string according to Postgres double-quoted string format.
-esc :: ByteString -> ByteString
+esc :: (HasCallStack) => ByteString -> ByteString
 esc = B.concatMap f
   where
     f '"'  = "\\\""

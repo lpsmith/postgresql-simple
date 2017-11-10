@@ -14,6 +14,7 @@
 
 module Database.PostgreSQL.Simple.HStore.Implementation where
 
+import GHC.Stack
 import           Control.Applicative
 import qualified Data.Attoparsec.ByteString as P
 import qualified Data.Attoparsec.ByteString.Char8 as P (isSpace_w8)
@@ -37,6 +38,7 @@ import           Data.Monoid(Monoid(..))
 import           Data.Semigroup
 import           Database.PostgreSQL.Simple.FromField
 import           Database.PostgreSQL.Simple.ToField
+import qualified Data.List as DL
 
 class ToHStore a where
    toHStore :: a -> HStoreBuilder
@@ -96,7 +98,7 @@ instance ToHStoreText TS.Text where
 instance ToHStoreText TL.Text where
   toHStoreText = HStoreText . TL.foldrChunks (escapeAppend . TS.encodeUtf8) mempty
 
-escapeAppend :: BS.ByteString -> Builder -> Builder
+escapeAppend :: (HasCallStack) => BS.ByteString -> Builder -> Builder
 escapeAppend = loop
   where
     loop (BS.break quoteNeeded -> (a,b)) rest
@@ -110,7 +112,7 @@ escapeAppend = loop
         | c == c2w '\"' = byteString "\\\""
         | otherwise     = byteString "\\\\"
 
-hstore :: (ToHStoreText a, ToHStoreText b) => a -> b -> HStoreBuilder
+hstore :: (HasCallStack, ToHStoreText a, ToHStoreText b) => a -> b -> HStoreBuilder
 hstore (toHStoreText -> (HStoreText key)) (toHStoreText -> (HStoreText val)) =
     Comma (char8 '"' `mappend` key `mappend` byteString "\"=>\""
               `mappend` val `mappend` char8 '"')
@@ -159,20 +161,26 @@ instance FromField HStoreMap where
     fromField f mdat = convert <$> fromField f mdat
       where convert (HStoreList xs) = HStoreMap (Map.fromList xs)
 
-parseHStoreList :: BS.ByteString -> Either String HStoreList
+parseHStoreList :: (HasCallStack) => BS.ByteString -> Either String HStoreList
 parseHStoreList dat =
     case P.parseOnly (parseHStore <* P.endOfInput) dat of
       Left err          -> Left (show err)
       Right (Left err)  -> Left (show err)
       Right (Right val) -> Right val
 
-parseHStore :: P.Parser (Either UnicodeException HStoreList)
+parseHStore :: (HasCallStack) => P.Parser (Either UnicodeException HStoreList)
 parseHStore = do
     kvs <- P.sepBy' (skipWhiteSpace *> parseHStoreKeyVal)
                     (skipWhiteSpace *> P.word8 (c2w ','))
-    return $ HStoreList <$> sequence kvs
+    return $ (HStoreList . (DL.foldl' removeNull [])) <$> sequence kvs
+    where
+      removeNull :: (HasCallStack) => [(Text, Text)] -> (Text, Maybe Text) -> [(Text, Text)]
+      removeNull memo (k, Nothing) = memo
+      removeNull memo (k, Just v) = memo ++ [(k, v)]
 
-parseHStoreKeyVal :: P.Parser (Either UnicodeException (Text,Text))
+-- NOTE: The Right value is a (Maybe (Text, Text)) to be able to handle
+-- key-value pairs where the value is NULL in the DB.
+parseHStoreKeyVal :: (HasCallStack) => P.Parser (Either UnicodeException (Text, Maybe Text))
 parseHStoreKeyVal = do
   mkey <- parseHStoreText
   case mkey of
@@ -181,16 +189,22 @@ parseHStoreKeyVal = do
       skipWhiteSpace
       _ <- P.string "=>"
       skipWhiteSpace
-      mval <- parseHStoreText
+      mval <- parseHStoreNullableText
       case mval of
         Left  err -> return (Left err)
-        Right val -> return (Right (key,val))
+        Right Nothing -> return (Right (key, Nothing))
+        Right (Just val) -> return (Right (key, Just val))
 
 
-skipWhiteSpace :: P.Parser ()
+skipWhiteSpace :: (HasCallStack) => P.Parser ()
 skipWhiteSpace = P.skipWhile P.isSpace_w8
 
-parseHStoreText :: P.Parser (Either UnicodeException Text)
+parseHStoreNullableText :: (HasCallStack) => P.Parser (Either UnicodeException (Maybe Text))
+parseHStoreNullableText = nullParser <|> (fmap . fmap) Just parseHStoreText
+  where
+    nullParser = (P.string "NULL" <|> P.string "null") >> return (Right Nothing)
+
+parseHStoreText :: (HasCallStack) => P.Parser (Either UnicodeException Text)
 parseHStoreText = do
   _ <- P.word8 (c2w '"')
   mtexts <- parseHStoreTexts id
@@ -200,7 +214,7 @@ parseHStoreText = do
                      _ <- P.word8 (c2w '"')
                      return (Right (TS.concat texts))
 
-parseHStoreTexts :: ([Text] -> [Text])
+parseHStoreTexts :: (HasCallStack) => ([Text] -> [Text])
                  -> P.Parser (Either UnicodeException [Text])
 parseHStoreTexts acc = do
   mchunk <- TS.decodeUtf8' <$> P.takeWhile (not . isSpecialChar)

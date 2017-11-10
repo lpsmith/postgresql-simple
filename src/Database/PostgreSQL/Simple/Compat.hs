@@ -11,6 +11,7 @@ module Database.PostgreSQL.Simple.Compat
     , fromPico
     ) where
 
+import GHC.Stack
 import qualified Control.Exception as E
 import Data.Monoid
 import Data.ByteString         (ByteString)
@@ -50,7 +51,7 @@ import Unsafe.Coerce (unsafeCoerce)
 -- enable the RankNTypes extension (since 'E.mask' has a rank-3 type).  The
 -- 'withTransactionMode' function calls the restore callback only once, so we
 -- don't need that polymorphism.
-mask :: ((IO a -> IO a) -> IO b) -> IO b
+mask :: (HasCallStack) => ((IO a -> IO a) -> IO b) -> IO b
 #if MIN_VERSION_base(4,3,0)
 mask io = E.mask $ \restore -> io restore
 #else
@@ -63,12 +64,12 @@ mask io = do
 #if !MIN_VERSION_base(4,5,0)
 infixr 6 <>
 
-(<>) :: Monoid m => m -> m -> m
+(<>) :: (HasCallStack) => Monoid m => m -> m -> m
 (<>) = mappend
 {-# INLINE (<>) #-}
 #endif
 
-toByteString :: Builder -> ByteString
+toByteString :: (HasCallStack) => Builder -> ByteString
 #if MIN_VERSION_bytestring(0,10,0)
 toByteString x = toStrict (toLazyByteString x)
 #else
@@ -77,18 +78,18 @@ toByteString x = B.concat (toChunks (toLazyByteString x))
 
 #if MIN_VERSION_base(4,7,0)
 
-toPico :: Integer -> Pico
+toPico :: (HasCallStack) => Integer -> Pico
 toPico = MkFixed
 
-fromPico :: Pico -> Integer
+fromPico :: (HasCallStack) => Pico -> Integer
 fromPico (MkFixed i) = i
 
 #else
 
-toPico :: Integer -> Pico
+toPico :: (HasCallStack) => Integer -> Pico
 toPico = unsafeCoerce
 
-fromPico :: Pico -> Integer
+fromPico :: (HasCallStack) => Pico -> Integer
 fromPico = unsafeCoerce
 
 #endif

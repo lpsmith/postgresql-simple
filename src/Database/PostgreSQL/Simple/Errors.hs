@@ -25,6 +25,7 @@ module Database.PostgreSQL.Simple.Errors
        )
        where
 
+import GHC.Stack
 import Control.Applicative
 import Control.Exception as E
 
@@ -70,7 +71,7 @@ instance Exception ConstraintViolation
 -- >   where
 -- >     handler (UniqueViolation "user_login_key") = ...
 -- >     handler _ = ...
-constraintViolation :: SqlError -> Maybe ConstraintViolation
+constraintViolation :: (HasCallStack) => SqlError -> Maybe ConstraintViolation
 constraintViolation e =
   case sqlState e of
     "23502" -> NotNullViolation <$> parseMaybe parseQ1 msg
@@ -89,7 +90,7 @@ constraintViolation e =
 -- >     handler (_, UniqueViolation "user_login_key") = ...
 -- >     handler (e, _) = throwIO e
 --
-constraintViolationE :: SqlError -> Maybe (SqlError, ConstraintViolation)
+constraintViolationE :: (HasCallStack) => SqlError -> Maybe (SqlError, ConstraintViolation)
 constraintViolationE e = fmap ((,) e) $ constraintViolation e
 
 -- | Catches SqlError, tries to convert to ConstraintViolation, re-throws
@@ -99,26 +100,26 @@ constraintViolationE e = fmap ((,) e) $ constraintViolation e
 -- >   where
 -- >     catcher _ (UniqueViolation "user_login_key") = ...
 -- >     catcher e _ = throwIO e
-catchViolation :: (SqlError -> ConstraintViolation -> IO a) -> IO a -> IO a
+catchViolation :: (HasCallStack) => (SqlError -> ConstraintViolation -> IO a) -> IO a -> IO a
 catchViolation f m = E.catch m
                      (\e -> maybe (throwIO e) (f e) $ constraintViolation e)
 
 -- Parsers just try to extract quoted strings from error messages, number
 -- of quoted strings depend on error type.
-scanTillQuote :: Parser ByteString
+scanTillQuote :: (HasCallStack) => Parser ByteString
 scanTillQuote = scan False go
   where go True _ = Just False -- escaped character
         go False '"' = Nothing -- end parse
         go False '\\' = Just True -- next one is escaped
         go _ _ = Just False
 
-parseQ1 :: Parser ByteString
+parseQ1 :: (HasCallStack) => Parser ByteString
 parseQ1 = scanTillQuote *> char '"' *> scanTillQuote <* char '"'
 
-parseQ2 :: Parser (ByteString, ByteString)
+parseQ2 :: (HasCallStack) => Parser (ByteString, ByteString)
 parseQ2 = (,) <$> parseQ1 <*> parseQ1
 
-parseMaybe :: Parser a -> ByteString -> Maybe a
+parseMaybe :: (HasCallStack) => Parser a -> ByteString -> Maybe a
 parseMaybe p b = either (const Nothing) Just $ parseOnly p b
 
 ------------------------------------------------------------------------
@@ -126,14 +127,14 @@ parseMaybe p b = either (const Nothing) Just $ parseOnly p b
 --
 -- https://www.postgresql.org/docs/9.5/static/errcodes-appendix.html
 
-isSerializationError :: SqlError -> Bool
+isSerializationError :: (HasCallStack) => SqlError -> Bool
 isSerializationError = isSqlState "40001"
 
-isNoActiveTransactionError :: SqlError -> Bool
+isNoActiveTransactionError :: (HasCallStack) => SqlError -> Bool
 isNoActiveTransactionError = isSqlState "25P01"
 
-isFailedTransactionError :: SqlError -> Bool
+isFailedTransactionError :: (HasCallStack) => SqlError -> Bool
 isFailedTransactionError = isSqlState "25P02"
 
-isSqlState :: ByteString -> SqlError -> Bool
+isSqlState :: (HasCallStack) => ByteString -> SqlError -> Bool
 isSqlState s SqlError{..} = sqlState == s

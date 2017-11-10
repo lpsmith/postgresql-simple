@@ -22,6 +22,7 @@ module Database.PostgreSQL.Simple.Cursor
     , foldForwardWithParser
     ) where
 
+import GHC.Stack
 import           Data.ByteString.Builder (intDec)
 import           Control.Applicative ((<$>))
 import           Control.Exception as E
@@ -40,14 +41,14 @@ data Cursor = Cursor !Query !Connection
 
 -- | Declare a temporary cursor. The cursor is given a
 -- unique name for the given connection.
-declareCursor :: Connection -> Query -> IO Cursor
+declareCursor :: (HasCallStack) => Connection -> Query -> IO Cursor
 declareCursor conn q = do
   name <- newTempName conn
   void $ execute_ conn $ mconcat ["DECLARE ", name, " NO SCROLL CURSOR FOR ", q]
   return $ Cursor name conn
 
 -- | Close the given cursor.
-closeCursor :: Cursor -> IO ()
+closeCursor :: (HasCallStack) => Cursor -> IO ()
 closeCursor (Cursor name conn) =
   (void $ execute_ conn ("CLOSE " <> name)) `E.catch` \ex ->
      -- Don't throw exception if CLOSE failed because the transaction is
@@ -58,7 +59,7 @@ closeCursor (Cursor name conn) =
 -- supplied fold-like function on each row as it is received. In case
 -- the cursor is exhausted, a 'Left' value is returned, otherwise a
 -- 'Right' value is returned.
-foldForwardWithParser :: Cursor -> RowParser r -> Int -> (a -> r -> IO a) -> a -> IO (Either a a)
+foldForwardWithParser :: (HasCallStack) => Cursor -> RowParser r -> Int -> (a -> r -> IO a) -> a -> IO (Either a a)
 foldForwardWithParser (Cursor name conn) parser chunkSize f a0 = do
   let q = "FETCH FORWARD "
             <> (toByteString $ intDec chunkSize)
@@ -83,11 +84,11 @@ foldForwardWithParser (Cursor name conn) parser chunkSize f a0 = do
 -- | Fold over a chunk of rows, calling the supplied fold-like function
 -- on each row as it is received. In case the cursor is exhausted,
 -- a 'Left' value is returned, otherwise a 'Right' value is returned.
-foldForward :: FromRow r => Cursor -> Int -> (a -> r -> IO a) -> a -> IO (Either a a)
+foldForward :: (HasCallStack) => FromRow r => Cursor -> Int -> (a -> r -> IO a) -> a -> IO (Either a a)
 foldForward cursor = foldForwardWithParser cursor fromRow
 
 
-foldM' :: (Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
+foldM' :: (HasCallStack, Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
 foldM' f a lo hi = loop a lo
   where
     loop a !n

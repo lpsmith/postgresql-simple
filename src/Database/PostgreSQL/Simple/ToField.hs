@@ -59,6 +59,7 @@ import           Data.Text.Lazy.Builder.Scientific (scientificBuilder)
 import           Data.Scientific (scientificBuilder)
 #endif
 import           Foreign.C.Types (CUInt(..))
+import GHC.Stack
 
 -- | How to render an element when substituting it into a query.
 data Action =
@@ -110,7 +111,7 @@ instance (ToField a) => ToField (In [a]) where
         (intersperse (Plain (char8 ',')) . map toField $ xs) ++
         [Plain (char8 ')')]
 
-renderNull :: Action
+renderNull :: (HasCallStack) => Action
 renderNull = Plain (byteString "null")
 
 instance ToField Null where
@@ -297,17 +298,17 @@ instance ToField JSON.Value where
 -- This can be used as the default implementation for the 'toField'
 -- method for Haskell types that have a JSON representation in
 -- PostgreSQL.
-toJSONField :: JSON.ToJSON a => a -> Action
+toJSONField :: (HasCallStack, JSON.ToJSON a) => a -> Action
 toJSONField = toField . JSON.toJSON
 
 -- | Surround a string with single-quote characters: \"@'@\"
 --
 -- This function /does not/ perform any other escaping.
-inQuotes :: Builder -> Builder
+inQuotes :: (HasCallStack) => Builder -> Builder
 inQuotes b = quote `mappend` b `mappend` quote
   where quote = char8 '\''
 
-interleaveFoldr :: (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
+interleaveFoldr :: (HasCallStack) => (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
 interleaveFoldr f b bs as = foldr (\a bs -> b : f a bs) bs as
 {-# INLINE interleaveFoldr #-}
 
@@ -330,10 +331,10 @@ instance ToRow a => ToField (Values a) where
         litC = Plain . char8
         values x = Many (lit "(VALUES ": x)
 
-        typedField :: (Action, QualifiedIdentifier) -> [Action] -> [Action]
+        typedField :: (HasCallStack) => (Action, QualifiedIdentifier) -> [Action] -> [Action]
         typedField (val,typ) rest = val : lit "::" : toField typ : rest
 
-        typedRow :: [Action] -> [QualifiedIdentifier] -> [Action] -> [Action]
+        typedRow :: (HasCallStack) => [Action] -> [QualifiedIdentifier] -> [Action] -> [Action]
         typedRow (val:vals) (typ:typs) rest =
             litC '(' :
               typedField (val,typ) ( interleaveFoldr
@@ -343,7 +344,7 @@ instance ToRow a => ToField (Values a) where
                                         (zip vals typs)   )
         typedRow _ _ _ = error emptyrow
 
-        untypedRow :: [Action] -> [Action] -> [Action]
+        untypedRow :: (HasCallStack) => [Action] -> [Action] -> [Action]
         untypedRow (val:vals) rest =
             litC '(' : val :
             interleaveFoldr
@@ -353,17 +354,17 @@ instance ToRow a => ToField (Values a) where
                  vals
         untypedRow _ _ = error emptyrow
 
-        typedRows :: ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
+        typedRows :: (HasCallStack) => ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
         typedRows [] _ _ = error funcname
         typedRows (val:vals) types rest =
             typedRow (toRow val) types (multiRows vals rest)
 
-        untypedRows :: ToRow a => [a] -> [Action] -> [Action]
+        untypedRows :: (HasCallStack) => ToRow a => [a] -> [Action] -> [Action]
         untypedRows [] _ = error funcname
         untypedRows (val:vals) rest =
             untypedRow (toRow val) (multiRows vals rest)
 
-        multiRows :: ToRow a => [a] -> [Action] -> [Action]
+        multiRows :: (HasCallStack) => ToRow a => [a] -> [Action] -> [Action]
         multiRows vals rest = interleaveFoldr
                                 (untypedRow . toRow)
                                 (litC ',')

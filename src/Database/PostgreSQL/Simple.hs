@@ -138,6 +138,7 @@ import           Database.PostgreSQL.Simple.Internal.PQResultUtils
 import           Database.PostgreSQL.Simple.Transaction
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
+import GHC.Stack
 
 
 -- | Format a query string.
@@ -150,7 +151,7 @@ import qualified Data.ByteString.Char8 as B
 --
 -- Throws 'FormatError' if the query string could not be formatted
 -- correctly.
-formatQuery :: ToRow q => Connection -> Query -> q -> IO ByteString
+formatQuery :: (HasCallStack, ToRow q) => Connection -> Query -> q -> IO ByteString
 formatQuery conn q@(Query template) qs
     | null xs && '?' `B.notElem` template = return template
     | otherwise = toByteString <$> buildQuery conn q template xs
@@ -169,7 +170,7 @@ formatQuery conn q@(Query template) qs
 --
 -- Throws 'FormatError' if the query string could not be formatted
 -- correctly.
-formatMany :: (ToRow q) => Connection -> Query -> [q] -> IO ByteString
+formatMany :: (HasCallStack, ToRow q) => Connection -> Query -> [q] -> IO ByteString
 formatMany _ q [] = fmtError "no rows supplied" q []
 formatMany conn q@(Query template) qs = do
   case parseTemplate template of
@@ -194,7 +195,7 @@ formatMany conn q@(Query template) qs = do
 -- This would be much more concise with some sort of regex engine.
 -- 'formatMany' used to use pcre-light instead of this hand-written parser,
 -- but pcre is a hassle to install on Windows.
-parseTemplate :: ByteString -> Maybe (ByteString, ByteString, ByteString)
+parseTemplate :: (HasCallStack) => ByteString -> Maybe (ByteString, ByteString, ByteString)
 parseTemplate template =
     -- Convert input string to uppercase, to facilitate searching.
     search $ B.map toUpper_ascii template
@@ -277,7 +278,7 @@ parseTemplate template =
 
 
 
-buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
+buildQuery :: (HasCallStack) => Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs =
     zipParams (split template) <$> mapM (buildAction conn q xs) xs
   where split s =
@@ -299,7 +300,7 @@ buildQuery conn q template xs =
 --
 -- Throws 'FormatError' if the query could not be formatted correctly, or
 -- a 'SqlError' exception if the backend returns an error.
-execute :: (ToRow q) => Connection -> Query -> q -> IO Int64
+execute :: (HasCallStack, ToRow q) => Connection -> Query -> q -> IO Int64
 execute conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishExecute conn template result
@@ -334,7 +335,7 @@ execute conn template qs = do
 --  |] [(1, \"hello\"),(2, \"world\")]
 -- @
 
-executeMany :: (ToRow q) => Connection -> Query -> [q] -> IO Int64
+executeMany :: (HasCallStack, ToRow q) => Connection -> Query -> [q] -> IO Int64
 executeMany _ _ [] = return 0
 executeMany conn q qs = do
   result <- exec conn =<< formatMany conn q qs
@@ -352,10 +353,10 @@ executeMany conn q qs = do
 -- consider using the 'Values' constructor instead.
 --
 -- Throws 'FormatError' if the query could not be formatted correctly.
-returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
+returning :: (HasCallStack, ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
 returning = returningWith fromRow
 
-returningWith :: (ToRow q) => RowParser r -> Connection -> Query -> [q] -> IO [r]
+returningWith :: (HasCallStack, ToRow q) => RowParser r -> Connection -> Query -> [q] -> IO [r]
 returningWith _ _ _ [] = return []
 returningWith parser conn q qs = do
   result <- exec conn =<< formatMany conn q qs
@@ -379,21 +380,21 @@ returningWith parser conn q qs = do
 --
 -- * 'SqlError':  the postgresql backend returned an error,  e.g.
 --   a syntax or type error,  or an incorrect table or column name.
-query :: (ToRow q, FromRow r) => Connection -> Query -> q -> IO [r]
+query :: (HasCallStack, ToRow q, FromRow r) => Connection -> Query -> q -> IO [r]
 query = queryWith fromRow
 
 -- | A version of 'query' that does not perform query substitution.
-query_ :: (FromRow r) => Connection -> Query -> IO [r]
+query_ :: (HasCallStack, FromRow r) => Connection -> Query -> IO [r]
 query_ = queryWith_ fromRow
 
 -- | A version of 'query' taking parser as argument
-queryWith :: ToRow q => RowParser r -> Connection -> Query -> q -> IO [r]
+queryWith :: (HasCallStack, ToRow q) => RowParser r -> Connection -> Query -> q -> IO [r]
 queryWith parser conn template qs = do
   result <- exec conn =<< formatQuery conn template qs
   finishQueryWith parser conn template result
 
 -- | A version of 'query_' taking parser as argument
-queryWith_ :: RowParser r -> Connection -> Query -> IO [r]
+queryWith_ :: (HasCallStack) => RowParser r -> Connection -> Query -> IO [r]
 queryWith_ parser conn q@(Query que) = do
   result <- exec conn que
   finishQueryWith parser conn q result
@@ -425,7 +426,7 @@ queryWith_ parser conn q@(Query que) = do
 --
 -- * 'SqlError':  the postgresql backend returned an error,  e.g.
 --   a syntax or type error,  or an incorrect table or column name.
-fold            :: ( FromRow row, ToRow params )
+fold            :: ( FromRow row, ToRow params, HasCallStack )
                 => Connection
                 -> Query
                 -> params
@@ -435,7 +436,7 @@ fold            :: ( FromRow row, ToRow params )
 fold = foldWithOptions defaultFoldOptions
 
 -- | A version of 'fold' taking a parser as an argument
-foldWith        :: ( ToRow params )
+foldWith        :: ( ToRow params, HasCallStack )
                 => RowParser row
                 -> Connection
                 -> Query
@@ -471,7 +472,7 @@ defaultFoldOptions = FoldOptions {
 --   accordingly.    If the connection is already in a transaction,
 --   then the existing transaction is used and thus the 'transactionMode'
 --   option is ignored.
-foldWithOptions :: ( FromRow row, ToRow params )
+foldWithOptions :: ( FromRow row, ToRow params, HasCallStack )
                 => FoldOptions
                 -> Connection
                 -> Query
@@ -482,7 +483,7 @@ foldWithOptions :: ( FromRow row, ToRow params )
 foldWithOptions opts = foldWithOptionsAndParser opts fromRow
 
 -- | A version of 'foldWithOptions' taking a parser as an argument
-foldWithOptionsAndParser :: (ToRow params)
+foldWithOptionsAndParser :: (ToRow params, HasCallStack)
                          => FoldOptions
                          -> RowParser row
                          -> Connection
@@ -496,7 +497,7 @@ foldWithOptionsAndParser opts parser conn template qs a f = do
     doFold opts parser conn template (Query q) a f
 
 -- | A version of 'fold' that does not perform query substitution.
-fold_ :: (FromRow r) =>
+fold_ :: (FromRow r, HasCallStack) =>
          Connection
       -> Query                  -- ^ Query.
       -> a                      -- ^ Initial state for result consumer.
@@ -505,7 +506,7 @@ fold_ :: (FromRow r) =>
 fold_ = foldWithOptions_ defaultFoldOptions
 
 -- | A version of 'fold_' taking a parser as an argument
-foldWith_ :: RowParser r
+foldWith_ :: (HasCallStack) => RowParser r
           -> Connection
           -> Query
           -> a
@@ -513,7 +514,7 @@ foldWith_ :: RowParser r
           -> IO a
 foldWith_ = foldWithOptionsAndParser_ defaultFoldOptions
 
-foldWithOptions_ :: (FromRow r) =>
+foldWithOptions_ :: (HasCallStack, FromRow r) =>
                     FoldOptions
                  -> Connection
                  -> Query             -- ^ Query.
@@ -532,7 +533,7 @@ foldWithOptionsAndParser_ :: FoldOptions
                           -> IO a
 foldWithOptionsAndParser_ opts parser conn query a f = doFold opts parser conn query query a f
 
-doFold :: FoldOptions
+doFold :: (HasCallStack) => FoldOptions
        -> RowParser row
        -> Connection
        -> Query
@@ -581,7 +582,7 @@ doFold FoldOptions{..} parser conn _template q a0 f = do
                  Fixed n     -> n
 
 -- | A version of 'fold' that does not transform a state value.
-forEach :: (ToRow q, FromRow r) =>
+forEach :: (HasCallStack, ToRow q, FromRow r) =>
            Connection
         -> Query                -- ^ Query template.
         -> q                    -- ^ Query parameters.
@@ -591,7 +592,7 @@ forEach = forEachWith fromRow
 {-# INLINE forEach #-}
 
 -- | A version of 'forEach' taking a parser as an argument
-forEachWith :: ( ToRow q )
+forEachWith :: ( HasCallStack, ToRow q )
             => RowParser r
             -> Connection
             -> Query
@@ -602,7 +603,7 @@ forEachWith parser conn template qs = foldWith parser conn template qs () . cons
 {-# INLINE forEachWith #-}
 
 -- | A version of 'forEach' that does not perform query substitution.
-forEach_ :: (FromRow r) =>
+forEach_ :: (HasCallStack, FromRow r) =>
             Connection
          -> Query                -- ^ Query template.
          -> (r -> IO ())         -- ^ Result consumer.
@@ -610,7 +611,7 @@ forEach_ :: (FromRow r) =>
 forEach_ = forEachWith_ fromRow
 {-# INLINE forEach_ #-}
 
-forEachWith_ :: RowParser r
+forEachWith_ :: (HasCallStack) => RowParser r
              -> Connection
              -> Query
              -> (r -> IO ())

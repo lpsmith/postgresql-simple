@@ -51,6 +51,7 @@ import Database.PostgreSQL.Simple.Internal
 import Database.PostgreSQL.Simple.Types
 import Database.PostgreSQL.Simple.Errors
 import Database.PostgreSQL.Simple.Compat (mask, (<>))
+import GHC.Stack
 
 
 -- | Of the four isolation levels defined by the SQL standard,
@@ -87,15 +88,15 @@ data TransactionMode = TransactionMode {
        readWriteMode  :: !ReadWriteMode
      } deriving (Show, Eq)
 
-defaultTransactionMode :: TransactionMode
+defaultTransactionMode :: (HasCallStack) => TransactionMode
 defaultTransactionMode =  TransactionMode
                             defaultIsolationLevel
                             defaultReadWriteMode
 
-defaultIsolationLevel  :: IsolationLevel
+defaultIsolationLevel  :: (HasCallStack) => IsolationLevel
 defaultIsolationLevel  =  DefaultIsolationLevel
 
-defaultReadWriteMode   :: ReadWriteMode
+defaultReadWriteMode   :: (HasCallStack) => ReadWriteMode
 defaultReadWriteMode   =  DefaultReadWriteMode
 
 -- | Execute an action inside a SQL transaction.
@@ -110,7 +111,7 @@ defaultReadWriteMode   =  DefaultReadWriteMode
 -- 'rollback', then the exception will be rethrown.
 --
 -- For nesting transactions, see 'withSavepoint'.
-withTransaction :: Connection -> IO a -> IO a
+withTransaction :: (HasCallStack) => Connection -> IO a -> IO a
 withTransaction = withTransactionMode defaultTransactionMode
 
 -- | Execute an action inside of a 'Serializable' transaction.  If a
@@ -123,7 +124,7 @@ withTransaction = withTransactionMode defaultTransactionMode
 -- what might happen between one statement and the next.
 --
 -- Think of it as STM, but without @retry@.
-withTransactionSerializable :: Connection -> IO a -> IO a
+withTransactionSerializable :: (HasCallStack) => Connection -> IO a -> IO a
 withTransactionSerializable =
     withTransactionModeRetry
         TransactionMode
@@ -133,12 +134,12 @@ withTransactionSerializable =
         isSerializationError
 
 -- | Execute an action inside a SQL transaction with a given isolation level.
-withTransactionLevel :: IsolationLevel -> Connection -> IO a -> IO a
+withTransactionLevel :: (HasCallStack) => IsolationLevel -> Connection -> IO a -> IO a
 withTransactionLevel lvl
     = withTransactionMode defaultTransactionMode { isolationLevel = lvl }
 
 -- | Execute an action inside a SQL transaction with a given transaction mode.
-withTransactionMode :: TransactionMode -> Connection -> IO a -> IO a
+withTransactionMode :: (HasCallStack) => TransactionMode -> Connection -> IO a -> IO a
 withTransactionMode mode conn act =
   mask $ \restore -> do
     beginMode mode conn
@@ -153,7 +154,7 @@ withTransactionMode mode conn act =
 -- occurs then the transaction will be rolled back and the exception rethrown.
 --
 -- This is used to implement 'withTransactionSerializable'.
-withTransactionModeRetry :: TransactionMode -> (SqlError -> Bool) -> Connection -> IO a -> IO a
+withTransactionModeRetry :: (HasCallStack) => TransactionMode -> (SqlError -> Bool) -> Connection -> IO a -> IO a
 withTransactionModeRetry mode shouldRetry conn act =
     mask $ \restore ->
         retryLoop $ E.try $ do
@@ -161,7 +162,7 @@ withTransactionModeRetry mode shouldRetry conn act =
             commit conn
             return a
   where
-    retryLoop :: IO (Either E.SomeException a) -> IO a
+    retryLoop :: (HasCallStack) => IO (Either E.SomeException a) -> IO a
     retryLoop act' = do
         beginMode mode conn
         r <- act'
@@ -175,27 +176,27 @@ withTransactionModeRetry mode shouldRetry conn act =
                 return a
 
 -- | Rollback a transaction.
-rollback :: Connection -> IO ()
+rollback :: (HasCallStack) => Connection -> IO ()
 rollback conn = execute_ conn "ABORT" >> return ()
 
 -- | Rollback a transaction, ignoring any @IOErrors@
-rollback_ :: Connection -> IO ()
+rollback_ :: (HasCallStack) => Connection -> IO ()
 rollback_ conn = rollback conn `E.catch` \(_ :: IOError) -> return ()
 
 -- | Commit a transaction.
-commit :: Connection -> IO ()
+commit :: (HasCallStack) => Connection -> IO ()
 commit conn = execute_ conn "COMMIT" >> return ()
 
 -- | Begin a transaction.
-begin :: Connection -> IO ()
+begin :: (HasCallStack) => Connection -> IO ()
 begin = beginMode defaultTransactionMode
 
 -- | Begin a transaction with a given isolation level
-beginLevel :: IsolationLevel -> Connection -> IO ()
+beginLevel :: (HasCallStack) => IsolationLevel -> Connection -> IO ()
 beginLevel lvl = beginMode defaultTransactionMode { isolationLevel = lvl }
 
 -- | Begin a transaction with a given transaction mode
-beginMode :: TransactionMode -> Connection -> IO ()
+beginMode :: (HasCallStack) => TransactionMode -> Connection -> IO ()
 beginMode mode conn = do
     _ <- execute_ conn $! Query (B.concat ["BEGIN", isolevel, readmode])
     return ()
@@ -218,7 +219,7 @@ beginMode mode conn = do
 -- \"nested transaction\".
 --
 -- See <https://www.postgresql.org/docs/9.5/static/sql-savepoint.html>
-withSavepoint :: Connection -> IO a -> IO a
+withSavepoint :: (HasCallStack) => Connection -> IO a -> IO a
 withSavepoint conn body =
   mask $ \restore -> do
     sp <- newSavepoint conn
@@ -230,7 +231,7 @@ withSavepoint conn body =
     return r
 
 -- | Create a new savepoint.  This may only be used inside of a transaction.
-newSavepoint :: Connection -> IO Savepoint
+newSavepoint :: (HasCallStack) => Connection -> IO Savepoint
 newSavepoint conn = do
     name <- newTempName conn
     _ <- execute_ conn ("SAVEPOINT " <> name)
@@ -241,19 +242,19 @@ newSavepoint conn = do
 -- Warning: this will throw a 'SqlError' matching 'isFailedTransactionError' if
 -- the transaction is aborted due to an error.  'commit' would merely warn and
 -- roll back.
-releaseSavepoint :: Connection -> Savepoint -> IO ()
+releaseSavepoint :: (HasCallStack) => Connection -> Savepoint -> IO ()
 releaseSavepoint conn (Savepoint name) =
     execute_ conn ("RELEASE SAVEPOINT " <> name) >> return ()
 
 -- | Roll back to a savepoint.  This will not release the savepoint.
-rollbackToSavepoint :: Connection -> Savepoint -> IO ()
+rollbackToSavepoint :: (HasCallStack) => Connection -> Savepoint -> IO ()
 rollbackToSavepoint conn (Savepoint name) =
     execute_ conn ("ROLLBACK TO SAVEPOINT " <> name) >> return ()
 
 -- | Roll back to a savepoint and release it.  This is like calling
 -- 'rollbackToSavepoint' followed by 'releaseSavepoint', but avoids a
 -- round trip to the database server.
-rollbackToAndReleaseSavepoint :: Connection -> Savepoint -> IO ()
+rollbackToAndReleaseSavepoint :: (HasCallStack) => Connection -> Savepoint -> IO ()
 rollbackToAndReleaseSavepoint conn (Savepoint name) =
     execute_ conn sql >> return ()
   where

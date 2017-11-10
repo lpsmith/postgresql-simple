@@ -21,6 +21,7 @@ module Database.PostgreSQL.Simple.Range
       , contains, containsBy
       ) where
 
+import GHC.Stack
 import           Control.Applicative hiding (empty)
 import           Data.Attoparsec.ByteString.Char8     (Parser, parseOnly)
 import qualified Data.Attoparsec.ByteString.Char8     as A
@@ -64,14 +65,14 @@ data RangeBound a = NegInfinity
 data PGRange a = PGRange !(RangeBound a) !(RangeBound a)
      deriving (Show, Typeable, Functor)
 
-empty :: PGRange a
+empty :: (HasCallStack) => PGRange a
 empty = PGRange PosInfinity NegInfinity
 
 instance Ord a => Eq (PGRange a) where
   x == y = eq x y || (isEmpty x && isEmpty y)
    where eq (PGRange a m) (PGRange b n) = a == b && m == n
 
-isEmptyBy :: (a -> a -> Ordering) -> PGRange a -> Bool
+isEmptyBy :: (HasCallStack) => (a -> a -> Ordering) -> PGRange a -> Bool
 isEmptyBy cmp v =
     case v of
       (PGRange PosInfinity _) -> True
@@ -89,7 +90,7 @@ isEmptyBy cmp v =
 --   which 'contains' returns 'True'.
 --   Consider @'PGRange' ('Excludes' 2) ('Excludes' 3) :: PGRange Int@,
 --   for example.
-isEmpty :: Ord a => PGRange a -> Bool
+isEmpty :: (HasCallStack, Ord a) => PGRange a -> Bool
 isEmpty = isEmptyBy compare
 
 
@@ -100,10 +101,10 @@ isEmpty = isEmptyBy compare
 -- Haskell values into the database will result in them being rounded, which
 -- can change the value of the containment predicate.
 
-contains :: Ord a => PGRange a -> (a -> Bool)
+contains :: (HasCallStack, Ord a) => PGRange a -> (a -> Bool)
 contains = containsBy compare
 
-containsBy :: (a -> a -> Ordering) -> PGRange a -> (a -> Bool)
+containsBy :: (HasCallStack) => (a -> a -> Ordering) -> PGRange a -> (a -> Bool)
 containsBy cmp rng x =
     case rng of
       PGRange _lb         NegInfinity -> False
@@ -123,16 +124,16 @@ containsBy cmp rng x =
           Inclusive z -> cmp x z /= GT
           Exclusive z -> cmp x z == LT
 
-lowerBound :: Parser (a -> RangeBound a)
+lowerBound :: (HasCallStack) => Parser (a -> RangeBound a)
 lowerBound = (A.char '(' *> pure Exclusive) <|> (A.char '[' *> pure Inclusive)
 {-# INLINE lowerBound #-}
 
-upperBound :: Parser (a -> RangeBound a)
+upperBound :: (HasCallStack) => Parser (a -> RangeBound a)
 upperBound = (A.char ')' *> pure Exclusive) <|> (A.char ']' *> pure Inclusive)
 {-# INLINE upperBound #-}
 
 -- | Generic range parser
-pgrange :: Parser (RangeBound B.ByteString, RangeBound B.ByteString)
+pgrange :: (HasCallStack) => Parser (RangeBound B.ByteString, RangeBound B.ByteString)
 pgrange = do
   lb <- lowerBound
   v1 <- (A.char ',' *> "") <|> (rangeElem (==',') <* A.char ',')
@@ -143,13 +144,13 @@ pgrange = do
       up  = if B.null v2 then PosInfinity else ub v2
   return (low, up)
 
-rangeElem :: (Char -> Bool) -> Parser B.ByteString
+rangeElem :: (HasCallStack) => (Char -> Bool) -> Parser B.ByteString
 rangeElem end = (A.char '"' *> doubleQuoted)
             <|> A.takeTill end
 {-# INLINE rangeElem #-}
 
 -- | Simple double quoted value parser
-doubleQuoted :: Parser B.ByteString
+doubleQuoted :: (HasCallStack) => Parser B.ByteString
 doubleQuoted = toByteString <$> go mempty
   where
     go acc = do
@@ -165,11 +166,11 @@ doubleQuoted = toByteString <$> go mempty
              _ -> error "impossible in doubleQuoted"
       rest
 
-rangeToBuilder :: Ord a => (a -> Builder) -> PGRange a -> Builder
+rangeToBuilder :: (HasCallStack, Ord a) => (a -> Builder) -> PGRange a -> Builder
 rangeToBuilder = rangeToBuilderBy compare
 
 -- | Generic range to builder for plain values
-rangeToBuilderBy :: (a -> a -> Ordering) -> (a -> Builder) -> PGRange a -> Builder
+rangeToBuilderBy :: (HasCallStack) => (a -> a -> Ordering) -> (a -> Builder) -> PGRange a -> Builder
 rangeToBuilderBy cmp f x =
     if isEmptyBy cmp x
     then byteString "'empty'"
@@ -274,7 +275,7 @@ instance ToField (PGRange ZonedTime) where
     toField = Plain . rangeToBuilderBy cmpZonedTime zonedTimeToBuilder
     {-# INLINE toField #-}
 
-cmpZonedTime :: ZonedTime -> ZonedTime -> Ordering
+cmpZonedTime :: (HasCallStack) => ZonedTime -> ZonedTime -> Ordering
 cmpZonedTime = compare `on` zonedTimeToUTC   -- FIXME:  optimize
 
 instance ToField (PGRange LocalTime) where
@@ -297,7 +298,7 @@ instance ToField (PGRange ZonedTimestamp) where
     toField = Plain . rangeToBuilderBy cmpZonedTimestamp zonedTimestampToBuilder
     {-# INLINE toField #-}
 
-cmpZonedTimestamp :: ZonedTimestamp -> ZonedTimestamp -> Ordering
+cmpZonedTimestamp :: (HasCallStack) => ZonedTimestamp -> ZonedTimestamp -> Ordering
 cmpZonedTimestamp = compare `on` (zonedTimeToUTC <$>)
 
 instance ToField (PGRange LocalTimestamp) where

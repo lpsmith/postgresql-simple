@@ -38,6 +38,7 @@ module Database.PostgreSQL.Simple.Copy
     , putCopyError
     ) where
 
+import GHC.Stack
 import           Control.Applicative
 import           Control.Concurrent
 import           Control.Exception  ( throwIO )
@@ -56,7 +57,7 @@ import           Database.PostgreSQL.Simple.Internal
 --   @CopyOut@.  The connection must be in the ready state in order
 --   to call this function.  Performs parameter subsitution.
 
-copy :: ( ToRow params ) => Connection -> Query -> params -> IO ()
+copy :: (HasCallStack, ToRow params ) => Connection -> Query -> params -> IO ()
 copy conn template qs = do
     q <- formatQuery conn template qs
     doCopy "Database.PostgreSQL.Simple.Copy.copy" conn template q
@@ -67,11 +68,11 @@ copy conn template qs = do
 --   @CopyOut@.  The connection must be in the ready state in order
 --   to call this function.  Does not perform parameter subsitution.
 
-copy_ :: Connection -> Query -> IO ()
+copy_ :: (HasCallStack) => Connection -> Query -> IO ()
 copy_ conn (Query q) = do
     doCopy "Database.PostgreSQL.Simple.Copy.copy_" conn (Query q) q
 
-doCopy :: B.ByteString -> Connection -> Query -> B.ByteString -> IO ()
+doCopy :: (HasCallStack) => B.ByteString -> Connection -> Query -> B.ByteString -> IO ()
 doCopy funcName conn template q = do
     result <- exec conn q
     status <- PQ.resultStatus result
@@ -110,7 +111,7 @@ data CopyOutResult
 --   if it returns 'CopyOutDone', then the connection has reverted to the
 --   ready state.
 
-getCopyData :: Connection -> IO CopyOutResult
+getCopyData :: (HasCallStack) => Connection -> IO CopyOutResult
 getCopyData conn = withConnection conn loop
   where
     funcName = "Database.PostgreSQL.Simple.Copy.getCopyData"
@@ -158,7 +159,7 @@ getCopyData conn = withConnection conn loop
 --   connection remains in the @CopyIn@ state after this function
 --   is called.
 
-putCopyData :: Connection -> B.ByteString -> IO ()
+putCopyData :: (HasCallStack) => Connection -> B.ByteString -> IO ()
 putCopyData conn dat = withConnection conn $ \pqconn -> do
     doCopyIn funcName (\c -> PQ.putCopyData c dat) pqconn
   where
@@ -173,7 +174,7 @@ putCopyData conn dat = withConnection conn $ \pqconn -> do
 --   connection's state changes back to ready after this function
 --   is called.
 
-putCopyEnd :: Connection -> IO Int64
+putCopyEnd :: (HasCallStack) => Connection -> IO Int64
 putCopyEnd conn = withConnection conn $ \pqconn -> do
     doCopyIn funcName (\c -> PQ.putCopyEnd c Nothing) pqconn
     getCopyCommandTag funcName pqconn
@@ -190,7 +191,7 @@ putCopyEnd conn = withConnection conn $ \pqconn -> do
 --   connection's state changes back to ready after this function
 --   is called.
 
-putCopyError :: Connection -> B.ByteString -> IO ()
+putCopyError :: (HasCallStack) => Connection -> B.ByteString -> IO ()
 putCopyError conn err = withConnection conn $ \pqconn -> do
     doCopyIn funcName (\c -> PQ.putCopyEnd c (Just err)) pqconn
     consumeResults pqconn
@@ -198,7 +199,7 @@ putCopyError conn err = withConnection conn $ \pqconn -> do
     funcName = "Database.PostgreSQL.Simple.Copy.putCopyError"
 
 
-doCopyIn :: B.ByteString -> (PQ.Connection -> IO PQ.CopyInResult)
+doCopyIn :: (HasCallStack) => B.ByteString -> (PQ.Connection -> IO PQ.CopyInResult)
          -> PQ.Connection -> IO ()
 doCopyIn funcName action = loop
   where
@@ -224,7 +225,7 @@ doCopyIn funcName action = loop
                   loop pqconn
 {-# INLINE doCopyIn #-}
 
-getCopyCommandTag :: B.ByteString -> PQ.Connection -> IO Int64
+getCopyCommandTag :: (HasCallStack) => B.ByteString -> PQ.Connection -> IO Int64
 getCopyCommandTag funcName pqconn = do
     result  <- maybe (fail errCmdStatus) return =<< PQ.getResult pqconn
     cmdStat <- maybe (fail errCmdStatus) return =<< PQ.cmdStatus result
@@ -240,7 +241,7 @@ getCopyCommandTag funcName pqconn = do
     errCmdStatusFmt = B.unpack funcName ++ ": failed to parse command status"
 
 
-consumeResults :: PQ.Connection -> IO ()
+consumeResults :: (HasCallStack) => PQ.Connection -> IO ()
 consumeResults pqconn = do
     mres <- PQ.getResult pqconn
     case mres of

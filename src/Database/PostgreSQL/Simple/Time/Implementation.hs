@@ -25,6 +25,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Database.PostgreSQL.Simple.Compat ((<>))
 import qualified Database.PostgreSQL.Simple.Time.Internal.Parser  as TP
 import qualified Database.PostgreSQL.Simple.Time.Internal.Printer as TPP
+import GHC.Stack
 
 data Unbounded a
    = NegInfinity
@@ -50,117 +51,117 @@ type UTCTimestamp   = Unbounded UTCTime
 type ZonedTimestamp = Unbounded ZonedTime
 type Date           = Unbounded Day
 
-parseUTCTime   :: B.ByteString -> Either String UTCTime
+parseUTCTime   :: (HasCallStack) => B.ByteString -> Either String UTCTime
 parseUTCTime   = A.parseOnly (getUTCTime <* A.endOfInput)
 
-parseZonedTime :: B.ByteString -> Either String ZonedTime
+parseZonedTime :: (HasCallStack) => B.ByteString -> Either String ZonedTime
 parseZonedTime = A.parseOnly (getZonedTime <* A.endOfInput)
 
-parseLocalTime :: B.ByteString -> Either String LocalTime
+parseLocalTime :: (HasCallStack) => B.ByteString -> Either String LocalTime
 parseLocalTime = A.parseOnly (getLocalTime <* A.endOfInput)
 
-parseDay :: B.ByteString -> Either String Day
+parseDay :: (HasCallStack) => B.ByteString -> Either String Day
 parseDay = A.parseOnly (getDay <* A.endOfInput)
 
-parseTimeOfDay :: B.ByteString -> Either String TimeOfDay
+parseTimeOfDay :: (HasCallStack) => B.ByteString -> Either String TimeOfDay
 parseTimeOfDay = A.parseOnly (getTimeOfDay <* A.endOfInput)
 
-parseUTCTimestamp   :: B.ByteString -> Either String UTCTimestamp
+parseUTCTimestamp   :: (HasCallStack) => B.ByteString -> Either String UTCTimestamp
 parseUTCTimestamp   = A.parseOnly (getUTCTimestamp <* A.endOfInput)
 
-parseZonedTimestamp :: B.ByteString -> Either String ZonedTimestamp
+parseZonedTimestamp :: (HasCallStack) => B.ByteString -> Either String ZonedTimestamp
 parseZonedTimestamp = A.parseOnly (getZonedTimestamp <* A.endOfInput)
 
-parseLocalTimestamp :: B.ByteString -> Either String LocalTimestamp
+parseLocalTimestamp :: (HasCallStack) => B.ByteString -> Either String LocalTimestamp
 parseLocalTimestamp = A.parseOnly (getLocalTimestamp <* A.endOfInput)
 
-parseDate :: B.ByteString -> Either String Date
+parseDate :: (HasCallStack) => B.ByteString -> Either String Date
 parseDate = A.parseOnly (getDate <* A.endOfInput)
 
-getUnbounded :: A.Parser a -> A.Parser (Unbounded a)
+getUnbounded :: (HasCallStack) => A.Parser a -> A.Parser (Unbounded a)
 getUnbounded getFinite
     =     (pure NegInfinity <* A.string "-infinity")
       <|> (pure PosInfinity <* A.string  "infinity")
       <|> (Finite <$> getFinite)
 
-getDay :: A.Parser Day
+getDay :: (HasCallStack) => A.Parser Day
 getDay = TP.day
 
-getDate :: A.Parser Date
+getDate :: (HasCallStack) => A.Parser Date
 getDate = getUnbounded getDay
 
-getTimeOfDay :: A.Parser TimeOfDay
+getTimeOfDay :: (HasCallStack) => A.Parser TimeOfDay
 getTimeOfDay = TP.timeOfDay
 
-getLocalTime :: A.Parser LocalTime
+getLocalTime :: (HasCallStack) => A.Parser LocalTime
 getLocalTime = TP.localTime
 
-getLocalTimestamp :: A.Parser LocalTimestamp
+getLocalTimestamp :: (HasCallStack) => A.Parser LocalTimestamp
 getLocalTimestamp = getUnbounded getLocalTime
 
-getTimeZone :: A.Parser TimeZone
+getTimeZone :: (HasCallStack) => A.Parser TimeZone
 getTimeZone = fromMaybe utc <$> TP.timeZone
 
 type TimeZoneHMS = (Int,Int,Int)
 
-getTimeZoneHMS :: A.Parser TimeZoneHMS
+getTimeZoneHMS :: (HasCallStack) => A.Parser TimeZoneHMS
 getTimeZoneHMS = munge <$> TP.timeZoneHMS
   where
     munge Nothing = (0,0,0)
     munge (Just (TP.UTCOffsetHMS h m s)) = (h,m,s)
 
-localToUTCTimeOfDayHMS :: TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
+localToUTCTimeOfDayHMS :: (HasCallStack) => TimeZoneHMS -> TimeOfDay -> (Integer, TimeOfDay)
 localToUTCTimeOfDayHMS (dh, dm, ds) tod =
     TP.localToUTCTimeOfDayHMS (TP.UTCOffsetHMS dh dm ds) tod
 
-getZonedTime :: A.Parser ZonedTime
+getZonedTime :: (HasCallStack) => A.Parser ZonedTime
 getZonedTime = TP.zonedTime
 
-getZonedTimestamp :: A.Parser ZonedTimestamp
+getZonedTimestamp :: (HasCallStack) => A.Parser ZonedTimestamp
 getZonedTimestamp = getUnbounded getZonedTime
 
-getUTCTime :: A.Parser UTCTime
+getUTCTime :: (HasCallStack) => A.Parser UTCTime
 getUTCTime = TP.utcTime
 
-getUTCTimestamp :: A.Parser UTCTimestamp
+getUTCTimestamp :: (HasCallStack) => A.Parser UTCTimestamp
 getUTCTimestamp = getUnbounded getUTCTime
 
-dayToBuilder :: Day -> Builder
+dayToBuilder :: (HasCallStack) => Day -> Builder
 dayToBuilder = primBounded TPP.day
 
-timeOfDayToBuilder :: TimeOfDay -> Builder
+timeOfDayToBuilder :: (HasCallStack) => TimeOfDay -> Builder
 timeOfDayToBuilder = primBounded TPP.timeOfDay
 
-timeZoneToBuilder :: TimeZone -> Builder
+timeZoneToBuilder :: (HasCallStack) => TimeZone -> Builder
 timeZoneToBuilder = primBounded TPP.timeZone
 
-utcTimeToBuilder :: UTCTime -> Builder
+utcTimeToBuilder :: (HasCallStack) => UTCTime -> Builder
 utcTimeToBuilder = primBounded TPP.utcTime
 
-zonedTimeToBuilder :: ZonedTime -> Builder
+zonedTimeToBuilder :: (HasCallStack) => ZonedTime -> Builder
 zonedTimeToBuilder = primBounded TPP.zonedTime
 
-localTimeToBuilder :: LocalTime -> Builder
+localTimeToBuilder :: (HasCallStack) => LocalTime -> Builder
 localTimeToBuilder = primBounded TPP.localTime
 
-unboundedToBuilder :: (a -> Builder) -> (Unbounded a -> Builder)
+unboundedToBuilder :: (HasCallStack) => (a -> Builder) -> (Unbounded a -> Builder)
 unboundedToBuilder finiteToBuilder unbounded
     = case unbounded of
         NegInfinity -> byteString "-infinity"
         Finite a    -> finiteToBuilder a
         PosInfinity -> byteString  "infinity"
 
-utcTimestampToBuilder :: UTCTimestamp -> Builder
+utcTimestampToBuilder :: (HasCallStack) => UTCTimestamp -> Builder
 utcTimestampToBuilder = unboundedToBuilder utcTimeToBuilder
 
-zonedTimestampToBuilder :: ZonedTimestamp -> Builder
+zonedTimestampToBuilder :: (HasCallStack) => ZonedTimestamp -> Builder
 zonedTimestampToBuilder = unboundedToBuilder zonedTimeToBuilder
 
-localTimestampToBuilder :: LocalTimestamp -> Builder
+localTimestampToBuilder :: (HasCallStack) => LocalTimestamp -> Builder
 localTimestampToBuilder = unboundedToBuilder localTimeToBuilder
 
-dateToBuilder  :: Date -> Builder
+dateToBuilder  :: (HasCallStack) => Date -> Builder
 dateToBuilder  = unboundedToBuilder dayToBuilder
 
-nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
+nominalDiffTimeToBuilder :: (HasCallStack) => NominalDiffTime -> Builder
 nominalDiffTimeToBuilder = TPP.nominalDiffTime

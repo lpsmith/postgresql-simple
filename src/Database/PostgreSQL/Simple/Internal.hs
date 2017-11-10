@@ -20,6 +20,7 @@
 
 module Database.PostgreSQL.Simple.Internal where
 
+import GHC.Stack
 import           Control.Applicative
 import           Control.Exception
 import           Control.Concurrent.MVar
@@ -88,7 +89,7 @@ data SqlError = SqlError {
    , sqlErrorHint   :: ByteString
    } deriving (Eq, Show, Typeable)
 
-fatalError :: ByteString -> SqlError
+fatalError :: (HasCallStack) => ByteString -> SqlError
 fatalError msg = SqlError "" FatalError msg "" ""
 
 instance Exception SqlError
@@ -139,7 +140,7 @@ data ConnectInfo = ConnectInfo {
 --
 -- > connect defaultConnectInfo { connectHost = "db.example.com" }
 
-defaultConnectInfo :: ConnectInfo
+defaultConnectInfo :: (HasCallStack) => ConnectInfo
 defaultConnectInfo = ConnectInfo {
                        connectHost = "127.0.0.1"
                      , connectPort = 5432
@@ -150,7 +151,7 @@ defaultConnectInfo = ConnectInfo {
 
 -- | Connect with the given username to the given database. Will throw
 --   an exception if it cannot connect.
-connect :: ConnectInfo -> IO Connection
+connect :: (HasCallStack) => ConnectInfo -> IO Connection
 connect = connectPostgreSQL . postgreSQLConnectionString
 
 -- | Attempt to make a connection based on a libpq connection string.
@@ -222,7 +223,7 @@ connect = connectPostgreSQL . postgreSQLConnectionString
 --   <https://www.postgresql.org/docs/9.5/static/libpq-ssl.html>
 --   for detailed information regarding libpq and SSL.
 
-connectPostgreSQL :: ByteString -> IO Connection
+connectPostgreSQL :: (HasCallStack) => ByteString -> IO Connection
 connectPostgreSQL connstr = do
     conn <- connectdb connstr
     stat <- PQ.status conn
@@ -242,7 +243,7 @@ connectPostgreSQL connstr = do
           msg <- maybe "connectPostgreSQL error" id <$> PQ.errorMessage conn
           throwIO $ fatalError msg
 
-connectdb :: ByteString -> IO PQ.Connection
+connectdb :: (HasCallStack) => ByteString -> IO PQ.Connection
 #if defined(mingw32_HOST_OS)
 connectdb = PQ.connectdb
 #else
@@ -275,7 +276,7 @@ connectdb conninfo = do
 
 -- | Turns a 'ConnectInfo' data structure into a libpq connection string.
 
-postgreSQLConnectionString :: ConnectInfo -> ByteString
+postgreSQLConnectionString :: (HasCallStack) => ConnectInfo -> ByteString
 postgreSQLConnectionString connectInfo = fromString connstr
   where
     connstr = str "host="     connectHost
@@ -307,11 +308,11 @@ postgreSQLConnectionString connectInfo = fromString connstr
 
 
 
-oid2int :: Oid -> Int
+oid2int :: (HasCallStack) => Oid -> Int
 oid2int (Oid x) = fromIntegral x
 {-# INLINE oid2int #-}
 
-exec :: Connection
+exec :: (HasCallStack) => Connection
      -> ByteString
      -> IO PQ.Result
 #if defined(mingw32_HOST_OS)
@@ -363,12 +364,12 @@ exec conn sql =
 #endif
 
 -- | A version of 'execute' that does not perform query substitution.
-execute_ :: Connection -> Query -> IO Int64
+execute_ :: (HasCallStack) => Connection -> Query -> IO Int64
 execute_ conn q@(Query stmt) = do
   result <- exec conn stmt
   finishExecute conn q result
 
-finishExecute :: Connection -> Query -> PQ.Result -> IO Int64
+finishExecute :: (HasCallStack) => Connection -> Query -> PQ.Result -> IO Int64
 finishExecute _conn q result = do
     status <- PQ.resultStatus result
     case status of
@@ -403,7 +404,7 @@ finishExecute _conn q result = do
                     then 10 * acc + fromIntegral (ord c - ord '0')
                     else error ("finishExecute:  not an int: " ++ B8.unpack str)
 
-throwResultError :: ByteString -> PQ.Result -> PQ.ExecStatus -> IO a
+throwResultError :: (HasCallStack) => ByteString -> PQ.Result -> PQ.ExecStatus -> IO a
 throwResultError _ result status = do
     errormsg  <- fromMaybe "" <$>
                  PQ.resultErrorField result PQ.DiagMessagePrimary
@@ -418,18 +419,18 @@ throwResultError _ result status = do
                        , sqlErrorDetail = detail
                        , sqlErrorHint = hint }
 
-disconnectedError :: SqlError
+disconnectedError :: (HasCallStack) => SqlError
 disconnectedError = fatalError "connection disconnected"
 
 -- | Atomically perform an action with the database handle, if there is one.
-withConnection :: Connection -> (PQ.Connection -> IO a) -> IO a
+withConnection :: (HasCallStack) => Connection -> (PQ.Connection -> IO a) -> IO a
 withConnection Connection{..} m = do
     withMVar connectionHandle $ \conn -> do
         if PQ.isNullConnection conn
           then throwIO disconnectedError
           else m conn
 
-close :: Connection -> IO ()
+close :: (HasCallStack) => Connection -> IO ()
 close Connection{..} =
     mask $ \restore -> (do
             conn <- takeMVar connectionHandle
@@ -438,7 +439,7 @@ close Connection{..} =
             putMVar connectionHandle =<< PQ.newNullConnection
         )
 
-newNullConnection :: IO Connection
+newNullConnection :: (HasCallStack) => IO Connection
 newNullConnection = do
     connectionHandle  <- newMVar =<< PQ.newNullConnection
     connectionObjects <- newMVar IntMap.empty
@@ -453,12 +454,12 @@ data Row = Row {
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Conversion) a }
    deriving ( Functor, Applicative, Alternative, Monad )
 
-liftRowParser :: IO a -> RowParser a
+liftRowParser :: (HasCallStack) => IO a -> RowParser a
 liftRowParser = RP . lift . lift . liftConversion
 
 newtype Conversion a = Conversion { runConversion :: Connection -> IO (Ok a) }
 
-liftConversion :: IO a -> Conversion a
+liftConversion :: (HasCallStack) => IO a -> Conversion a
 liftConversion m = Conversion (\_ -> Ok <$> m)
 
 instance Functor Conversion where
@@ -494,20 +495,20 @@ instance MonadPlus Conversion where
    mzero = empty
    mplus = (<|>)
 
-conversionMap :: (Ok a -> Ok b) -> Conversion a -> Conversion b
+conversionMap :: (HasCallStack) => (Ok a -> Ok b) -> Conversion a -> Conversion b
 conversionMap f m = Conversion $ \conn -> f <$> runConversion m conn
 
-conversionError :: Exception err => err -> Conversion a
+conversionError :: (HasCallStack) => Exception err => err -> Conversion a
 conversionError err = Conversion $ \_ -> return (Errors [toException err])
 
-newTempName :: Connection -> IO Query
+newTempName :: (HasCallStack) => Connection -> IO Query
 newTempName Connection{..} = do
     !n <- atomicModifyIORef connectionTempNameCounter
           (\n -> let !n' = n+1 in (n', n'))
     return $! Query $ B8.pack $ "temp" ++ show n
 
 -- FIXME?  What error should getNotification and getCopyData throw?
-fdError :: ByteString -> IOError
+fdError :: (HasCallStack) => ByteString -> IOError
 fdError funcName = IOError {
                      ioe_handle      = Nothing,
                      ioe_type        = ResourceVanished,
@@ -518,7 +519,7 @@ fdError funcName = IOError {
                    }
 
 
-libPQError :: ByteString -> IOError
+libPQError :: (HasCallStack) => ByteString -> IOError
 libPQError desc = IOError {
                     ioe_handle      = Nothing,
                     ioe_type        = OtherError,
@@ -528,13 +529,13 @@ libPQError desc = IOError {
                     ioe_filename    = Nothing
                   }
 
-throwLibPQError :: PQ.Connection -> ByteString -> IO a
+throwLibPQError :: (HasCallStack) => PQ.Connection -> ByteString -> IO a
 throwLibPQError conn default_desc = do
   msg <- maybe default_desc id <$> PQ.errorMessage conn
   throwIO $! libPQError msg
 
 
-fmtError :: String -> Query -> [Action] -> a
+fmtError :: (HasCallStack) => String -> Query -> [Action] -> a
 fmtError msg q xs = throw FormatError {
                       fmtMessage = msg
                     , fmtQuery = q
@@ -546,14 +547,14 @@ fmtError msg q xs = throw FormatError {
         twiddle (EscapeIdentifier s) = s
         twiddle (Many ys)            = B.concat (map twiddle ys)
 
-fmtErrorBs :: Query -> [Action] -> ByteString -> a
+fmtErrorBs :: (HasCallStack) => Query -> [Action] -> ByteString -> a
 fmtErrorBs q xs msg = fmtError (T.unpack $ TE.decodeUtf8 msg) q xs
 
 -- | Quote bytestring or throw 'FormatError'
-quote :: Query -> [Action] -> Either ByteString ByteString -> Builder
+quote :: (HasCallStack) => Query -> [Action] -> Either ByteString ByteString -> Builder
 quote q xs = either (fmtErrorBs q xs) (inQuotes . byteString)
 
-buildAction :: Connection        -- ^ Connection for string escaping
+buildAction :: (HasCallStack) => Connection        -- ^ Connection for string escaping
             -> Query             -- ^ Query for message error
             -> [Action]          -- ^ List of parameters for message error
             -> Action            -- ^ Action to build
@@ -566,11 +567,11 @@ buildAction conn q xs (EscapeIdentifier s) =
 buildAction conn q xs (Many  ys)           =
     mconcat <$> mapM (buildAction conn q xs) ys
 
-checkError :: PQ.Connection -> Maybe a -> IO (Either ByteString a)
+checkError :: (HasCallStack) => PQ.Connection -> Maybe a -> IO (Either ByteString a)
 checkError _ (Just x) = return $ Right x
 checkError c Nothing  = Left . maybe "" id <$> PQ.errorMessage c
 
-escapeWrap       :: (PQ.Connection -> ByteString -> IO (Maybe ByteString))
+escapeWrap       :: (HasCallStack) => (PQ.Connection -> ByteString -> IO (Maybe ByteString))
                  -> Connection
                  -> ByteString
                  -> IO (Either ByteString ByteString)
@@ -578,11 +579,11 @@ escapeWrap f conn s =
     withConnection conn $ \c ->
     f c s >>= checkError c
 
-escapeStringConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeStringConn :: (HasCallStack) => Connection -> ByteString -> IO (Either ByteString ByteString)
 escapeStringConn = escapeWrap PQ.escapeStringConn
 
-escapeIdentifier :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeIdentifier :: (HasCallStack) => Connection -> ByteString -> IO (Either ByteString ByteString)
 escapeIdentifier = escapeWrap PQ.escapeIdentifier
 
-escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
+escapeByteaConn :: (HasCallStack) => Connection -> ByteString -> IO (Either ByteString ByteString)
 escapeByteaConn = escapeWrap PQ.escapeByteaConn
