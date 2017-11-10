@@ -35,9 +35,10 @@ import Data.Time.Calendar (Day, fromGregorianValid, addDays)
 import Data.Time.Clock (UTCTime(..))
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Time.LocalTime as Local
+import GHC.Stack
 
 -- | Parse a date of the form @YYYY-MM-DD@.
-day :: Parser Day
+day :: (HasCallStack) => Parser Day
 day = do
   y <- decimal <* char '-'
   m <- twoDigits <* char '-'
@@ -45,7 +46,7 @@ day = do
   maybe (fail "invalid date") return (fromGregorianValid y m d)
 
 -- | Parse a two-digit integer (e.g. day of month, hour).
-twoDigits :: Parser Int
+twoDigits :: (HasCallStack) => Parser Int
 twoDigits = do
   a <- digit
   b <- digit
@@ -53,7 +54,7 @@ twoDigits = do
   return $! c2d a * 10 + c2d b
 
 -- | Parse a time of the form @HH:MM[:SS[.SSS]]@.
-timeOfDay :: Parser Local.TimeOfDay
+timeOfDay :: (HasCallStack) => Parser Local.TimeOfDay
 timeOfDay = do
   h <- twoDigits <* char ':'
   m <- twoDigits
@@ -67,7 +68,7 @@ timeOfDay = do
 
 -- | Parse a count of seconds, with the integer part being two digits
 -- long.
-seconds :: Parser Pico
+seconds :: (HasCallStack) => Parser Pico
 seconds = do
   real <- twoDigits
   mc <- peekChar
@@ -77,7 +78,7 @@ seconds = do
       return $! parsePicos (fromIntegral real) t
     _ -> return $! fromIntegral real
  where
-  parsePicos :: Int64 -> B8.ByteString -> Pico
+  parsePicos :: (HasCallStack) => Int64 -> B8.ByteString -> Pico
   parsePicos a0 t = toPico (fromIntegral (t' * 10^n))
     where n  = max 0 (12 - B8.length t)
           t' = B8.foldl' (\a c -> 10 * a + fromIntegral (ord c .&. 15)) a0
@@ -85,7 +86,7 @@ seconds = do
 
 -- | Parse a time zone, and return 'Nothing' if the offset from UTC is
 -- zero. (This makes some speedups possible.)
-timeZone :: Parser (Maybe Local.TimeZone)
+timeZone :: (HasCallStack) => Parser (Maybe Local.TimeZone)
 timeZone = do
   ch <- satisfy $ \c -> c == '+' || c == '-' || c == 'Z'
   if ch == 'Z'
@@ -112,7 +113,7 @@ data UTCOffsetHMS = UTCOffsetHMS {-# UNPACK #-} !Int {-# UNPACK #-} !Int {-# UNP
 
 -- | Parse a time zone, and return 'Nothing' if the offset from UTC is
 -- zero. (This makes some speedups possible.)
-timeZoneHMS :: Parser (Maybe UTCOffsetHMS)
+timeZoneHMS :: (HasCallStack) => Parser (Maybe UTCOffsetHMS)
 timeZoneHMS = do
   ch <- satisfy $ \c -> c == '+' || c == '-' || c == 'Z'
   if ch == 'Z'
@@ -139,7 +140,7 @@ timeZoneHMS = do
           Just ':' -> anyChar *> twoDigits
           _        -> return 0
 
-localToUTCTimeOfDayHMS :: UTCOffsetHMS -> Local.TimeOfDay -> (Integer, Local.TimeOfDay)
+localToUTCTimeOfDayHMS :: (HasCallStack) => UTCOffsetHMS -> Local.TimeOfDay -> (Integer, Local.TimeOfDay)
 localToUTCTimeOfDayHMS (UTCOffsetHMS dh dm ds) (Local.TimeOfDay h m s) =
     (\ !a !b -> (a,b)) dday (Local.TimeOfDay h'' m'' s'')
   where
@@ -161,13 +162,13 @@ localToUTCTimeOfDayHMS (UTCOffsetHMS dh dm ds) (Local.TimeOfDay h m s) =
 -- | Parse a date and time, of the form @YYYY-MM-DD HH:MM:SS@.
 -- The space may be replaced with a @T@.  The number of seconds may be
 -- followed by a fractional component.
-localTime :: Parser Local.LocalTime
+localTime :: (HasCallStack) => Parser Local.LocalTime
 localTime = Local.LocalTime <$> day <* daySep <*> timeOfDay
   where daySep = satisfy (\c -> c == ' ' || c == 'T')
 
 -- | Behaves as 'zonedTime', but converts any time zone offset into a
 -- UTC time.
-utcTime :: Parser UTCTime
+utcTime :: (HasCallStack) => Parser UTCTime
 utcTime = do
   (Local.LocalTime d t) <- localTime
   mtz <- timeZoneHMS
@@ -188,8 +189,8 @@ utcTime = do
 -- time zone offset of the form @+0000@ or @-08:00@, where the first
 -- two digits are hours, the @:@ is optional and the second two digits
 -- (also optional) are minutes.
-zonedTime :: Parser Local.ZonedTime
+zonedTime :: (HasCallStack) => Parser Local.ZonedTime
 zonedTime = Local.ZonedTime <$> localTime <*> (fromMaybe utc <$> timeZone)
 
-utc :: Local.TimeZone
+utc :: (HasCallStack) => Local.TimeZone
 utc = Local.TimeZone 0 False ""

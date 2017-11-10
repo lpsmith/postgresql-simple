@@ -136,8 +136,9 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
 
 import Database.PostgreSQL.LibPQ (Oid(..))
 import Database.PostgreSQL.Simple.TypeInfo.Types
+import GHC.Stack
 
-staticTypeInfo :: Oid -> Maybe TypeInfo
+staticTypeInfo :: (HasCallStack) => Oid -> Maybe TypeInfo
 staticTypeInfo (Oid x) = case x of
     16   -> Just bool
     17   -> Just bytea
@@ -255,7 +256,7 @@ staticTypeInfo (Oid x) = case x of
     3927 -> Just _int8range
     _ -> Nothing
 
-bool :: TypeInfo
+bool :: (HasCallStack) => TypeInfo
 bool =  Basic {
     typoid      = Oid 16,
     typcategory = 'B',
@@ -263,7 +264,7 @@ bool =  Basic {
     typname     = "bool"
   }
 
-bytea :: TypeInfo
+bytea :: (HasCallStack) => TypeInfo
 bytea =  Basic {
     typoid      = Oid 17,
     typcategory = 'U',
@@ -271,7 +272,7 @@ bytea =  Basic {
     typname     = "bytea"
   }
 
-char :: TypeInfo
+char :: (HasCallStack) => TypeInfo
 char =  Basic {
     typoid      = Oid 18,
     typcategory = 'S',
@@ -279,7 +280,7 @@ char =  Basic {
     typname     = "char"
   }
 
-name :: TypeInfo
+name :: (HasCallStack) => TypeInfo
 name =  Basic {
     typoid      = Oid 19,
     typcategory = 'S',
@@ -287,7 +288,7 @@ name =  Basic {
     typname     = "name"
   }
 
-int8 :: TypeInfo
+int8 :: (HasCallStack) => TypeInfo
 int8 =  Basic {
     typoid      = Oid 20,
     typcategory = 'N',
@@ -295,7 +296,7 @@ int8 =  Basic {
     typname     = "int8"
   }
 
-int2 :: TypeInfo
+int2 :: (HasCallStack) => TypeInfo
 int2 =  Basic {
     typoid      = Oid 21,
     typcategory = 'N',
@@ -303,7 +304,7 @@ int2 =  Basic {
     typname     = "int2"
   }
 
-int4 :: TypeInfo
+int4 :: (HasCallStack) => TypeInfo
 int4 =  Basic {
     typoid      = Oid 23,
     typcategory = 'N',
@@ -311,7 +312,7 @@ int4 =  Basic {
     typname     = "int4"
   }
 
-regproc :: TypeInfo
+regproc :: (HasCallStack) => TypeInfo
 regproc =  Basic {
     typoid      = Oid 24,
     typcategory = 'N',
@@ -319,7 +320,7 @@ regproc =  Basic {
     typname     = "regproc"
   }
 
-text :: TypeInfo
+text :: (HasCallStack) => TypeInfo
 text =  Basic {
     typoid      = Oid 25,
     typcategory = 'S',
@@ -327,7 +328,7 @@ text =  Basic {
     typname     = "text"
   }
 
-oid :: TypeInfo
+oid :: (HasCallStack) => TypeInfo
 oid =  Basic {
     typoid      = Oid 26,
     typcategory = 'N',
@@ -335,7 +336,7 @@ oid =  Basic {
     typname     = "oid"
   }
 
-tid :: TypeInfo
+tid :: (HasCallStack) => TypeInfo
 tid =  Basic {
     typoid      = Oid 27,
     typcategory = 'U',
@@ -343,7 +344,7 @@ tid =  Basic {
     typname     = "tid"
   }
 
-xid :: TypeInfo
+xid :: (HasCallStack) => TypeInfo
 xid =  Basic {
     typoid      = Oid 28,
     typcategory = 'U',
@@ -351,7 +352,7 @@ xid =  Basic {
     typname     = "xid"
   }
 
-cid :: TypeInfo
+cid :: (HasCallStack) => TypeInfo
 cid =  Basic {
     typoid      = Oid 29,
     typcategory = 'U',
@@ -359,7 +360,7 @@ cid =  Basic {
     typname     = "cid"
   }
 
-xml :: TypeInfo
+xml :: (HasCallStack) => TypeInfo
 xml =  Basic {
     typoid      = Oid 142,
     typcategory = 'U',
@@ -367,7 +368,7 @@ xml =  Basic {
     typname     = "xml"
   }
 
-point :: TypeInfo
+point :: (HasCallStack) => TypeInfo
 point =  Basic {
     typoid      = Oid 600,
     typcategory = 'G',
@@ -375,7 +376,7 @@ point =  Basic {
     typname     = "point"
   }
 
-lseg :: TypeInfo
+lseg :: (HasCallStack) => TypeInfo
 lseg =  Basic {
     typoid      = Oid 601,
     typcategory = 'G',
@@ -383,7 +384,7 @@ lseg =  Basic {
     typname     = "lseg"
   }
 
-path :: TypeInfo
+path :: (HasCallStack) => TypeInfo
 path =  Basic {
     typoid      = Oid 602,
     typcategory = 'G',
@@ -391,7 +392,7 @@ path =  Basic {
     typname     = "path"
   }
 
-box :: TypeInfo
+box :: (HasCallStack) => TypeInfo
 box =  Basic {
     typoid      = Oid 603,
     typcategory = 'G',
@@ -399,7 +400,7 @@ box =  Basic {
     typname     = "box"
   }
 
-polygon :: TypeInfo
+polygon :: (HasCallStack) => TypeInfo
 polygon =  Basic {
     typoid      = Oid 604,
     typcategory = 'G',
@@ -407,7 +408,7 @@ polygon =  Basic {
     typname     = "polygon"
   }
 
-line :: TypeInfo
+line :: (HasCallStack) => TypeInfo
 line =  Basic {
     typoid      = Oid 628,
     typcategory = 'G',
@@ -415,7 +416,7 @@ line =  Basic {
     typname     = "line"
   }
 
-cidr :: TypeInfo
+cidr :: (HasCallStack) => TypeInfo
 cidr =  Basic {
     typoid      = Oid 650,
     typcategory = 'I',
@@ -423,7 +424,7 @@ cidr =  Basic {
     typname     = "cidr"
   }
 
-float4 :: TypeInfo
+float4 :: (HasCallStack) => TypeInfo
 float4 =  Basic {
     typoid      = Oid 700,
     typcategory = 'N',
@@ -431,7 +432,7 @@ float4 =  Basic {
     typname     = "float4"
   }
 
-float8 :: TypeInfo
+float8 :: (HasCallStack) => TypeInfo
 float8 =  Basic {
     typoid      = Oid 701,
     typcategory = 'N',
@@ -439,7 +440,7 @@ float8 =  Basic {
     typname     = "float8"
   }
 
-unknown :: TypeInfo
+unknown :: (HasCallStack) => TypeInfo
 unknown =  Basic {
     typoid      = Oid 705,
     typcategory = 'X',
@@ -447,7 +448,7 @@ unknown =  Basic {
     typname     = "unknown"
   }
 
-circle :: TypeInfo
+circle :: (HasCallStack) => TypeInfo
 circle =  Basic {
     typoid      = Oid 718,
     typcategory = 'G',
@@ -455,7 +456,7 @@ circle =  Basic {
     typname     = "circle"
   }
 
-money :: TypeInfo
+money :: (HasCallStack) => TypeInfo
 money =  Basic {
     typoid      = Oid 790,
     typcategory = 'N',
@@ -463,7 +464,7 @@ money =  Basic {
     typname     = "money"
   }
 
-macaddr :: TypeInfo
+macaddr :: (HasCallStack) => TypeInfo
 macaddr =  Basic {
     typoid      = Oid 829,
     typcategory = 'U',
@@ -471,7 +472,7 @@ macaddr =  Basic {
     typname     = "macaddr"
   }
 
-inet :: TypeInfo
+inet :: (HasCallStack) => TypeInfo
 inet =  Basic {
     typoid      = Oid 869,
     typcategory = 'I',
@@ -479,7 +480,7 @@ inet =  Basic {
     typname     = "inet"
   }
 
-bpchar :: TypeInfo
+bpchar :: (HasCallStack) => TypeInfo
 bpchar =  Basic {
     typoid      = Oid 1042,
     typcategory = 'S',
@@ -487,7 +488,7 @@ bpchar =  Basic {
     typname     = "bpchar"
   }
 
-varchar :: TypeInfo
+varchar :: (HasCallStack) => TypeInfo
 varchar =  Basic {
     typoid      = Oid 1043,
     typcategory = 'S',
@@ -495,7 +496,7 @@ varchar =  Basic {
     typname     = "varchar"
   }
 
-date :: TypeInfo
+date :: (HasCallStack) => TypeInfo
 date =  Basic {
     typoid      = Oid 1082,
     typcategory = 'D',
@@ -503,7 +504,7 @@ date =  Basic {
     typname     = "date"
   }
 
-time :: TypeInfo
+time :: (HasCallStack) => TypeInfo
 time =  Basic {
     typoid      = Oid 1083,
     typcategory = 'D',
@@ -511,7 +512,7 @@ time =  Basic {
     typname     = "time"
   }
 
-timestamp :: TypeInfo
+timestamp :: (HasCallStack) => TypeInfo
 timestamp =  Basic {
     typoid      = Oid 1114,
     typcategory = 'D',
@@ -519,7 +520,7 @@ timestamp =  Basic {
     typname     = "timestamp"
   }
 
-timestamptz :: TypeInfo
+timestamptz :: (HasCallStack) => TypeInfo
 timestamptz =  Basic {
     typoid      = Oid 1184,
     typcategory = 'D',
@@ -527,7 +528,7 @@ timestamptz =  Basic {
     typname     = "timestamptz"
   }
 
-interval :: TypeInfo
+interval :: (HasCallStack) => TypeInfo
 interval =  Basic {
     typoid      = Oid 1186,
     typcategory = 'T',
@@ -535,7 +536,7 @@ interval =  Basic {
     typname     = "interval"
   }
 
-timetz :: TypeInfo
+timetz :: (HasCallStack) => TypeInfo
 timetz =  Basic {
     typoid      = Oid 1266,
     typcategory = 'D',
@@ -543,7 +544,7 @@ timetz =  Basic {
     typname     = "timetz"
   }
 
-bit :: TypeInfo
+bit :: (HasCallStack) => TypeInfo
 bit =  Basic {
     typoid      = Oid 1560,
     typcategory = 'V',
@@ -551,7 +552,7 @@ bit =  Basic {
     typname     = "bit"
   }
 
-varbit :: TypeInfo
+varbit :: (HasCallStack) => TypeInfo
 varbit =  Basic {
     typoid      = Oid 1562,
     typcategory = 'V',
@@ -559,7 +560,7 @@ varbit =  Basic {
     typname     = "varbit"
   }
 
-numeric :: TypeInfo
+numeric :: (HasCallStack) => TypeInfo
 numeric =  Basic {
     typoid      = Oid 1700,
     typcategory = 'N',
@@ -567,7 +568,7 @@ numeric =  Basic {
     typname     = "numeric"
   }
 
-refcursor :: TypeInfo
+refcursor :: (HasCallStack) => TypeInfo
 refcursor =  Basic {
     typoid      = Oid 1790,
     typcategory = 'U',
@@ -575,7 +576,7 @@ refcursor =  Basic {
     typname     = "refcursor"
   }
 
-record :: TypeInfo
+record :: (HasCallStack) => TypeInfo
 record =  Basic {
     typoid      = Oid 2249,
     typcategory = 'P',
@@ -583,7 +584,7 @@ record =  Basic {
     typname     = "record"
   }
 
-void :: TypeInfo
+void :: (HasCallStack) => TypeInfo
 void =  Basic {
     typoid      = Oid 2278,
     typcategory = 'P',
@@ -591,7 +592,7 @@ void =  Basic {
     typname     = "void"
   }
 
-array_record :: TypeInfo
+array_record :: (HasCallStack) => TypeInfo
 array_record =  Array {
     typoid      = Oid 2287,
     typcategory = 'P',
@@ -600,7 +601,7 @@ array_record =  Array {
     typelem     = record
   }
 
-regprocedure :: TypeInfo
+regprocedure :: (HasCallStack) => TypeInfo
 regprocedure =  Basic {
     typoid      = Oid 2202,
     typcategory = 'N',
@@ -608,7 +609,7 @@ regprocedure =  Basic {
     typname     = "regprocedure"
   }
 
-regoper :: TypeInfo
+regoper :: (HasCallStack) => TypeInfo
 regoper =  Basic {
     typoid      = Oid 2203,
     typcategory = 'N',
@@ -616,7 +617,7 @@ regoper =  Basic {
     typname     = "regoper"
   }
 
-regoperator :: TypeInfo
+regoperator :: (HasCallStack) => TypeInfo
 regoperator =  Basic {
     typoid      = Oid 2204,
     typcategory = 'N',
@@ -624,7 +625,7 @@ regoperator =  Basic {
     typname     = "regoperator"
   }
 
-regclass :: TypeInfo
+regclass :: (HasCallStack) => TypeInfo
 regclass =  Basic {
     typoid      = Oid 2205,
     typcategory = 'N',
@@ -632,7 +633,7 @@ regclass =  Basic {
     typname     = "regclass"
   }
 
-regtype :: TypeInfo
+regtype :: (HasCallStack) => TypeInfo
 regtype =  Basic {
     typoid      = Oid 2206,
     typcategory = 'N',
@@ -640,7 +641,7 @@ regtype =  Basic {
     typname     = "regtype"
   }
 
-uuid :: TypeInfo
+uuid :: (HasCallStack) => TypeInfo
 uuid =  Basic {
     typoid      = Oid 2950,
     typcategory = 'U',
@@ -648,7 +649,7 @@ uuid =  Basic {
     typname     = "uuid"
   }
 
-json :: TypeInfo
+json :: (HasCallStack) => TypeInfo
 json =  Basic {
     typoid      = Oid 114,
     typcategory = 'U',
@@ -656,7 +657,7 @@ json =  Basic {
     typname     = "json"
   }
 
-jsonb :: TypeInfo
+jsonb :: (HasCallStack) => TypeInfo
 jsonb =  Basic {
     typoid      = Oid 3802,
     typcategory = 'U',
@@ -664,7 +665,7 @@ jsonb =  Basic {
     typname     = "jsonb"
   }
 
-int2vector :: TypeInfo
+int2vector :: (HasCallStack) => TypeInfo
 int2vector =  Array {
     typoid      = Oid 22,
     typcategory = 'A',
@@ -673,7 +674,7 @@ int2vector =  Array {
     typelem     = int2
   }
 
-oidvector :: TypeInfo
+oidvector :: (HasCallStack) => TypeInfo
 oidvector =  Array {
     typoid      = Oid 30,
     typcategory = 'A',
@@ -682,7 +683,7 @@ oidvector =  Array {
     typelem     = oid
   }
 
-array_xml :: TypeInfo
+array_xml :: (HasCallStack) => TypeInfo
 array_xml =  Array {
     typoid      = Oid 143,
     typcategory = 'A',
@@ -691,7 +692,7 @@ array_xml =  Array {
     typelem     = xml
   }
 
-array_json :: TypeInfo
+array_json :: (HasCallStack) => TypeInfo
 array_json =  Array {
     typoid      = Oid 199,
     typcategory = 'A',
@@ -700,7 +701,7 @@ array_json =  Array {
     typelem     = json
   }
 
-array_line :: TypeInfo
+array_line :: (HasCallStack) => TypeInfo
 array_line =  Array {
     typoid      = Oid 629,
     typcategory = 'A',
@@ -709,7 +710,7 @@ array_line =  Array {
     typelem     = line
   }
 
-array_cidr :: TypeInfo
+array_cidr :: (HasCallStack) => TypeInfo
 array_cidr =  Array {
     typoid      = Oid 651,
     typcategory = 'A',
@@ -718,7 +719,7 @@ array_cidr =  Array {
     typelem     = cidr
   }
 
-array_circle :: TypeInfo
+array_circle :: (HasCallStack) => TypeInfo
 array_circle =  Array {
     typoid      = Oid 719,
     typcategory = 'A',
@@ -727,7 +728,7 @@ array_circle =  Array {
     typelem     = circle
   }
 
-array_money :: TypeInfo
+array_money :: (HasCallStack) => TypeInfo
 array_money =  Array {
     typoid      = Oid 791,
     typcategory = 'A',
@@ -736,7 +737,7 @@ array_money =  Array {
     typelem     = money
   }
 
-array_bool :: TypeInfo
+array_bool :: (HasCallStack) => TypeInfo
 array_bool =  Array {
     typoid      = Oid 1000,
     typcategory = 'A',
@@ -745,7 +746,7 @@ array_bool =  Array {
     typelem     = bool
   }
 
-array_bytea :: TypeInfo
+array_bytea :: (HasCallStack) => TypeInfo
 array_bytea =  Array {
     typoid      = Oid 1001,
     typcategory = 'A',
@@ -754,7 +755,7 @@ array_bytea =  Array {
     typelem     = bytea
   }
 
-array_char :: TypeInfo
+array_char :: (HasCallStack) => TypeInfo
 array_char =  Array {
     typoid      = Oid 1002,
     typcategory = 'A',
@@ -763,7 +764,7 @@ array_char =  Array {
     typelem     = char
   }
 
-array_name :: TypeInfo
+array_name :: (HasCallStack) => TypeInfo
 array_name =  Array {
     typoid      = Oid 1003,
     typcategory = 'A',
@@ -772,7 +773,7 @@ array_name =  Array {
     typelem     = name
   }
 
-array_int2 :: TypeInfo
+array_int2 :: (HasCallStack) => TypeInfo
 array_int2 =  Array {
     typoid      = Oid 1005,
     typcategory = 'A',
@@ -781,7 +782,7 @@ array_int2 =  Array {
     typelem     = int2
   }
 
-array_int2vector :: TypeInfo
+array_int2vector :: (HasCallStack) => TypeInfo
 array_int2vector =  Array {
     typoid      = Oid 1006,
     typcategory = 'A',
@@ -790,7 +791,7 @@ array_int2vector =  Array {
     typelem     = int2vector
   }
 
-array_int4 :: TypeInfo
+array_int4 :: (HasCallStack) => TypeInfo
 array_int4 =  Array {
     typoid      = Oid 1007,
     typcategory = 'A',
@@ -799,7 +800,7 @@ array_int4 =  Array {
     typelem     = int4
   }
 
-array_regproc :: TypeInfo
+array_regproc :: (HasCallStack) => TypeInfo
 array_regproc =  Array {
     typoid      = Oid 1008,
     typcategory = 'A',
@@ -808,7 +809,7 @@ array_regproc =  Array {
     typelem     = regproc
   }
 
-array_text :: TypeInfo
+array_text :: (HasCallStack) => TypeInfo
 array_text =  Array {
     typoid      = Oid 1009,
     typcategory = 'A',
@@ -817,7 +818,7 @@ array_text =  Array {
     typelem     = text
   }
 
-array_tid :: TypeInfo
+array_tid :: (HasCallStack) => TypeInfo
 array_tid =  Array {
     typoid      = Oid 1010,
     typcategory = 'A',
@@ -826,7 +827,7 @@ array_tid =  Array {
     typelem     = tid
   }
 
-array_xid :: TypeInfo
+array_xid :: (HasCallStack) => TypeInfo
 array_xid =  Array {
     typoid      = Oid 1011,
     typcategory = 'A',
@@ -835,7 +836,7 @@ array_xid =  Array {
     typelem     = xid
   }
 
-array_cid :: TypeInfo
+array_cid :: (HasCallStack) => TypeInfo
 array_cid =  Array {
     typoid      = Oid 1012,
     typcategory = 'A',
@@ -844,7 +845,7 @@ array_cid =  Array {
     typelem     = cid
   }
 
-array_oidvector :: TypeInfo
+array_oidvector :: (HasCallStack) => TypeInfo
 array_oidvector =  Array {
     typoid      = Oid 1013,
     typcategory = 'A',
@@ -853,7 +854,7 @@ array_oidvector =  Array {
     typelem     = oidvector
   }
 
-array_bpchar :: TypeInfo
+array_bpchar :: (HasCallStack) => TypeInfo
 array_bpchar =  Array {
     typoid      = Oid 1014,
     typcategory = 'A',
@@ -862,7 +863,7 @@ array_bpchar =  Array {
     typelem     = bpchar
   }
 
-array_varchar :: TypeInfo
+array_varchar :: (HasCallStack) => TypeInfo
 array_varchar =  Array {
     typoid      = Oid 1015,
     typcategory = 'A',
@@ -871,7 +872,7 @@ array_varchar =  Array {
     typelem     = varchar
   }
 
-array_int8 :: TypeInfo
+array_int8 :: (HasCallStack) => TypeInfo
 array_int8 =  Array {
     typoid      = Oid 1016,
     typcategory = 'A',
@@ -880,7 +881,7 @@ array_int8 =  Array {
     typelem     = int8
   }
 
-array_point :: TypeInfo
+array_point :: (HasCallStack) => TypeInfo
 array_point =  Array {
     typoid      = Oid 1017,
     typcategory = 'A',
@@ -889,7 +890,7 @@ array_point =  Array {
     typelem     = point
   }
 
-array_lseg :: TypeInfo
+array_lseg :: (HasCallStack) => TypeInfo
 array_lseg =  Array {
     typoid      = Oid 1018,
     typcategory = 'A',
@@ -898,7 +899,7 @@ array_lseg =  Array {
     typelem     = lseg
   }
 
-array_path :: TypeInfo
+array_path :: (HasCallStack) => TypeInfo
 array_path =  Array {
     typoid      = Oid 1019,
     typcategory = 'A',
@@ -907,7 +908,7 @@ array_path =  Array {
     typelem     = path
   }
 
-array_box :: TypeInfo
+array_box :: (HasCallStack) => TypeInfo
 array_box =  Array {
     typoid      = Oid 1020,
     typcategory = 'A',
@@ -916,7 +917,7 @@ array_box =  Array {
     typelem     = box
   }
 
-array_float4 :: TypeInfo
+array_float4 :: (HasCallStack) => TypeInfo
 array_float4 =  Array {
     typoid      = Oid 1021,
     typcategory = 'A',
@@ -925,7 +926,7 @@ array_float4 =  Array {
     typelem     = float4
   }
 
-array_float8 :: TypeInfo
+array_float8 :: (HasCallStack) => TypeInfo
 array_float8 =  Array {
     typoid      = Oid 1022,
     typcategory = 'A',
@@ -934,7 +935,7 @@ array_float8 =  Array {
     typelem     = float8
   }
 
-array_polygon :: TypeInfo
+array_polygon :: (HasCallStack) => TypeInfo
 array_polygon =  Array {
     typoid      = Oid 1027,
     typcategory = 'A',
@@ -943,7 +944,7 @@ array_polygon =  Array {
     typelem     = polygon
   }
 
-array_oid :: TypeInfo
+array_oid :: (HasCallStack) => TypeInfo
 array_oid =  Array {
     typoid      = Oid 1028,
     typcategory = 'A',
@@ -952,7 +953,7 @@ array_oid =  Array {
     typelem     = oid
   }
 
-array_macaddr :: TypeInfo
+array_macaddr :: (HasCallStack) => TypeInfo
 array_macaddr =  Array {
     typoid      = Oid 1040,
     typcategory = 'A',
@@ -961,7 +962,7 @@ array_macaddr =  Array {
     typelem     = macaddr
   }
 
-array_inet :: TypeInfo
+array_inet :: (HasCallStack) => TypeInfo
 array_inet =  Array {
     typoid      = Oid 1041,
     typcategory = 'A',
@@ -970,7 +971,7 @@ array_inet =  Array {
     typelem     = inet
   }
 
-array_timestamp :: TypeInfo
+array_timestamp :: (HasCallStack) => TypeInfo
 array_timestamp =  Array {
     typoid      = Oid 1115,
     typcategory = 'A',
@@ -979,7 +980,7 @@ array_timestamp =  Array {
     typelem     = timestamp
   }
 
-array_date :: TypeInfo
+array_date :: (HasCallStack) => TypeInfo
 array_date =  Array {
     typoid      = Oid 1182,
     typcategory = 'A',
@@ -988,7 +989,7 @@ array_date =  Array {
     typelem     = date
   }
 
-array_time :: TypeInfo
+array_time :: (HasCallStack) => TypeInfo
 array_time =  Array {
     typoid      = Oid 1183,
     typcategory = 'A',
@@ -997,7 +998,7 @@ array_time =  Array {
     typelem     = time
   }
 
-array_timestamptz :: TypeInfo
+array_timestamptz :: (HasCallStack) => TypeInfo
 array_timestamptz =  Array {
     typoid      = Oid 1185,
     typcategory = 'A',
@@ -1006,7 +1007,7 @@ array_timestamptz =  Array {
     typelem     = timestamptz
   }
 
-array_interval :: TypeInfo
+array_interval :: (HasCallStack) => TypeInfo
 array_interval =  Array {
     typoid      = Oid 1187,
     typcategory = 'A',
@@ -1015,7 +1016,7 @@ array_interval =  Array {
     typelem     = interval
   }
 
-array_numeric :: TypeInfo
+array_numeric :: (HasCallStack) => TypeInfo
 array_numeric =  Array {
     typoid      = Oid 1231,
     typcategory = 'A',
@@ -1024,7 +1025,7 @@ array_numeric =  Array {
     typelem     = numeric
   }
 
-array_timetz :: TypeInfo
+array_timetz :: (HasCallStack) => TypeInfo
 array_timetz =  Array {
     typoid      = Oid 1270,
     typcategory = 'A',
@@ -1033,7 +1034,7 @@ array_timetz =  Array {
     typelem     = timetz
   }
 
-array_bit :: TypeInfo
+array_bit :: (HasCallStack) => TypeInfo
 array_bit =  Array {
     typoid      = Oid 1561,
     typcategory = 'A',
@@ -1042,7 +1043,7 @@ array_bit =  Array {
     typelem     = bit
   }
 
-array_varbit :: TypeInfo
+array_varbit :: (HasCallStack) => TypeInfo
 array_varbit =  Array {
     typoid      = Oid 1563,
     typcategory = 'A',
@@ -1051,7 +1052,7 @@ array_varbit =  Array {
     typelem     = varbit
   }
 
-array_refcursor :: TypeInfo
+array_refcursor :: (HasCallStack) => TypeInfo
 array_refcursor =  Array {
     typoid      = Oid 2201,
     typcategory = 'A',
@@ -1060,7 +1061,7 @@ array_refcursor =  Array {
     typelem     = refcursor
   }
 
-array_regprocedure :: TypeInfo
+array_regprocedure :: (HasCallStack) => TypeInfo
 array_regprocedure =  Array {
     typoid      = Oid 2207,
     typcategory = 'A',
@@ -1069,7 +1070,7 @@ array_regprocedure =  Array {
     typelem     = regprocedure
   }
 
-array_regoper :: TypeInfo
+array_regoper :: (HasCallStack) => TypeInfo
 array_regoper =  Array {
     typoid      = Oid 2208,
     typcategory = 'A',
@@ -1078,7 +1079,7 @@ array_regoper =  Array {
     typelem     = regoper
   }
 
-array_regoperator :: TypeInfo
+array_regoperator :: (HasCallStack) => TypeInfo
 array_regoperator =  Array {
     typoid      = Oid 2209,
     typcategory = 'A',
@@ -1087,7 +1088,7 @@ array_regoperator =  Array {
     typelem     = regoperator
   }
 
-array_regclass :: TypeInfo
+array_regclass :: (HasCallStack) => TypeInfo
 array_regclass =  Array {
     typoid      = Oid 2210,
     typcategory = 'A',
@@ -1096,7 +1097,7 @@ array_regclass =  Array {
     typelem     = regclass
   }
 
-array_regtype :: TypeInfo
+array_regtype :: (HasCallStack) => TypeInfo
 array_regtype =  Array {
     typoid      = Oid 2211,
     typcategory = 'A',
@@ -1105,7 +1106,7 @@ array_regtype =  Array {
     typelem     = regtype
   }
 
-array_uuid :: TypeInfo
+array_uuid :: (HasCallStack) => TypeInfo
 array_uuid =  Array {
     typoid      = Oid 2951,
     typcategory = 'A',
@@ -1114,7 +1115,7 @@ array_uuid =  Array {
     typelem     = uuid
   }
 
-array_jsonb :: TypeInfo
+array_jsonb :: (HasCallStack) => TypeInfo
 array_jsonb =  Array {
     typoid      = Oid 3807,
     typcategory = 'A',
@@ -1123,7 +1124,7 @@ array_jsonb =  Array {
     typelem     = jsonb
   }
 
-int4range :: TypeInfo
+int4range :: (HasCallStack) => TypeInfo
 int4range =  Range {
     typoid      = Oid 3904,
     typcategory = 'R',
@@ -1132,7 +1133,7 @@ int4range =  Range {
     rngsubtype  = int4
   }
 
-_int4range :: TypeInfo
+_int4range :: (HasCallStack) => TypeInfo
 _int4range =  Array {
     typoid      = Oid 3905,
     typcategory = 'A',
@@ -1141,7 +1142,7 @@ _int4range =  Array {
     typelem     = int4range
   }
 
-numrange :: TypeInfo
+numrange :: (HasCallStack) => TypeInfo
 numrange =  Range {
     typoid      = Oid 3906,
     typcategory = 'R',
@@ -1150,7 +1151,7 @@ numrange =  Range {
     rngsubtype  = numeric
   }
 
-_numrange :: TypeInfo
+_numrange :: (HasCallStack) => TypeInfo
 _numrange =  Array {
     typoid      = Oid 3907,
     typcategory = 'A',
@@ -1159,7 +1160,7 @@ _numrange =  Array {
     typelem     = numrange
   }
 
-tsrange :: TypeInfo
+tsrange :: (HasCallStack) => TypeInfo
 tsrange =  Range {
     typoid      = Oid 3908,
     typcategory = 'R',
@@ -1168,7 +1169,7 @@ tsrange =  Range {
     rngsubtype  = timestamp
   }
 
-_tsrange :: TypeInfo
+_tsrange :: (HasCallStack) => TypeInfo
 _tsrange =  Array {
     typoid      = Oid 3909,
     typcategory = 'A',
@@ -1177,7 +1178,7 @@ _tsrange =  Array {
     typelem     = tsrange
   }
 
-tstzrange :: TypeInfo
+tstzrange :: (HasCallStack) => TypeInfo
 tstzrange =  Range {
     typoid      = Oid 3910,
     typcategory = 'R',
@@ -1186,7 +1187,7 @@ tstzrange =  Range {
     rngsubtype  = timestamptz
   }
 
-_tstzrange :: TypeInfo
+_tstzrange :: (HasCallStack) => TypeInfo
 _tstzrange =  Array {
     typoid      = Oid 3911,
     typcategory = 'A',
@@ -1195,7 +1196,7 @@ _tstzrange =  Array {
     typelem     = tstzrange
   }
 
-daterange :: TypeInfo
+daterange :: (HasCallStack) => TypeInfo
 daterange =  Range {
     typoid      = Oid 3912,
     typcategory = 'R',
@@ -1204,7 +1205,7 @@ daterange =  Range {
     rngsubtype  = date
   }
 
-_daterange :: TypeInfo
+_daterange :: (HasCallStack) => TypeInfo
 _daterange =  Array {
     typoid      = Oid 3913,
     typcategory = 'A',
@@ -1213,7 +1214,7 @@ _daterange =  Array {
     typelem     = daterange
   }
 
-int8range :: TypeInfo
+int8range :: (HasCallStack) => TypeInfo
 int8range =  Range {
     typoid      = Oid 3926,
     typcategory = 'R',
@@ -1222,7 +1223,7 @@ int8range =  Range {
     rngsubtype  = int8
   }
 
-_int8range :: TypeInfo
+_int8range :: (HasCallStack) => TypeInfo
 _int8range =  Array {
     typoid      = Oid 3927,
     typcategory = 'A',

@@ -17,6 +17,7 @@ module Database.PostgreSQL.Simple.Internal.PQResultUtils
     , getRowWith
     ) where
 
+import GHC.Stack
 import           Control.Exception as E
 import           Data.ByteString (ByteString)
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
@@ -29,7 +30,7 @@ import qualified Data.ByteString.Char8 as B
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
-finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
+finishQueryWith :: (HasCallStack) => RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
 finishQueryWith parser conn q result = do
   status <- PQ.resultStatus result
   case status of
@@ -54,7 +55,7 @@ finishQueryWith parser conn q result = do
   where
     queryErr msg = throwIO $ QueryError msg q
 
-getRowWith :: RowParser r -> PQ.Row -> PQ.Column -> Connection -> PQ.Result -> IO r
+getRowWith :: (HasCallStack) => RowParser r -> PQ.Row -> PQ.Column -> Connection -> PQ.Result -> IO r
 getRowWith parser row ncols conn result = do
   let rw = Row row result
   let unCol (PQ.Col x) = fromIntegral x :: Int
@@ -77,12 +78,12 @@ getRowWith parser row ncols conn result = do
     Errors [x] -> throwIO x
     Errors xs  -> throwIO $ ManyErrors xs
 
-ellipsis :: ByteString -> ByteString
+ellipsis :: (HasCallStack) => ByteString -> ByteString
 ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
 
-forM' :: (Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
+forM' :: (HasCallStack, Ord n, Num n) => n -> n -> (n -> IO a) -> IO [a]
 forM' lo hi m = loop hi []
   where
     loop !n !as

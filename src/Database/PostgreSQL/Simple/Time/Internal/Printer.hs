@@ -32,26 +32,27 @@ import Data.Time
     , TimeZone, timeZoneMinutes )
 import Database.PostgreSQL.Simple.Compat ((<>), fromPico)
 import Unsafe.Coerce (unsafeCoerce)
+import GHC.Stack
 
-liftB :: FixedPrim a -> BoundedPrim a
+liftB :: (HasCallStack) => FixedPrim a -> BoundedPrim a
 liftB = liftFixedToBounded
 
-digit   :: FixedPrim Int
+digit   :: (HasCallStack) => FixedPrim Int
 digit   = (\x -> chr (x + 48)) >$< char8
 
-digits2 :: FixedPrim Int
+digits2 :: (HasCallStack) => FixedPrim Int
 digits2 = (`quotRem` 10) >$< (digit >*< digit)
 
-digits3 :: FixedPrim Int
+digits3 :: (HasCallStack) => FixedPrim Int
 digits3 = (`quotRem` 10) >$< (digits2 >*< digit)
 
-digits4 :: FixedPrim Int
+digits4 :: (HasCallStack) => FixedPrim Int
 digits4 = (`quotRem` 10) >$< (digits3 >*< digit)
 
-frac :: BoundedPrim Int64
+frac :: (HasCallStack) => BoundedPrim Int64
 frac = condB (== 0) emptyB ((,) '.' >$< (liftB char8 >*< trunc12))
   where
-    trunc12 :: BoundedPrim Int64
+    trunc12 :: (HasCallStack) => BoundedPrim Int64
     trunc12 = (`quotRem` 1000000) >$<
               condB (\(_,y) -> y == 0)
                     (fst >$< trunc6)
@@ -70,22 +71,22 @@ frac = condB (== 0) emptyB ((,) '.' >$< (liftB char8 >*< trunc12))
     trunc1 = condB (== 0) emptyB digitB
 
 
-year  :: BoundedPrim Int32
+year  :: (HasCallStack) => BoundedPrim Int32
 year = condB (> 10000) int32Dec (checkBCE >$< liftB digits4)
   where
-    checkBCE :: Int32 -> Int
+    checkBCE :: (HasCallStack) => Int32 -> Int
     checkBCE y
         | y > 0     = fromIntegral y
         | otherwise = error msg
 
     msg = "Database.PostgreSQL.Simple.Time.Printer.year:  years BCE not supported"
 
-day :: BoundedPrim Day
+day :: (HasCallStack) => BoundedPrim Day
 day = toYMD >$< (year >*< liftB (char8 >*< digits2 >*< char8 >*< digits2))
   where
     toYMD (toGregorian -> (fromIntegral -> !y, !m,!d)) = (y,('-',(m,('-',d))))
 
-timeOfDay :: BoundedPrim TimeOfDay
+timeOfDay :: (HasCallStack) => BoundedPrim TimeOfDay
 timeOfDay = f >$< (hh_mm_ >*< ss)
   where
     f (TimeOfDay h m s)  =  ((h,(':',(m,':'))),s)
@@ -95,7 +96,7 @@ timeOfDay = f >$< (hh_mm_ >*< ss)
     ss = (\s -> fromIntegral (fromPico s) `quotRem` 1000000000000) >$<
          (liftB (fromIntegral >$< digits2) >*< frac)
 
-timeZone :: BoundedPrim TimeZone
+timeZone :: (HasCallStack) => BoundedPrim TimeZone
 timeZone = timeZoneMinutes >$< tz
   where
     tz  = condB (>= 0) ((,) '+' >$< tzh) ((,) '-' . negate >$< tzh)
@@ -104,20 +105,20 @@ timeZone = timeZoneMinutes >$< tz
 
     tzm = condB (==0) emptyB ((,) ':' >$< liftB (char8 >*< digits2))
 
-utcTime :: BoundedPrim UTCTime
+utcTime :: (HasCallStack) => BoundedPrim UTCTime
 utcTime = f >$< (day >*< liftB char8 >*< timeOfDay >*< liftB char8)
   where f (UTCTime d (timeToTimeOfDay -> tod)) = (d,(' ',(tod,'Z')))
 
-localTime :: BoundedPrim LocalTime
+localTime :: (HasCallStack) => BoundedPrim LocalTime
 localTime = f >$< (day >*< liftB char8 >*< timeOfDay)
   where f (LocalTime d tod) = (d, (' ', tod))
 
-zonedTime :: BoundedPrim ZonedTime
+zonedTime :: (HasCallStack) => BoundedPrim ZonedTime
 zonedTime = f >$< (localTime >*< timeZone)
   where f (ZonedTime lt tz) = (lt, tz)
 
 
-nominalDiffTime :: NominalDiffTime -> Builder
+nominalDiffTime :: (HasCallStack) => NominalDiffTime -> Builder
 nominalDiffTime xy = integerDec x <> primBounded frac (abs (fromIntegral y))
   where
     (x,y) = fromPico (unsafeCoerce xy) `quotRem` 1000000000000

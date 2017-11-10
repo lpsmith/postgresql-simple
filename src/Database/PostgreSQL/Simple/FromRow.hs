@@ -28,6 +28,7 @@ module Database.PostgreSQL.Simple.FromRow
      , numFieldsRemaining
      ) where
 
+import GHC.Stack
 import           Prelude hiding (null)
 import           Control.Applicative (Applicative(..), (<$>), (<|>), (*>), liftA2)
 import           Control.Monad (replicateM, replicateM_)
@@ -77,22 +78,22 @@ class FromRow a where
     default fromRow :: (Generic a, GFromRow (Rep a)) => RowParser a
     fromRow = to <$> gfromRow
 
-getvalue :: PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
+getvalue :: (HasCallStack) => PQ.Result -> PQ.Row -> PQ.Column -> Maybe ByteString
 getvalue result row col = unsafeDupablePerformIO (PQ.getvalue' result row col)
 
-nfields :: PQ.Result -> PQ.Column
+nfields :: (HasCallStack) => PQ.Result -> PQ.Column
 nfields result = unsafeDupablePerformIO (PQ.nfields result)
 
-getTypeInfoByCol :: Row -> PQ.Column -> Conversion TypeInfo
+getTypeInfoByCol :: (HasCallStack) => Row -> PQ.Column -> Conversion TypeInfo
 getTypeInfoByCol Row{..} col =
     Conversion $ \conn -> do
       oid <- PQ.ftype rowresult col
       Ok <$> getTypeInfo conn oid
 
-getTypenameByCol :: Row -> PQ.Column -> Conversion ByteString
+getTypenameByCol :: (HasCallStack) => Row -> PQ.Column -> Conversion ByteString
 getTypenameByCol row col = typname <$> getTypeInfoByCol row col
 
-fieldWith :: FieldParser a -> RowParser a
+fieldWith :: (HasCallStack) => FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
     r@Row{..} <- ask
@@ -117,21 +118,21 @@ fieldWith fieldP = RP $ do
           !field = Field{..}
       lift (lift (fieldP field (getvalue result row column)))
 
-field :: FromField a => RowParser a
+field :: (HasCallStack) => FromField a => RowParser a
 field = fieldWith fromField
 
-ellipsis :: ByteString -> ByteString
+ellipsis :: (HasCallStack) => ByteString -> ByteString
 ellipsis bs
     | B.length bs > 15 = B.take 10 bs `B.append` "[...]"
     | otherwise        = bs
 
-numFieldsRemaining :: RowParser Int
+numFieldsRemaining :: (HasCallStack) => RowParser Int
 numFieldsRemaining = RP $ do
     Row{..} <- ask
     column <- lift get
     return $! (\(PQ.Col x) -> fromIntegral x) (nfields rowresult - column)
 
-null :: RowParser Null
+null :: (HasCallStack) => RowParser Null
 null =  field
 
 instance (FromField a) => FromRow (Only a) where

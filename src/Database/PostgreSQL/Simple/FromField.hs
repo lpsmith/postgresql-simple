@@ -113,6 +113,7 @@ module Database.PostgreSQL.Simple.FromField
 
 #include "MachDeps.h"
 
+import GHC.Stack
 import           Control.Applicative ( (<|>), (<$>), pure, (*>), (<*) )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
@@ -180,7 +181,7 @@ data ResultError = Incompatible { errSQLType :: String
 
 instance Exception ResultError
 
-left :: Exception a => a -> Conversion b
+left :: (HasCallStack, Exception a) => a -> Conversion b
 left = conversionError
 
 type FieldParser a = Field -> Maybe ByteString -> Conversion a
@@ -214,21 +215,21 @@ class FromField a where
 --   postgresql-simple will check a per-connection cache,  and then
 --   finally query the database's meta-schema.
 
-typename :: Field -> Conversion ByteString
+typename :: (HasCallStack) => Field -> Conversion ByteString
 typename field = typname <$> typeInfo field
 
-typeInfo :: Field -> Conversion TypeInfo
+typeInfo :: (HasCallStack) => Field -> Conversion TypeInfo
 typeInfo Field{..} = Conversion $ \conn -> do
                        Ok <$> (getTypeInfo conn typeOid)
 
-typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
+typeInfoByOid :: (HasCallStack) => PQ.Oid -> Conversion TypeInfo
 typeInfoByOid oid = Conversion $ \conn -> do
                       Ok <$> (getTypeInfo conn oid)
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
 
-name :: Field -> Maybe ByteString
+name :: (HasCallStack) => Field -> Maybe ByteString
 name Field{..} = unsafeDupablePerformIO (PQ.fname result column)
 
 -- | Returns the name of the object id of the @table@ associated with the
@@ -236,7 +237,7 @@ name Field{..} = unsafeDupablePerformIO (PQ.fname result column)
 --   for example a computed column does not have a table associated with it.
 --   Analogous to libpq's @PQftable@.
 
-tableOid :: Field -> Maybe PQ.Oid
+tableOid :: (HasCallStack) => Field -> Maybe PQ.Oid
 tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column))
   where
      toMaybeOid x
@@ -248,7 +249,7 @@ tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column
 --   off the associated table column.   Numbering starts from 0.  Analogous
 --   to libpq's @PQftablecol@.
 
-tableColumn :: Field -> Int
+tableColumn :: (HasCallStack) => Field -> Int
 tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result column))
   where
     fromCol (PQ.Col x) = fromIntegral x
@@ -256,7 +257,7 @@ tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result col
 -- | This returns whether the data was returned in a binary or textual format.
 --   Analogous to libpq's @PQfformat@.
 
-format :: Field -> PQ.Format
+format :: (HasCallStack) => Field -> PQ.Format
 format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
 
 -- | void
@@ -277,7 +278,7 @@ instance FromField a => FromField (Maybe a) where
 --   also turns type and conversion errors into 'Nothing',  whereas this is
 --   more specific and turns only @null@ values into 'Nothing'.
 
-optionalField :: FieldParser a -> FieldParser (Maybe a)
+optionalField :: (HasCallStack) => FieldParser a -> FieldParser (Maybe a)
 optionalField p f mv =
     case mv of
       Nothing -> pure Nothing
@@ -357,17 +358,17 @@ instance FromField Scientific where
      fromField = atto ok rational
       where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.int8,TI.numeric])
 
-unBinary :: Binary t -> t
+unBinary :: (HasCallStack) => Binary t -> t
 unBinary (Binary x) = x
 
-pg_double :: Parser Double
+pg_double :: (HasCallStack) => Parser Double
 pg_double
     =   (string "NaN"       *> pure ( 0 / 0))
     <|> (string "Infinity"  *> pure ( 1 / 0))
     <|> (string "-Infinity" *> pure (-1 / 0))
     <|> double
 
-pg_rational :: Parser Rational
+pg_rational :: (HasCallStack) => Parser Rational
 pg_rational
     =   (string "NaN"       *> pure notANumber )
     <|> (string "Infinity"  *> pure infinity   )
@@ -388,7 +389,7 @@ instance FromField PQ.Oid where
 instance FromField LB.ByteString where
     fromField f dat = LB.fromChunks . (:[]) <$> fromField f dat
 
-unescapeBytea :: Field -> SB.ByteString
+unescapeBytea :: (HasCallStack) => Field -> SB.ByteString
               -> Conversion (Binary SB.ByteString)
 unescapeBytea f str = case unsafeDupablePerformIO (PQ.unescapeBytea str) of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
@@ -475,7 +476,7 @@ instance FromField LocalTimestamp where
 instance FromField Date where
   fromField = ff $(inlineTypoid TI.date) "Date" parseDate
 
-ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
+ff :: (HasCallStack) => PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
 ff compatOid hsType parse f mstr =
   if typeOid f /= compatOid
@@ -506,7 +507,7 @@ instance (FromField a, FromField b) => FromField (Either a b) where
 instance (FromField a, Typeable a) => FromField (PGArray a) where
   fromField = pgArrayFieldParser fromField
 
-pgArrayFieldParser :: Typeable a => FieldParser a -> FieldParser (PGArray a)
+pgArrayFieldParser :: (HasCallStack, Typeable a) => FieldParser a -> FieldParser (PGArray a)
 pgArrayFieldParser fieldParser f mdat = do
         info <- typeInfo f
         case info of
@@ -519,7 +520,7 @@ pgArrayFieldParser fieldParser f mdat = do
                      Right conv -> PGArray <$> conv
           _ -> returnError Incompatible f ""
 
-fromArray :: FieldParser a -> TypeInfo -> Field -> Parser (Conversion [a])
+fromArray :: (HasCallStack) => FieldParser a -> TypeInfo -> Field -> Parser (Conversion [a])
 fromArray fieldParser typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
     delim = typdelim (typelem typeInfo)
@@ -581,7 +582,7 @@ instance FromField JSON.Value where
 -- like to return @Nothing@ on both the SQL @null@ and json @null@ values,
 -- one way to do it would be to write
 -- @\\f mv -> 'Control.Monad.join' '<$>' optionalField fromJSONField f mv@
-fromJSONField :: (JSON.FromJSON a, Typeable a) => FieldParser a
+fromJSONField :: (HasCallStack) => (JSON.FromJSON a, Typeable a) => FieldParser a
 fromJSONField f mbBs = do
     value <- fromField f mbBs
     case JSON.fromJSON value of
@@ -618,7 +619,7 @@ okInt = ok32
 okInt = ok64
 #endif
 
-doFromField :: forall a . (Typeable a)
+doFromField :: forall a . (Typeable a, HasCallStack)
           => Field -> Compat -> (ByteString -> Conversion a)
           -> Maybe ByteString -> Conversion a
 doFromField f isCompat cvt (Just bs)
@@ -631,7 +632,7 @@ doFromField f _ _ _ = returnError UnexpectedNull f ""
 --   and an 'errMessage',  this fills in the other fields in the
 --   exception value and returns it in a 'Left . SomeException'
 --   constructor.
-returnError :: forall a err . (Typeable a, Exception err)
+returnError :: forall a err . (Typeable a, Exception err, HasCallStack)
             => (String -> Maybe PQ.Oid -> String -> String -> String -> err)
             -> Field -> String -> Conversion a
 returnError mkErr f msg = do
@@ -642,7 +643,7 @@ returnError mkErr f msg = do
                (show (typeOf (undefined :: a)))
                msg
 
-atto :: forall a. (Typeable a)
+atto :: forall a. (Typeable a, HasCallStack)
      => Compat -> Parser a -> Field -> Maybe ByteString
      -> Conversion a
 atto types p0 f dat = doFromField f types (go p0) dat

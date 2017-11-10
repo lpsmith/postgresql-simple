@@ -44,6 +44,7 @@ import           Database.PostgreSQL.Simple.Internal
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           System.Posix.Types ( CPid )
 import           GHC.IO.Exception ( ioe_location )
+import GHC.Stack
 
 #if defined(mingw32_HOST_OS)
 import           Control.Concurrent ( threadDelay )
@@ -60,7 +61,7 @@ data Notification = Notification
    , notificationData    :: {-# UNPACK #-} !B.ByteString
    } deriving (Show, Eq)
 
-convertNotice :: PQ.Notify -> Notification
+convertNotice :: (HasCallStack) => PQ.Notify -> Notification
 convertNotice PQ.Notify{..}
     = Notification { notificationPid     = notifyBePid
                    , notificationChannel = notifyRelname
@@ -73,7 +74,7 @@ convertNotice PQ.Notify{..}
 --   being used for other purposes,   note however that PostgreSQL does not
 --   deliver notifications while a connection is inside a transaction.
 
-getNotification :: Connection -> IO Notification
+getNotification :: (HasCallStack) => Connection -> IO Notification
 getNotification conn = join $ withConnection conn fetch
   where
     funcName = "Database.PostgreSQL.Simple.Notification.getNotification"
@@ -130,14 +131,14 @@ getNotification conn = join $ withConnection conn fetch
              void $ PQ.consumeInput c
              fetch c
 
-    setIOErrorLocation :: IOError -> IOError
+    setIOErrorLocation :: (HasCallStack) => IOError -> IOError
     setIOErrorLocation err = err { ioe_location = B8.unpack funcName }
 
 
 -- | Non-blocking variant of 'getNotification'.   Returns a single notification,
 -- if available.   If no notifications are available,  returns 'Nothing'.
 
-getNotificationNonBlocking :: Connection -> IO (Maybe Notification)
+getNotificationNonBlocking :: (HasCallStack) => Connection -> IO (Maybe Notification)
 getNotificationNonBlocking conn =
     withConnection conn $ \c -> do
         mmsg <- PQ.notifies c
@@ -158,5 +159,5 @@ getNotificationNonBlocking conn =
 -- process). Note that the PID belongs to a process executing on the
 -- database server host, not the local host!
 
-getBackendPID :: Connection -> IO CPid
+getBackendPID :: (HasCallStack) => Connection -> IO CPid
 getBackendPID conn = withConnection conn PQ.backendPID

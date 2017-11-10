@@ -41,6 +41,7 @@ import                Database.PostgreSQL.Simple.Internal
 import                Database.PostgreSQL.Simple.Types
 import                Database.PostgreSQL.Simple.TypeInfo.Types
 import                Database.PostgreSQL.Simple.TypeInfo.Static
+import GHC.Stack
 
 -- | Returns the metadata of the type with a particular oid.  To find
 --   this data, 'getTypeInfo' first consults postgresql-simple's
@@ -49,13 +50,13 @@ import                Database.PostgreSQL.Simple.TypeInfo.Static
 --   be queried only if necessary,  and the result will be stored
 --   in the connections's cache.
 
-getTypeInfo :: Connection -> PQ.Oid -> IO TypeInfo
+getTypeInfo :: (HasCallStack) => Connection -> PQ.Oid -> IO TypeInfo
 getTypeInfo conn@Connection{..} oid =
   case staticTypeInfo oid of
     Just name -> return name
     Nothing -> modifyMVar connectionObjects $ getTypeInfo' conn oid
 
-getTypeInfo' :: Connection -> PQ.Oid -> TypeInfoCache
+getTypeInfo' :: (HasCallStack) => Connection -> PQ.Oid -> TypeInfoCache
              -> IO (TypeInfoCache, TypeInfo)
 getTypeInfo' conn oid oidmap =
   case IntMap.lookup (oid2int oid) oidmap of
@@ -107,7 +108,7 @@ getTypeInfo' conn oid oidmap =
       let !oidmap'' = IntMap.insert (oid2int oid) typeInfo oidmap'
       return $! (oidmap'', typeInfo)
 
-getAttInfos :: Connection -> [(B.ByteString, PQ.Oid)] -> TypeInfoCache
+getAttInfos :: (HasCallStack) => Connection -> [(B.ByteString, PQ.Oid)] -> TypeInfoCache
             -> MV.IOVector Attribute -> Int
             -> IO (TypeInfoCache, V.Vector Attribute)
 getAttInfos conn cols oidmap vec n =
