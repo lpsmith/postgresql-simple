@@ -131,3 +131,16 @@ test-suite test
   if !impl(ghc >= 7.6)
     build-depends:
       ghc-prim
+
+test-suite benchmark
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: benchmark
+  main-is:        Main.hs
+  build-depends: postgresql-simple
+               , criterion
+               , deepseq
+               , text
+               , time
+               , aeson
+               , containers
+               , base
