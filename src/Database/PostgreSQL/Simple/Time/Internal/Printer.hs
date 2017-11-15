@@ -71,7 +71,7 @@ frac = condB (== 0) emptyB ((,) '.' >$< (liftB char8 >*< trunc12))
 
 
 year  :: BoundedPrim Int32
-year = condB (> 10000) int32Dec (checkBCE >$< liftB digits4)
+year = condB (>= 10000) int32Dec (checkBCE >$< liftB digits4)
   where
     checkBCE :: Int32 -> Int
     checkBCE y
