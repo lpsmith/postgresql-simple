@@ -31,11 +31,7 @@ import Data.Scientific (scientificBuilder)
 import System.IO.Unsafe (unsafeDupablePerformIO)
 
 import Data.Fixed (Pico)
-#if MIN_VERSION_base(4,7,0)
 import Data.Fixed (Fixed(MkFixed))
-#else
-import Unsafe.Coerce (unsafeCoerce)
-#endif
 
 -- | Like 'E.mask', but backported to base before version 4.3.0.
 --
@@ -61,20 +57,8 @@ toByteString x = toStrict (toLazyByteString x)
 toByteString x = B.concat (toChunks (toLazyByteString x))
 #endif
 
-#if MIN_VERSION_base(4,7,0)
-
 toPico :: Integer -> Pico
 toPico = MkFixed
 
 fromPico :: Pico -> Integer
 fromPico (MkFixed i) = i
-
-#else
-
-toPico :: Integer -> Pico
-toPico = unsafeCoerce
-
-fromPico :: Pico -> Integer
-fromPico = unsafeCoerce
-
-#endif
