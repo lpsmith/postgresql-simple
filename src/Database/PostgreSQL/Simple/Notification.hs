@@ -47,8 +47,6 @@ import           GHC.IO.Exception ( ioe_location )
 
 #if defined(mingw32_HOST_OS)
 import           Control.Concurrent ( threadDelay )
-#elif !MIN_VERSION_base(4,7,0)
-import           Control.Concurrent ( threadWaitRead )
 #else
 import           GHC.Conc           ( atomically )
 import           Control.Concurrent ( threadWaitReadSTM )
@@ -94,21 +92,6 @@ getNotification conn = join $ withConnection conn fetch
                 -- with async exceptions, whereas threadDelay can.
                 Just _fd -> do
                   return (threadDelay 1000000 >> loop)
-#elif !MIN_VERSION_base(4,7,0)
-                -- Technically there's a race condition that is usually benign.
-                -- If the connection is closed or reset after we drop the
-                -- lock,  and then the fd index is reallocated to a new
-                -- descriptor before we call threadWaitRead,  then
-                -- we could end up waiting on the wrong descriptor.
-                --
-                -- Now, if the descriptor becomes readable promptly,  then
-                -- it's no big deal as we'll wake up and notice the change
-                -- on the next iteration of the loop.   But if are very
-                -- unlucky,  then we could end up waiting a long time.
-                Just fd  -> do
-                  return $ do
-                    threadWaitRead fd `catch` (throwIO . setIOErrorLocation)
-                    loop
 #else
                 -- This case fixes the race condition above.   By registering
                 -- our interest in the descriptor before we drop the lock,
