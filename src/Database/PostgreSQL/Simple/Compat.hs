@@ -28,13 +28,7 @@ import Data.Text.Lazy.Builder.Scientific (scientificBuilder)
 import Data.Scientific (scientificBuilder)
 #endif
 
-#if   __GLASGOW_HASKELL__ >= 702
 import System.IO.Unsafe (unsafeDupablePerformIO)
-#elif __GLASGOW_HASKELL__ >= 611
-import GHC.IO (unsafeDupablePerformIO)
-#else
-import GHC.IOBase (unsafeDupablePerformIO)
-#endif
 
 import Data.Fixed (Pico)
 #if MIN_VERSION_base(4,7,0)
