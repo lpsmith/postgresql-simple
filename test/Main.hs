@@ -7,6 +7,7 @@ import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
 import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
 import Database.PostgreSQL.Simple.HStore
+import qualified Database.PostgreSQL.Simple.HStoreV2 as V2
 import Database.PostgreSQL.Simple.Copy
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 
@@ -61,6 +62,7 @@ tests env = testGroup "tests"
     , testCase "2-ary generic"      . testGeneric2
     , testCase "3-ary generic"      . testGeneric3
     , testCase "Timeout"            . testTimeout
+    , testCase "HStoreV2"           . testHStoreV2
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -202,6 +204,22 @@ testHStore TestEnv{..} = do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+-- Should be able to handle NULL values assigned to hstore keys.
+testHStoreV2 :: TestEnv -> Assertion
+testHStoreV2 TestEnv{..} = do
+    execute_ conn "CREATE EXTENSION IF NOT EXISTS hstore"
+    roundTrip []
+    roundTrip [("foo", Just "bar"),("bar", Just "baz"),("baz", Just "hello")]
+    roundTrip [("fo\"o", Just "bar"),("b\\ar", Just "baz"),("baz", Just "\"value\\with\"escapes")]
+    roundTrip [("fo\"o", Just "bar"),("b\\ar", Just "baz"),("baz_with_null", Nothing)]
+  where
+    roundTrip :: [(Text, Maybe Text)] -> Assertion
+    roundTrip xs = do
+      let m = Only (V2.HStoreMap (Map.fromList xs))
+      m' <- query conn "SELECT ?::hstore" m
+      [m] @?= m'
+
 
 testJSON :: TestEnv -> Assertion
 testJSON TestEnv{..} = do
@@ -469,7 +487,7 @@ isSyntaxError SqlError{..} = sqlState == "42601"
 -- Note that some tests, such as Notify, use multiple connections, and assume
 -- that 'testConnect' connects to the same database every time it is called.
 testConnect :: IO Connection
-testConnect = connectPostgreSQL ""
+testConnect = connectPostgreSQL "host='localhost' port=5432 user='pgsimple' password='pgsimple'"
 
 withTestEnv :: (TestEnv -> IO a) -> IO a
 withTestEnv cb =

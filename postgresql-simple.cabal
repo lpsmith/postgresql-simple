@@ -30,6 +30,8 @@ Library
      Database.PostgreSQL.Simple.LargeObjects
      Database.PostgreSQL.Simple.HStore
      Database.PostgreSQL.Simple.HStore.Internal
+     Database.PostgreSQL.Simple.HStoreV2
+     Database.PostgreSQL.Simple.HStoreV2.Internal
      Database.PostgreSQL.Simple.Notification
      Database.PostgreSQL.Simple.Ok
      Database.PostgreSQL.Simple.Range
@@ -50,6 +52,7 @@ Library
   Other-modules:
      Database.PostgreSQL.Simple.Compat
      Database.PostgreSQL.Simple.HStore.Implementation
+     Database.PostgreSQL.Simple.HStoreV2.Implementation
      Database.PostgreSQL.Simple.Internal.PQResultUtils
      Database.PostgreSQL.Simple.Time.Implementation
      Database.PostgreSQL.Simple.Time.Internal.Parser
