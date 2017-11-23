@@ -23,6 +23,8 @@ import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as BL
+import Data.CaseInsensitive (CI)
+import qualified Data.CaseInsensitive as CI
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Text(Text)
@@ -50,6 +52,7 @@ tests env = testGroup "tests"
     , testCase "Array"              . testArray
     , testCase "Array of nullables" . testNullableArray
     , testCase "HStore"             . testHStore
+    , testCase "citext"             . testCIText
     , testCase "JSON"               . testJSON
     , testCase "Savepoint"          . testSavepoint
     , testCase "Unicode"            . testUnicode
@@ -202,6 +205,19 @@ testHStore TestEnv{..} = do
       let m = Only (HStoreMap (Map.fromList xs))
       m' <- query conn "SELECT ?::hstore" m
       [m] @?= m'
+
+testCIText :: TestEnv -> Assertion
+testCIText TestEnv{..} = do
+    execute_ conn "CREATE EXTENSION IF NOT EXISTS citext"
+    roundTrip (CI.mk "")
+    roundTrip (CI.mk "UPPERCASE")
+    roundTrip (CI.mk "lowercase")
+  where
+    roundTrip :: (CI Text) -> Assertion
+    roundTrip cit = do
+        let toPostgres = Only cit
+        fromPostgres <- query conn "SELECT ?::citext" toPostgres
+        [toPostgres] @?= fromPostgres
 
 testJSON :: TestEnv -> Assertion
 testJSON TestEnv{..} = do
