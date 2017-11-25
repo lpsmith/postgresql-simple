@@ -1,7 +1,6 @@
 ### Unreleased
   
   * Added `ToField` instances for case-insensitive strict and lazy text.
-    Added `citext` and `_citext` to `Database.PostgreSQL.Simple.TypeInfo.Static`.
     Thanks to Max Tagher for the implementation.
 
 ### Version 0.5.3.0 (2017-05-15)
