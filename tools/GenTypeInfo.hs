@@ -195,9 +195,7 @@ daterange
 _daterange
 int8range
 _int8range
-citext
-_citext                  array_citext
-|] -- Note: You must enable the citext extension (CREATE EXTENSION IF NOT EXISTS citext) to generate the citext values
+|]
 
 instance IsString Blaze.Builder where
    fromString = Blaze.fromByteString . fromString

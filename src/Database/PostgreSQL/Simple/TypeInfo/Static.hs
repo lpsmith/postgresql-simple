@@ -132,8 +132,6 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , _daterange
      , int8range
      , _int8range
-     , citext
-     , array_citext
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
@@ -255,8 +253,6 @@ staticTypeInfo (Oid x) = case x of
     3913 -> Just _daterange
     3926 -> Just int8range
     3927 -> Just _int8range
-    60129 -> Just citext
-    60134 -> Just array_citext
     _ -> Nothing
 
 bool :: TypeInfo
@@ -1233,21 +1229,4 @@ _int8range =  Array {
     typdelim    = ',',
     typname     = "_int8range",
     typelem     = int8range
-  }
-
-citext :: TypeInfo
-citext =  Basic {
-    typoid      = Oid 60129,
-    typcategory = 'S',
-    typdelim    = ',',
-    typname     = "citext"
-  }
-
-array_citext :: TypeInfo
-array_citext =  Array {
-    typoid      = Oid 60134,
-    typcategory = 'A',
-    typdelim    = ',',
-    typname     = "_citext",
-    typelem     = citext
   }
