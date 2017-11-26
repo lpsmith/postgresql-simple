@@ -19,6 +19,7 @@ module Database.PostgreSQL.Simple.Range
       , empty
       , isEmpty, isEmptyBy
       , contains, containsBy
+      , fromFieldRange
       ) where
 
 import           Control.Applicative hiding (empty)
@@ -189,7 +190,10 @@ rangeToBuilderBy cmp f x =
 
 
 instance (FromField a, Typeable a) => FromField (PGRange a) where
-  fromField f mdat = do
+  fromField = fromFieldRange fromField
+
+fromFieldRange :: Typeable a => FieldParser a -> FieldParser (PGRange a)
+fromFieldRange fromField' f mdat = do
     info <- typeInfo f
     case info of
       Range{} ->
@@ -199,8 +203,8 @@ instance (FromField a, Typeable a) => FromField (PGRange a) where
           Just "empty" -> pure $ empty
           Just bs ->
             let parseIt NegInfinity   = pure NegInfinity
-                parseIt (Inclusive v) = Inclusive <$> fromField f' (Just v)
-                parseIt (Exclusive v) = Exclusive <$> fromField f' (Just v)
+                parseIt (Inclusive v) = Inclusive <$> fromField' f' (Just v)
+                parseIt (Exclusive v) = Exclusive <$> fromField' f' (Just v)
                 parseIt PosInfinity   = pure PosInfinity
             in case parseOnly pgrange bs of
                 Left e -> returnError ConversionFailed f e
