@@ -552,15 +552,19 @@ instance FromField UUID where
 
 -- | json
 instance FromField JSON.Value where
-    fromField f mbs =
+    fromField f mbs = parse =<< fromFieldJSONByteString f mbs
+      where parse bs = case parseOnly (JSON.value' <* endOfInput) bs of
+                   Left  err -> returnError ConversionFailed f err
+                   Right val -> pure val
+
+-- | Return the JSON ByteString directly
+fromFieldJSONByteString :: Field -> Maybe ByteString -> Conversion ByteString
+fromFieldJSONByteString f mbs =
       if typeOid f /= $(inlineTypoid TI.json) && typeOid f /= $(inlineTypoid TI.jsonb)
       then returnError Incompatible f ""
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""
-             Just bs ->
-                 case parseOnly (JSON.value' <* endOfInput) bs of
-                   Left  err -> returnError ConversionFailed f err
-                   Right val -> pure val
+             Just bs -> pure bs
 
 -- | Parse a field to a JSON 'JSON.Value' and convert that into a
 -- Haskell value using 'JSON.fromJSON'.
