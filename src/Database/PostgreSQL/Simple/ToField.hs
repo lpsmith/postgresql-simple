@@ -42,6 +42,8 @@ import Database.PostgreSQL.Simple.Compat (toByteString)
 
 import qualified Data.ByteString as SB
 import qualified Data.ByteString.Lazy as LB
+import           Data.CaseInsensitive (CI)
+import qualified Data.CaseInsensitive as CI
 import qualified Data.Text as ST
 import qualified Data.Text.Encoding as ST
 import qualified Data.Text.Lazy as LT
@@ -230,6 +232,15 @@ instance ToField LT.Text where
     toField = toField . LT.toStrict
     {-# INLINE toField #-}
 
+-- | citext
+instance ToField (CI ST.Text) where
+    toField = toField . CI.original
+    {-# INLINE toField #-}
+
+-- | citext
+instance ToField (CI LT.Text) where
+    toField = toField . LT.toStrict . CI.original
+    {-# INLINE toField #-}
 
 instance ToField UTCTime where
     toField = Plain . inQuotes . utcTimeToBuilder

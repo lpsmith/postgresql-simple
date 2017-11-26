@@ -1,3 +1,8 @@
+### Unreleased
+  
+  * Added `ToField` instances for case-insensitive strict and lazy text.
+    Thanks to Max Tagher for the implementation.
+
 ### Version 0.5.3.0 (2017-05-15)
   * Refactored some rudimentary cursor handling code out of the
     implementation of the fold operators,  into a new
