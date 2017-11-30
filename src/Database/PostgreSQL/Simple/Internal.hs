@@ -1,5 +1,6 @@
 {-# LANGUAGE  CPP, BangPatterns, DoAndIfThenElse, RecordWildCards  #-}
-{-# LANGUAGE  DeriveDataTypeable, GeneralizedNewtypeDeriving       #-}
+{-# LANGUAGE  DeriveDataTypeable, DeriveGeneric                    #-}
+{-# LANGUAGE  GeneralizedNewtypeDeriving                           #-}
 
 ------------------------------------------------------------------------------
 -- |
@@ -50,6 +51,7 @@ import           Database.PostgreSQL.Simple.TypeInfo.Types(TypeInfo)
 import           Control.Monad.Trans.State.Strict
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
+import           GHC.Generics
 import           GHC.IO.Exception
 #if !defined(mingw32_HOST_OS)
 import           Control.Concurrent(threadWaitRead, threadWaitWrite)
@@ -119,7 +121,7 @@ data ConnectInfo = ConnectInfo {
     , connectUser :: String
     , connectPassword :: String
     , connectDatabase :: String
-    } deriving (Eq,Read,Show,Typeable)
+    } deriving (Generic,Eq,Read,Show,Typeable)
 
 -- | Default information for setting up a connection.
 --
