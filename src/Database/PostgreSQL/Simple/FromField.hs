@@ -550,7 +550,7 @@ instance FromField UUID where
                    Nothing -> returnError ConversionFailed f "Invalid UUID"
                    Just uuid -> pure uuid
 
--- | json
+-- | json, jsonb
 instance FromField JSON.Value where
     fromField f mbs = parse =<< fromFieldJSONByteString f mbs
       where parse bs = case parseOnly (JSON.value' <* endOfInput) bs of
