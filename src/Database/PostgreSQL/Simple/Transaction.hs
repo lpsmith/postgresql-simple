@@ -176,7 +176,7 @@ withTransactionModeRetry mode shouldRetry conn act =
 
 -- | Rollback a transaction.
 rollback :: Connection -> IO ()
-rollback conn = execute_ conn "ABORT" >> return ()
+rollback conn = execute_ conn "ROLLBACK" >> return ()
 
 -- | Rollback a transaction, ignoring any @IOErrors@
 rollback_ :: Connection -> IO ()
