@@ -4,18 +4,21 @@
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
-import Database.PostgreSQL.Simple.FromField (FromField)
-import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
-import Database.PostgreSQL.Simple.HStore
 import Database.PostgreSQL.Simple.Copy
+import Database.PostgreSQL.Simple.FromField (FromField)
+import Database.PostgreSQL.Simple.HStore
+import Database.PostgreSQL.Simple.Internal (breakOnSingleQuestionMark)
+import Database.PostgreSQL.Simple.Types(Query(..),Values(..), PGArray(..))
 import qualified Database.PostgreSQL.Simple.Transaction as ST
 
 import Control.Applicative
 import Control.Exception as E
 import Control.Monad
 import Data.Char
-import Data.List (sort)
+import Data.List (concat, sort)
 import Data.IORef
+import Data.Monoid ((<>))
+import Data.String (fromString)
 import Data.Typeable
 import GHC.Generics (Generic)
 
@@ -44,26 +47,27 @@ tests :: TestEnv -> TestTree
 tests env = testGroup "tests"
     $ map ($ env)
     [ testBytea
-    , testCase "ExecuteMany"        . testExecuteMany
-    , testCase "Fold"               . testFold
-    , testCase "Notify"             . testNotify
-    , testCase "Serializable"       . testSerializable
-    , testCase "Time"               . testTime
-    , testCase "Array"              . testArray
-    , testCase "Array of nullables" . testNullableArray
-    , testCase "HStore"             . testHStore
-    , testCase "citext"             . testCIText
-    , testCase "JSON"               . testJSON
-    , testCase "Savepoint"          . testSavepoint
-    , testCase "Unicode"            . testUnicode
-    , testCase "Values"             . testValues
-    , testCase "Copy"               . testCopy
+    , testCase "ExecuteMany"          . testExecuteMany
+    , testCase "Fold"                 . testFold
+    , testCase "Notify"               . testNotify
+    , testCase "Serializable"         . testSerializable
+    , testCase "Time"                 . testTime
+    , testCase "Array"                . testArray
+    , testCase "Array of nullables"   . testNullableArray
+    , testCase "HStore"               . testHStore
+    , testCase "citext"               . testCIText
+    , testCase "JSON"                 . testJSON
+    , testCase "Question mark escape" . testQM
+    , testCase "Savepoint"            . testSavepoint
+    , testCase "Unicode"              . testUnicode
+    , testCase "Values"               . testValues
+    , testCase "Copy"                 . testCopy
     , testCopyFailures
-    , testCase "Double"             . testDouble
-    , testCase "1-ary generic"      . testGeneric1
-    , testCase "2-ary generic"      . testGeneric2
-    , testCase "3-ary generic"      . testGeneric3
-    , testCase "Timeout"            . testTimeout
+    , testCase "Double"               . testDouble
+    , testCase "1-ary generic"        . testGeneric1
+    , testCase "2-ary generic"        . testGeneric2
+    , testCase "3-ary generic"        . testGeneric3
+    , testCase "Timeout"              . testTimeout
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -233,6 +237,56 @@ testJSON TestEnv{..} = do
       let js = Only (toJSON a)
       js' <- query conn "SELECT ?::json" js
       [js] @?= js'
+
+testQM :: TestEnv -> Assertion
+testQM TestEnv{..} = do
+    -- Just test on a single string
+    let testQuery' b = "testing for ?" <> b <> " and making sure "
+        testQueryDoubleQM = testQuery' "?"
+        testQueryRest = "? is substituted"
+        testQuery = fromString $ testQueryDoubleQM <> testQueryRest
+        -- expect the entire first part with double QMs replaced with literal '?'
+        expected = (fromString $ testQuery' "", fromString testQueryRest)
+        tried = breakOnSingleQuestionMark testQuery
+        errMsg = concat
+            [ "Failed to break on single question mark exclusively:\n"
+            , "expected: ", show expected
+            , "result:   ", show tried
+            ]
+    assertBool errMsg $ tried == expected
+
+    -- Let's also test the question mark operators in action
+    -- ? -> Does the string exist as a top-level key within the JSON value?
+    positiveQuery "SELECT ?::jsonb ?? ?" (testObj, "foo" :: Text)
+    negativeQuery "SELECT ?::jsonb ?? ?" (testObj, "baz" :: Text)
+    negativeQuery "SELECT ?::jsonb ?? ?" (toJSON numArray, "1" :: Text)
+    -- ?| -> Do any of these array strings exist as top-level keys?
+    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, PGArray ["nope","bar","6" :: Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, PGArray ["nope","6" :: Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON numArray, PGArray ["1","2","6" :: Text])
+    -- ?& -> Do all of these array strings exist as top-level keys?
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar","quux" :: Text])
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar" :: Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar","baz" :: Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON numArray, PGArray ["1","2","3","4","5" :: Text])
+    -- Format error for 2 question marks, not 4
+    True <- expectError (isFormatError 2) $
+        (query conn "SELECT ?::jsonb ?? ?" $ Only testObj :: IO [Only Bool])
+    return ()
+  where positiveQuery :: ToRow a => Query -> a -> Assertion
+        positiveQuery = boolQuery True
+        negativeQuery :: ToRow a => Query -> a -> Assertion
+        negativeQuery = boolQuery False
+        numArray :: [Int]
+        numArray = [1,2,3,4,5]
+        boolQuery :: ToRow a => Bool -> Query -> a -> Assertion
+        boolQuery b t x = do
+            a <- query conn t x
+            [Only b] @?= a
+        testObj = toJSON (Map.fromList [("foo",toJSON (1 :: Int))
+                                       ,("bar",String "baz")
+                                       ,("quux",toJSON [1 :: Int,2,3,4,5])] :: Map Text Value
+                         )
 
 testSavepoint :: TestEnv -> Assertion
 testSavepoint TestEnv{..} = do
@@ -478,6 +532,14 @@ isUniqueViolation SqlError{..} = sqlState == "23505"
 isSyntaxError :: SqlError -> Bool
 isSyntaxError SqlError{..} = sqlState == "42601"
 
+isFormatError :: Int -> FormatError -> Bool
+isFormatError i FormatError{..}
+    | null fmtMessage = False
+    | otherwise = fmtMessage == concat [ show i
+                                       , " single '?' characters, but "
+                                       , show (length fmtParams)
+                                       , " parameters"
+                                       ]
 ------------------------------------------------------------------------
 
 -- | Action for connecting to the database that will be used for testing.

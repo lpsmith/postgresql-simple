@@ -53,12 +53,12 @@ instance ToHStore HStoreBuilder where
 toBuilder :: HStoreBuilder -> Builder
 toBuilder x = case x of
                 Empty -> mempty
-                Comma x -> x
+                Comma c -> c
 
 toLazyByteString :: HStoreBuilder -> BL.ByteString
 toLazyByteString x = case x of
                        Empty -> BL.empty
-                       Comma x -> BU.toLazyByteString x
+                       Comma c -> BU.toLazyByteString c
 
 instance Semigroup HStoreBuilder where
     Empty   <> x = x
@@ -150,7 +150,7 @@ newtype HStoreMap  = HStoreMap {fromHStoreMap :: Map Text Text} deriving (Eq, Or
 
 instance ToHStore HStoreMap where
     toHStore (HStoreMap xs) = Map.foldrWithKey f mempty xs
-      where f k v xs = hstore k v `mappend` xs
+      where f k v xs' = hstore k v `mappend` xs'
 
 instance ToField HStoreMap where
     toField xs = toField (toHStore xs)

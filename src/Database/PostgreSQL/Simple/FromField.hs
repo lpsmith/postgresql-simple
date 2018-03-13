@@ -300,9 +300,9 @@ instance FromField Bool where
 
 -- | \"char\", bpchar
 instance FromField Char where
-    fromField f bs =
+    fromField f bs0 =
         if (eq TI.charOid \/ eq TI.bpcharOid) (typeOid f)
-        then case bs of
+        then case bs0 of
                Nothing -> returnError UnexpectedNull f ""
                Just bs -> if B.length bs /= 1
                           then returnError ConversionFailed f "length not 1"
@@ -390,7 +390,7 @@ instance FromField LB.ByteString where
 
 unescapeBytea :: Field -> SB.ByteString
               -> Conversion (Binary SB.ByteString)
-unescapeBytea f str = case unsafeDupablePerformIO (PQ.unescapeBytea str) of
+unescapeBytea f str' = case unsafeDupablePerformIO (PQ.unescapeBytea str') of
        Nothing  -> returnError ConversionFailed f "unescapeBytea failed"
        Just str -> pure (Binary str)
 
@@ -477,12 +477,12 @@ instance FromField Date where
 
 ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
-ff compatOid hsType parse f mstr =
+ff compatOid hsType parseBS f mstr =
   if typeOid f /= compatOid
   then err Incompatible ""
   else case mstr of
          Nothing -> err UnexpectedNull ""
-         Just str -> case parse str of
+         Just str -> case parseBS str of
                        Left msg -> err ConversionFailed msg
                        Right val -> return val
  where
@@ -520,10 +520,10 @@ pgArrayFieldParser fieldParser f mdat = do
           _ -> returnError Incompatible f ""
 
 fromArray :: FieldParser a -> TypeInfo -> Field -> Parser (Conversion [a])
-fromArray fieldParser typeInfo f = sequence . (parseIt <$>) <$> array delim
+fromArray fieldParser typInfo f = sequence . (parseIt <$>) <$> array delim
   where
-    delim = typdelim (typelem typeInfo)
-    fElem = f{ typeOid = typoid (typelem typeInfo) }
+    delim = typdelim (typelem typInfo)
+    fElem = f{ typeOid = typoid (typelem typInfo) }
 
     parseIt item =
         fieldParser f' $ if item == Arrays.Plain "NULL" then Nothing else Just item'
@@ -552,8 +552,8 @@ instance FromField UUID where
 
 -- | json, jsonb
 instance FromField JSON.Value where
-    fromField f mbs = parse =<< fromFieldJSONByteString f mbs
-      where parse bs = case parseOnly (JSON.value' <* endOfInput) bs of
+    fromField f mbs = parseBS =<< fromFieldJSONByteString f mbs
+      where parseBS bs = case parseOnly (JSON.value' <* endOfInput) bs of
                    Left  err -> returnError ConversionFailed f err
                    Right val -> pure val
 

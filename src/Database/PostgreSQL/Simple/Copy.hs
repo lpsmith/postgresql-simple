@@ -48,7 +48,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Database.PostgreSQL.LibPQ as PQ
 import           Database.PostgreSQL.Simple
 import           Database.PostgreSQL.Simple.Types
-import           Database.PostgreSQL.Simple.Internal
+import           Database.PostgreSQL.Simple.Internal hiding (result, row)
 
 
 -- | Issue a @COPY FROM STDIN@ or @COPY TO STDOUT@ query.   In the former

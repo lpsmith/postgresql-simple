@@ -1,0 +1,5 @@
+branches: master
+postgresql: True
+
+-- services aren't supported on Travis on macOS
+-- osx: 8.4.4

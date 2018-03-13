@@ -1,6 +1,6 @@
 ### Version 0.6 (2018-09-25)
 
-  * *Breaking change*: Use `Only` package's `Only for a common 1-tuple.
+  * *Breaking change*: Use `Only` package's `Only` for a common 1-tuple.
 
     Consider a downstream library depending already both on
     `Only` and `postgresql-simple` package. This library my define
@@ -316,7 +316,7 @@
   * De-emphasized connect and ConnectInfo in favor of connectPostgreSQL.
 
 ### Version 0.4.2.2 (2014-05-15)
-  * Fixed compatibility with scientific-0.3.*,  thanks to Adam Bergmark
+  * Fixed compatibility with scientific-0.3.\*,  thanks to Adam Bergmark
 
   * Improved documentation of the FromField module, as well as the fold,
     foldWithOptions, executeMany,  and returning operators.

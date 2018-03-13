@@ -110,19 +110,19 @@ containsBy cmp rng x =
       PGRange _lb         NegInfinity -> False
       PGRange lb          ub          -> checkLB lb x && checkUB ub x
   where
-    checkLB lb x =
+    checkLB lb y =
         case lb of
           NegInfinity -> True
           PosInfinity -> False
-          Inclusive a -> cmp a x /= GT
-          Exclusive a -> cmp a x == LT
+          Inclusive a -> cmp a y /= GT
+          Exclusive a -> cmp a y == LT
 
-    checkUB ub x =
+    checkUB ub y =
         case ub of
           NegInfinity -> False
           PosInfinity -> True
-          Inclusive z -> cmp x z /= GT
-          Exclusive z -> cmp x z == LT
+          Inclusive z -> cmp y z /= GT
+          Exclusive z -> cmp y z == LT
 
 lowerBound :: Parser (a -> RangeBound a)
 lowerBound = (A.char '(' *> pure Exclusive) <|> (A.char '[' *> pure Inclusive)
