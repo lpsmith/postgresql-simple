@@ -281,7 +281,7 @@ buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs =
     zipParams (split template) <$> mapM (buildAction conn q xs) xs
   where split s =
-            let (h,t) = go (mempty,s)
+            let (h,t) = go (B.empty,s)
                 go (x,bs) = (x `B.append` x',bs')
                   where (h',t1) = B.break (=='?') bs
                         (x',bs') = maybe (h',t1) go2 $ B.uncons t1 >>= B.uncons . snd
