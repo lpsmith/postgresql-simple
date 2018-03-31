@@ -17,13 +17,14 @@ module Database.PostgreSQL.Simple.Time.Internal.Printer
     , localTime
     , zonedTime
     , nominalDiffTime
+    , interval
     ) where
 
 import Control.Arrow ((>>>))
 import Data.ByteString.Builder (Builder, integerDec)
 import Data.ByteString.Builder.Prim
     ( liftFixedToBounded, (>$<), (>*<)
-    , BoundedPrim, primBounded, condB, emptyB, FixedPrim, char8, int32Dec)
+    , BoundedPrim, primBounded, condB, emptyB, FixedPrim, char8, int32Dec, int64Dec, primFixed)
 import Data.Char ( chr )
 import Data.Int ( Int32, Int64 )
 import Data.Time
@@ -31,6 +32,7 @@ import Data.Time
     , Day, toGregorian, TimeOfDay(..), timeToTimeOfDay
     , TimeZone, timeZoneMinutes )
 import Database.PostgreSQL.Simple.Compat ((<>), fromPico)
+import Database.PostgreSQL.Simple.Time.Interval (Interval(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 liftB :: FixedPrim a -> BoundedPrim a
@@ -121,3 +123,37 @@ nominalDiffTime :: NominalDiffTime -> Builder
 nominalDiffTime xy = integerDec x <> primBounded frac (abs (fromIntegral y))
   where
     (x,y) = fromPico (unsafeCoerce xy) `quotRem` 1000000000000
+
+
+interval :: Interval -> Builder
+interval x = boundedPrefix <> integerDec afterSeconds <> fixedSuffix
+  where
+    (hours, afterHours) = intervalMicroseconds x `quotRem` 3600000000
+    (minutes, afterMinutes) = afterHours `quotRem` 60000000
+    (seconds, afterSeconds) = afterMinutes `quotRem` 1000000
+
+    boundedPrefix = primBounded
+      (int32Dec >*<
+        liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*<
+        int32Dec >*<
+        liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*<
+        int64Dec >*<
+        liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*<
+        int64Dec >*<
+        liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*<
+        int64Dec >*<
+        liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8 >*< liftB char8)
+      (intervalMonths x,
+        (' ', ('m', ('o', ('n', ('s', (' ',
+        (intervalDays x,
+        (' ', ('d', ('a', ('y', ('s', (' ',
+        (fromIntegral hours,
+        (' ', ('h', ('o', ('u', ('r', ('s', (' ',
+        (fromIntegral minutes,
+        (' ', ('m', ('i', ('n', ('s', (' ',
+        (fromIntegral seconds,
+        (' ', ('s', ('e', ('c', ('s', ' ')))))))))))))))))))))))))))))))))))
+
+    fixedSuffix = primFixed (char8 >*< char8 >*< char8 >*< char8 >*< char8 >*< char8 >*< char8 >*< char8 >*<
+                             char8 >*< char8 >*< char8 >*< char8 >*< char8)
+                            (' ', ('m', ('i', ('c', ('r', ('o', ('s', ('e', ('c', ('o', ('n', ('d', 's'))))))))))))

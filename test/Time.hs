@@ -32,13 +32,14 @@ generated with granularity of seconds down to microseconds in powers of ten.
 
 -}
 
-module Time (testTime) where
+module Time (testTime, testInterval) where
 
 import Common
 import Control.Monad(forM_, replicateM_)
 import Data.Time
 import Data.ByteString(ByteString)
 import Database.PostgreSQL.Simple.SqlQQ
+import Database.PostgreSQL.Simple.Time
 
 numTests :: Int
 numTests = 200
@@ -116,4 +117,39 @@ checkRoundTrips TestEnv{..} limit = do
   forM_ yxs $ \yx -> do
       res <- query conn [sql| SELECT y=? FROM testtime WHERE x=? |] yx
       assertBool "ZonedTime did not round-trip from SQL to Haskell and back" $
+                 res == [Only True]
+
+testInterval :: TestEnv -> Assertion
+testInterval env@TestEnv{..} = do
+  initializeIntervalTable env
+  checkIntervalRoundTrips env
+
+initializeIntervalTable :: TestEnv -> IO ()
+initializeIntervalTable TestEnv{..} = withTransaction conn $ do
+  execute_ conn [sql| CREATE TEMPORARY TABLE test_interval
+                         ( x serial, y interval, PRIMARY KEY(x) )|]
+  let test :: ByteString -> IO () = \x -> do
+                 execute conn [sql|
+                     INSERT INTO test_interval (y) VALUES (?::interval)
+                  |] (Only x)
+                 return ()
+  test "10 mon"
+  test "1 mons"
+  test "10 day"
+  test "1 days"
+  test "10 year"
+  test "1 years"
+  test "00:00:00.000001"
+  test "100000:00:00"
+  test "-04:00:00"
+  test "10 years 10 mons 10 days 1000:10:10.101101"
+  test "-15 years -15 mons -10 days -1515:15:15.151515"
+  test "20 years -8 months 11111 days -00:00:01.1"
+
+checkIntervalRoundTrips :: TestEnv -> IO ()
+checkIntervalRoundTrips TestEnv{..} = do
+  yxs :: [(Interval, Int)] <- query_ conn [sql| SELECT y, x FROM test_interval|]
+  forM_ yxs $ \yx -> do
+      res <- query conn [sql| SELECT y=? FROM test_interval WHERE x=? |] yx
+      assertBool ("Interval did not round-trip from SQL to Haskell and back " ++ show yx ++ " ") $
                  res == [Only True]

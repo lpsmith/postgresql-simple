@@ -23,6 +23,7 @@ import Data.Typeable
 import Data.Maybe (fromMaybe)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Database.PostgreSQL.Simple.Compat ((<>))
+import Database.PostgreSQL.Simple.Time.Interval (Interval)
 import qualified Database.PostgreSQL.Simple.Time.Internal.Parser  as TP
 import qualified Database.PostgreSQL.Simple.Time.Internal.Printer as TPP
 
@@ -49,6 +50,9 @@ type LocalTimestamp = Unbounded LocalTime
 type UTCTimestamp   = Unbounded UTCTime
 type ZonedTimestamp = Unbounded ZonedTime
 type Date           = Unbounded Day
+
+parseInterval :: B.ByteString -> Either String Interval
+parseInterval = A.parseOnly TP.interval
 
 parseUTCTime   :: B.ByteString -> Either String UTCTime
 parseUTCTime   = A.parseOnly (getUTCTime <* A.endOfInput)
@@ -164,3 +168,6 @@ dateToBuilder  = unboundedToBuilder dayToBuilder
 
 nominalDiffTimeToBuilder :: NominalDiffTime -> Builder
 nominalDiffTimeToBuilder = TPP.nominalDiffTime
+
+intervalBuilder :: Interval -> Builder
+intervalBuilder = TPP.interval

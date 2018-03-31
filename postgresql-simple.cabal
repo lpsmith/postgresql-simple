@@ -54,6 +54,7 @@ Library
      Database.PostgreSQL.Simple.Time.Implementation
      Database.PostgreSQL.Simple.Time.Internal.Parser
      Database.PostgreSQL.Simple.Time.Internal.Printer
+     Database.PostgreSQL.Simple.Time.Interval
      Database.PostgreSQL.Simple.TypeInfo.Types
 
   Build-depends:
