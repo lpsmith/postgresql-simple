@@ -88,6 +88,10 @@ getTypeInfoByCol Row{..} col =
     Conversion $ \conn -> do
       oid <- PQ.ftype rowresult col
       Ok <$> getTypeInfo conn oid
+getTypeInfoByCol UnpackedRow{..} col = typeInfo $ fst f
+  where PQ.Col c = col
+        f = unpackedRowValues !! fromIntegral c
+
 
 getTypenameByCol :: Row -> PQ.Column -> Conversion ByteString
 getTypenameByCol row col = typname <$> getTypeInfoByCol row col
@@ -95,27 +99,32 @@ getTypenameByCol row col = typname <$> getTypeInfoByCol row col
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
-    r@Row{..} <- ask
-    column <- lift get
-    lift (put (column + 1))
-    let ncols = nfields rowresult
-    if (column >= ncols)
-    then lift $ lift $ do
-        vals <- mapM (getTypenameByCol r) [0..ncols-1]
-        let err = ConversionFailed
-                (show (unCol ncols) ++ " values: " ++ show (map ellipsis vals))
-                Nothing
-                ""
-                ("at least " ++ show (unCol column + 1)
-                  ++ " slots in target type")
-                "mismatch between number of columns to \
-                \convert and number in target type"
-        conversionError err
-    else do
-      let !result = rowresult
-          !typeOid = unsafeDupablePerformIO (PQ.ftype result column)
-          !field = Field{..}
-      lift (lift (fieldP field (getvalue result row column)))
+    ask >>= \arst -> case arst of
+      UnpackedRow{..} -> do
+        column <- lift get
+        lift (put (column + 1))
+        lift $ lift $ uncurry fieldP $ unpackedRowValues !! unCol column
+      r@Row{..} -> do
+        column <- lift get
+        lift (put (column + 1))
+        let ncols = nfields rowresult
+        if (column >= ncols)
+        then lift $ lift $ do
+            vals <- mapM (getTypenameByCol r) [0..ncols-1]
+            let err = ConversionFailed
+                    (show (unCol ncols) ++ " values: " ++ show (map ellipsis vals))
+                    Nothing
+                    ""
+                    ("at least " ++ show (unCol column + 1)
+                      ++ " slots in target type")
+                    "mismatch between number of columns to \
+                    \convert and number in target type"
+            conversionError err
+        else do
+          let !result = rowresult
+              !fieldTypeOid = unsafeDupablePerformIO (PQ.ftype result column)
+              !field = Field{..}
+          lift (lift (fieldP field (getvalue result row column)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField

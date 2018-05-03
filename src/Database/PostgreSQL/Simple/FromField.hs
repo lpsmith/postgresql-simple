@@ -218,18 +218,17 @@ typename :: Field -> Conversion ByteString
 typename field = typname <$> typeInfo field
 
 typeInfo :: Field -> Conversion TypeInfo
-typeInfo Field{..} = Conversion $ \conn -> do
-                       Ok <$> (getTypeInfo conn typeOid)
+typeInfo f = Conversion $ \conn -> Ok <$> getTypeInfo conn (typeOid f)
 
 typeInfoByOid :: PQ.Oid -> Conversion TypeInfo
-typeInfoByOid oid = Conversion $ \conn -> do
-                      Ok <$> (getTypeInfo conn oid)
+typeInfoByOid oid = Conversion $ \conn -> Ok <$> getTypeInfo conn oid
 
 -- | Returns the name of the column.  This is often determined by a table
 --   definition,  but it can be set using an @as@ clause.
 
 name :: Field -> Maybe ByteString
 name Field{..} = unsafeDupablePerformIO (PQ.fname result column)
+name UnpackedField{..} = unpackedFieldColumnName
 
 -- | Returns the name of the object id of the @table@ associated with the
 --   column,  if any.  Returns 'Nothing' when there is no such table;
@@ -237,7 +236,9 @@ name Field{..} = unsafeDupablePerformIO (PQ.fname result column)
 --   Analogous to libpq's @PQftable@.
 
 tableOid :: Field -> Maybe PQ.Oid
-tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column))
+tableOid field = case field of
+  Field{..} -> toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column))
+  UnpackedField{..} -> toMaybeOid unpackedFieldTableOid
   where
      toMaybeOid x
        = if   x == PQ.invalidOid
@@ -249,7 +250,9 @@ tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column
 --   to libpq's @PQftablecol@.
 
 tableColumn :: Field -> Int
-tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result column))
+tableColumn field = case field of
+  Field{..} -> fromCol (unsafeDupablePerformIO (PQ.ftablecol result column))
+  UnpackedField{..} -> unpackedFieldColumnNumber
   where
     fromCol (PQ.Col x) = fromIntegral x
 
@@ -258,6 +261,7 @@ tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result col
 
 format :: Field -> PQ.Format
 format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
+format UnpackedField{..} = unpackedFieldFormat
 
 -- | void
 instance FromField () where
@@ -523,7 +527,7 @@ fromArray :: FieldParser a -> TypeInfo -> Field -> Parser (Conversion [a])
 fromArray fieldParser typeInfo f = sequence . (parseIt <$>) <$> array delim
   where
     delim = typdelim (typelem typeInfo)
-    fElem = f{ typeOid = typoid (typelem typeInfo) }
+    fElem = setTypeOid f $ typoid (typelem typeInfo)
 
     parseIt item =
         fieldParser f' $ if item == Arrays.Plain "NULL" then Nothing else Just item'
