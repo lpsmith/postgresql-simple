@@ -99,12 +99,12 @@ getTypenameByCol row col = typname <$> getTypeInfoByCol row col
 fieldWith :: FieldParser a -> RowParser a
 fieldWith fieldP = RP $ do
     let unCol (PQ.Col x) = fromIntegral x :: Int
-    ask >>= \arst -> case arst of
+    ask >>= \r -> case r of
       UnpackedRow{..} -> do
         column <- lift get
         lift (put (column + 1))
         lift $ lift $ uncurry fieldP $ unpackedRowValues !! unCol column
-      r@Row{..} -> do
+      Row{..} -> do
         column <- lift get
         lift (put (column + 1))
         let ncols = nfields rowresult
