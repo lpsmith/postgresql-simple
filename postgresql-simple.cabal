@@ -16,7 +16,7 @@ Cabal-version:       >= 1.9.2
 
 extra-source-files:
      CONTRIBUTORS
-     CHANGELOG.md
+     CHANGES.md
 
 Library
   hs-source-dirs: src
