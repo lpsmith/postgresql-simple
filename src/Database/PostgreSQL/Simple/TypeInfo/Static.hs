@@ -24,6 +24,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , name
      , int8
      , int2
+     , int2vector
      , int4
      , regproc
      , text
@@ -31,7 +32,17 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , tid
      , xid
      , cid
+     , oidvector
+     , pg_ddl_command
+     , pg_type
+     , pg_attribute
+     , pg_proc
+     , pg_class
+     , json
      , xml
+     , pg_node_tree
+     , smgr
+     , index_am_handler
      , point
      , lseg
      , path
@@ -41,11 +52,16 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , cidr
      , float4
      , float8
+     , abstime
+     , reltime
+     , tinterval
      , unknown
      , circle
+     , macaddr8
      , money
      , macaddr
      , inet
+     , aclitem
      , bpchar
      , varchar
      , date
@@ -53,29 +69,61 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , timestamp
      , timestamptz
      , interval
+     , pg_database
      , timetz
      , bit
      , varbit
      , numeric
      , refcursor
-     , record
-     , void
-     , array_record
      , regprocedure
      , regoper
      , regoperator
      , regclass
      , regtype
+     , record
+     , cstring
+     , any
+     , anyarray
+     , void
+     , trigger
+     , language_handler
+     , internal
+     , opaque
+     , anyelement
+     , anynonarray
+     , pg_authid
+     , pg_auth_members
      , uuid
-     , json
+     , txid_snapshot
+     , fdw_handler
+     , pg_lsn
+     , tsm_handler
+     , pg_ndistinct
+     , pg_dependencies
+     , anyenum
+     , tsvector
+     , tsquery
+     , gtsvector
+     , regconfig
+     , regdictionary
      , jsonb
-     , int2vector
-     , oidvector
+     , anyrange
+     , event_trigger
+     , int4range
+     , numrange
+     , tsrange
+     , tstzrange
+     , daterange
+     , int8range
+     , pg_shseclabel
+     , regnamespace
+     , regrole
      , array_xml
      , array_json
      , array_line
      , array_cidr
      , array_circle
+     , array_macaddr8
      , array_money
      , array_bool
      , array_bytea
@@ -99,8 +147,12 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_box
      , array_float4
      , array_float8
+     , array_abstime
+     , array_reltime
+     , array_tinterval
      , array_polygon
      , array_oid
+     , array_aclitem
      , array_macaddr
      , array_inet
      , array_timestamp
@@ -109,6 +161,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_timestamptz
      , array_interval
      , array_numeric
+     , array_cstring
      , array_timetz
      , array_bit
      , array_varbit
@@ -118,24 +171,29 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      , array_regoperator
      , array_regclass
      , array_regtype
+     , array_record
+     , array_txid_snapshot
      , array_uuid
+     , array_pg_lsn
+     , array_tsvector
+     , array_gtsvector
+     , array_tsquery
+     , array_regconfig
+     , array_regdictionary
      , array_jsonb
-     , int4range
-     , _int4range
-     , numrange
-     , _numrange
-     , tsrange
-     , _tsrange
-     , tstzrange
-     , _tstzrange
-     , daterange
-     , _daterange
-     , int8range
-     , _int8range
+     , array_int4range
+     , array_numrange
+     , array_tsrange
+     , array_tstzrange
+     , array_daterange
+     , array_int8range
+     , array_regnamespace
+     , array_regrole
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
 import Database.PostgreSQL.Simple.TypeInfo.Types
+import Prelude hiding (any)
 
 staticTypeInfo :: Oid -> Maybe TypeInfo
 staticTypeInfo (Oid x) = case x of
@@ -145,6 +203,7 @@ staticTypeInfo (Oid x) = case x of
     19   -> Just name
     20   -> Just int8
     21   -> Just int2
+    22   -> Just int2vector
     23   -> Just int4
     24   -> Just regproc
     25   -> Just text
@@ -152,7 +211,17 @@ staticTypeInfo (Oid x) = case x of
     27   -> Just tid
     28   -> Just xid
     29   -> Just cid
+    30   -> Just oidvector
+    32   -> Just pg_ddl_command
+    71   -> Just pg_type
+    75   -> Just pg_attribute
+    81   -> Just pg_proc
+    83   -> Just pg_class
+    114  -> Just json
     142  -> Just xml
+    194  -> Just pg_node_tree
+    210  -> Just smgr
+    325  -> Just index_am_handler
     600  -> Just point
     601  -> Just lseg
     602  -> Just path
@@ -162,11 +231,16 @@ staticTypeInfo (Oid x) = case x of
     650  -> Just cidr
     700  -> Just float4
     701  -> Just float8
+    702  -> Just abstime
+    703  -> Just reltime
+    704  -> Just tinterval
     705  -> Just unknown
     718  -> Just circle
+    774  -> Just macaddr8
     790  -> Just money
     829  -> Just macaddr
     869  -> Just inet
+    1033 -> Just aclitem
     1042 -> Just bpchar
     1043 -> Just varchar
     1082 -> Just date
@@ -174,29 +248,61 @@ staticTypeInfo (Oid x) = case x of
     1114 -> Just timestamp
     1184 -> Just timestamptz
     1186 -> Just interval
+    1248 -> Just pg_database
     1266 -> Just timetz
     1560 -> Just bit
     1562 -> Just varbit
     1700 -> Just numeric
     1790 -> Just refcursor
-    2249 -> Just record
-    2278 -> Just void
-    2287 -> Just array_record
     2202 -> Just regprocedure
     2203 -> Just regoper
     2204 -> Just regoperator
     2205 -> Just regclass
     2206 -> Just regtype
+    2249 -> Just record
+    2275 -> Just cstring
+    2276 -> Just any
+    2277 -> Just anyarray
+    2278 -> Just void
+    2279 -> Just trigger
+    2280 -> Just language_handler
+    2281 -> Just internal
+    2282 -> Just opaque
+    2283 -> Just anyelement
+    2776 -> Just anynonarray
+    2842 -> Just pg_authid
+    2843 -> Just pg_auth_members
     2950 -> Just uuid
-    114  -> Just json
+    2970 -> Just txid_snapshot
+    3115 -> Just fdw_handler
+    3220 -> Just pg_lsn
+    3310 -> Just tsm_handler
+    3361 -> Just pg_ndistinct
+    3402 -> Just pg_dependencies
+    3500 -> Just anyenum
+    3614 -> Just tsvector
+    3615 -> Just tsquery
+    3642 -> Just gtsvector
+    3734 -> Just regconfig
+    3769 -> Just regdictionary
     3802 -> Just jsonb
-    22   -> Just int2vector
-    30   -> Just oidvector
+    3831 -> Just anyrange
+    3838 -> Just event_trigger
+    3904 -> Just int4range
+    3906 -> Just numrange
+    3908 -> Just tsrange
+    3910 -> Just tstzrange
+    3912 -> Just daterange
+    3926 -> Just int8range
+    4066 -> Just pg_shseclabel
+    4089 -> Just regnamespace
+    4096 -> Just regrole
     143  -> Just array_xml
     199  -> Just array_json
     629  -> Just array_line
     651  -> Just array_cidr
     719  -> Just array_circle
+    775  -> Just array_macaddr8
     791  -> Just array_money
     1000 -> Just array_bool
     1001 -> Just array_bytea
@@ -220,8 +326,12 @@ staticTypeInfo (Oid x) = case x of
     1020 -> Just array_box
     1021 -> Just array_float4
     1022 -> Just array_float8
+    1023 -> Just array_abstime
+    1024 -> Just array_reltime
+    1025 -> Just array_tinterval
     1027 -> Just array_polygon
     1028 -> Just array_oid
+    1034 -> Just array_aclitem
     1040 -> Just array_macaddr
     1041 -> Just array_inet
     1115 -> Just array_timestamp
@@ -230,6 +340,7 @@ staticTypeInfo (Oid x) = case x of
     1185 -> Just array_timestamptz
     1187 -> Just array_interval
     1231 -> Just array_numeric
+    1263 -> Just array_cstring
     1270 -> Just array_timetz
     1561 -> Just array_bit
     1563 -> Just array_varbit
@@ -239,20 +350,24 @@ staticTypeInfo (Oid x) = case x of
     2209 -> Just array_regoperator
     2210 -> Just array_regclass
     2211 -> Just array_regtype
+    2287 -> Just array_record
+    2949 -> Just array_txid_snapshot
     2951 -> Just array_uuid
+    3221 -> Just array_pg_lsn
+    3643 -> Just array_tsvector
+    3644 -> Just array_gtsvector
+    3645 -> Just array_tsquery
+    3735 -> Just array_regconfig
+    3770 -> Just array_regdictionary
     3807 -> Just array_jsonb
-    3904 -> Just int4range
-    3905 -> Just _int4range
-    3906 -> Just numrange
-    3907 -> Just _numrange
-    3908 -> Just tsrange
-    3909 -> Just _tsrange
-    3910 -> Just tstzrange
-    3911 -> Just _tstzrange
-    3912 -> Just daterange
-    3913 -> Just _daterange
-    3926 -> Just int8range
-    3927 -> Just _int8range
+    3905 -> Just array_int4range
+    3907 -> Just array_numrange
+    3909 -> Just array_tsrange
+    3911 -> Just array_tstzrange
+    3913 -> Just array_daterange
+    3927 -> Just array_int8range
+    4090 -> Just array_regnamespace
+    4097 -> Just array_regrole
     _ -> Nothing
 
 bool :: TypeInfo
@@ -301,6 +416,15 @@ int2 =  Basic {
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int2"
+  }
+
+int2vector :: TypeInfo
+int2vector =  Array {
+    typoid      = Oid 22,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "int2vector",
+    typelem     = int2
   }
 
 int4 :: TypeInfo
@@ -359,12 +483,93 @@ cid =  Basic {
     typname     = "cid"
   }
 
+oidvector :: TypeInfo
+oidvector =  Array {
+    typoid      = Oid 30,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "oidvector",
+    typelem     = oid
+  }
+
+pg_ddl_command :: TypeInfo
+pg_ddl_command =  Basic {
+    typoid      = Oid 32,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "pg_ddl_command"
+  }
+
+pg_type :: TypeInfo
+pg_type =  Basic {
+    typoid      = Oid 71,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_type"
+  }
+
+pg_attribute :: TypeInfo
+pg_attribute =  Basic {
+    typoid      = Oid 75,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_attribute"
+  }
+
+pg_proc :: TypeInfo
+pg_proc =  Basic {
+    typoid      = Oid 81,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_proc"
+  }
+
+pg_class :: TypeInfo
+pg_class =  Basic {
+    typoid      = Oid 83,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_class"
+  }
+
+json :: TypeInfo
+json =  Basic {
+    typoid      = Oid 114,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "json"
+  }
+
 xml :: TypeInfo
 xml =  Basic {
     typoid      = Oid 142,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "xml"
+  }
+
+pg_node_tree :: TypeInfo
+pg_node_tree =  Basic {
+    typoid      = Oid 194,
+    typcategory = 'S',
+    typdelim    = ',',
+    typname     = "pg_node_tree"
+  }
+
+smgr :: TypeInfo
+smgr =  Basic {
+    typoid      = Oid 210,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "smgr"
+  }
+
+index_am_handler :: TypeInfo
+index_am_handler =  Basic {
+    typoid      = Oid 325,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "index_am_handler"
   }
 
 point :: TypeInfo
@@ -439,6 +644,30 @@ float8 =  Basic {
     typname     = "float8"
   }
 
+abstime :: TypeInfo
+abstime =  Basic {
+    typoid      = Oid 702,
+    typcategory = 'D',
+    typdelim    = ',',
+    typname     = "abstime"
+  }
+
+reltime :: TypeInfo
+reltime =  Basic {
+    typoid      = Oid 703,
+    typcategory = 'T',
+    typdelim    = ',',
+    typname     = "reltime"
+  }
+
+tinterval :: TypeInfo
+tinterval =  Basic {
+    typoid      = Oid 704,
+    typcategory = 'T',
+    typdelim    = ',',
+    typname     = "tinterval"
+  }
+
 unknown :: TypeInfo
 unknown =  Basic {
     typoid      = Oid 705,
@@ -453,6 +682,14 @@ circle =  Basic {
     typcategory = 'G',
     typdelim    = ',',
     typname     = "circle"
+  }
+
+macaddr8 :: TypeInfo
+macaddr8 =  Basic {
+    typoid      = Oid 774,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "macaddr8"
   }
 
 money :: TypeInfo
@@ -477,6 +714,14 @@ inet =  Basic {
     typcategory = 'I',
     typdelim    = ',',
     typname     = "inet"
+  }
+
+aclitem :: TypeInfo
+aclitem =  Basic {
+    typoid      = Oid 1033,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "aclitem"
   }
 
 bpchar :: TypeInfo
@@ -535,6 +780,14 @@ interval =  Basic {
     typname     = "interval"
   }
 
+pg_database :: TypeInfo
+pg_database =  Basic {
+    typoid      = Oid 1248,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_database"
+  }
+
 timetz :: TypeInfo
 timetz =  Basic {
     typoid      = Oid 1266,
@@ -573,31 +826,6 @@ refcursor =  Basic {
     typcategory = 'U',
     typdelim    = ',',
     typname     = "refcursor"
-  }
-
-record :: TypeInfo
-record =  Basic {
-    typoid      = Oid 2249,
-    typcategory = 'P',
-    typdelim    = ',',
-    typname     = "record"
-  }
-
-void :: TypeInfo
-void =  Basic {
-    typoid      = Oid 2278,
-    typcategory = 'P',
-    typdelim    = ',',
-    typname     = "void"
-  }
-
-array_record :: TypeInfo
-array_record =  Array {
-    typoid      = Oid 2287,
-    typcategory = 'P',
-    typdelim    = ',',
-    typname     = "_record",
-    typelem     = record
   }
 
 regprocedure :: TypeInfo
@@ -640,6 +868,110 @@ regtype =  Basic {
     typname     = "regtype"
   }
 
+record :: TypeInfo
+record =  Basic {
+    typoid      = Oid 2249,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "record"
+  }
+
+cstring :: TypeInfo
+cstring =  Basic {
+    typoid      = Oid 2275,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "cstring"
+  }
+
+any :: TypeInfo
+any =  Basic {
+    typoid      = Oid 2276,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "any"
+  }
+
+anyarray :: TypeInfo
+anyarray =  Basic {
+    typoid      = Oid 2277,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "anyarray"
+  }
+
+void :: TypeInfo
+void =  Basic {
+    typoid      = Oid 2278,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "void"
+  }
+
+trigger :: TypeInfo
+trigger =  Basic {
+    typoid      = Oid 2279,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "trigger"
+  }
+
+language_handler :: TypeInfo
+language_handler =  Basic {
+    typoid      = Oid 2280,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "language_handler"
+  }
+
+internal :: TypeInfo
+internal =  Basic {
+    typoid      = Oid 2281,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "internal"
+  }
+
+opaque :: TypeInfo
+opaque =  Basic {
+    typoid      = Oid 2282,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "opaque"
+  }
+
+anyelement :: TypeInfo
+anyelement =  Basic {
+    typoid      = Oid 2283,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "anyelement"
+  }
+
+anynonarray :: TypeInfo
+anynonarray =  Basic {
+    typoid      = Oid 2776,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "anynonarray"
+  }
+
+pg_authid :: TypeInfo
+pg_authid =  Basic {
+    typoid      = Oid 2842,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_authid"
+  }
+
+pg_auth_members :: TypeInfo
+pg_auth_members =  Basic {
+    typoid      = Oid 2843,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_auth_members"
+  }
+
 uuid :: TypeInfo
 uuid =  Basic {
     typoid      = Oid 2950,
@@ -648,12 +980,100 @@ uuid =  Basic {
     typname     = "uuid"
   }
 
-json :: TypeInfo
-json =  Basic {
-    typoid      = Oid 114,
+txid_snapshot :: TypeInfo
+txid_snapshot =  Basic {
+    typoid      = Oid 2970,
     typcategory = 'U',
     typdelim    = ',',
-    typname     = "json"
+    typname     = "txid_snapshot"
+  }
+
+fdw_handler :: TypeInfo
+fdw_handler =  Basic {
+    typoid      = Oid 3115,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "fdw_handler"
+  }
+
+pg_lsn :: TypeInfo
+pg_lsn =  Basic {
+    typoid      = Oid 3220,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "pg_lsn"
+  }
+
+tsm_handler :: TypeInfo
+tsm_handler =  Basic {
+    typoid      = Oid 3310,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "tsm_handler"
+  }
+
+pg_ndistinct :: TypeInfo
+pg_ndistinct =  Basic {
+    typoid      = Oid 3361,
+    typcategory = 'S',
+    typdelim    = ',',
+    typname     = "pg_ndistinct"
+  }
+
+pg_dependencies :: TypeInfo
+pg_dependencies =  Basic {
+    typoid      = Oid 3402,
+    typcategory = 'S',
+    typdelim    = ',',
+    typname     = "pg_dependencies"
+  }
+
+anyenum :: TypeInfo
+anyenum =  Basic {
+    typoid      = Oid 3500,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "anyenum"
+  }
+
+tsvector :: TypeInfo
+tsvector =  Basic {
+    typoid      = Oid 3614,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "tsvector"
+  }
+
+tsquery :: TypeInfo
+tsquery =  Basic {
+    typoid      = Oid 3615,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "tsquery"
+  }
+
+gtsvector :: TypeInfo
+gtsvector =  Basic {
+    typoid      = Oid 3642,
+    typcategory = 'U',
+    typdelim    = ',',
+    typname     = "gtsvector"
+  }
+
+regconfig :: TypeInfo
+regconfig =  Basic {
+    typoid      = Oid 3734,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regconfig"
+  }
+
+regdictionary :: TypeInfo
+regdictionary =  Basic {
+    typoid      = Oid 3769,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regdictionary"
   }
 
 jsonb :: TypeInfo
@@ -664,22 +1084,98 @@ jsonb =  Basic {
     typname     = "jsonb"
   }
 
-int2vector :: TypeInfo
-int2vector =  Array {
-    typoid      = Oid 22,
-    typcategory = 'A',
+anyrange :: TypeInfo
+anyrange =  Basic {
+    typoid      = Oid 3831,
+    typcategory = 'P',
     typdelim    = ',',
-    typname     = "int2vector",
-    typelem     = int2
+    typname     = "anyrange"
   }
 
-oidvector :: TypeInfo
-oidvector =  Array {
-    typoid      = Oid 30,
-    typcategory = 'A',
+event_trigger :: TypeInfo
+event_trigger =  Basic {
+    typoid      = Oid 3838,
+    typcategory = 'P',
     typdelim    = ',',
-    typname     = "oidvector",
-    typelem     = oid
+    typname     = "event_trigger"
+  }
+
+int4range :: TypeInfo
+int4range =  Range {
+    typoid      = Oid 3904,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "int4range",
+    rngsubtype  = int4
+  }
+
+numrange :: TypeInfo
+numrange =  Range {
+    typoid      = Oid 3906,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "numrange",
+    rngsubtype  = numeric
+  }
+
+tsrange :: TypeInfo
+tsrange =  Range {
+    typoid      = Oid 3908,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "tsrange",
+    rngsubtype  = timestamp
+  }
+
+tstzrange :: TypeInfo
+tstzrange =  Range {
+    typoid      = Oid 3910,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "tstzrange",
+    rngsubtype  = timestamptz
+  }
+
+daterange :: TypeInfo
+daterange =  Range {
+    typoid      = Oid 3912,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "daterange",
+    rngsubtype  = date
+  }
+
+int8range :: TypeInfo
+int8range =  Range {
+    typoid      = Oid 3926,
+    typcategory = 'R',
+    typdelim    = ',',
+    typname     = "int8range",
+    rngsubtype  = int8
+  }
+
+pg_shseclabel :: TypeInfo
+pg_shseclabel =  Basic {
+    typoid      = Oid 4066,
+    typcategory = 'C',
+    typdelim    = ',',
+    typname     = "pg_shseclabel"
+  }
+
+regnamespace :: TypeInfo
+regnamespace =  Basic {
+    typoid      = Oid 4089,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regnamespace"
+  }
+
+regrole :: TypeInfo
+regrole =  Basic {
+    typoid      = Oid 4096,
+    typcategory = 'N',
+    typdelim    = ',',
+    typname     = "regrole"
   }
 
 array_xml :: TypeInfo
@@ -725,6 +1221,15 @@ array_circle =  Array {
     typdelim    = ',',
     typname     = "_circle",
     typelem     = circle
+  }
+
+array_macaddr8 :: TypeInfo
+array_macaddr8 =  Array {
+    typoid      = Oid 775,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_macaddr8",
+    typelem     = macaddr8
   }
 
 array_money :: TypeInfo
@@ -934,6 +1439,33 @@ array_float8 =  Array {
     typelem     = float8
   }
 
+array_abstime :: TypeInfo
+array_abstime =  Array {
+    typoid      = Oid 1023,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_abstime",
+    typelem     = abstime
+  }
+
+array_reltime :: TypeInfo
+array_reltime =  Array {
+    typoid      = Oid 1024,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_reltime",
+    typelem     = reltime
+  }
+
+array_tinterval :: TypeInfo
+array_tinterval =  Array {
+    typoid      = Oid 1025,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tinterval",
+    typelem     = tinterval
+  }
+
 array_polygon :: TypeInfo
 array_polygon =  Array {
     typoid      = Oid 1027,
@@ -950,6 +1482,15 @@ array_oid =  Array {
     typdelim    = ',',
     typname     = "_oid",
     typelem     = oid
+  }
+
+array_aclitem :: TypeInfo
+array_aclitem =  Array {
+    typoid      = Oid 1034,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_aclitem",
+    typelem     = aclitem
   }
 
 array_macaddr :: TypeInfo
@@ -1022,6 +1563,15 @@ array_numeric =  Array {
     typdelim    = ',',
     typname     = "_numeric",
     typelem     = numeric
+  }
+
+array_cstring :: TypeInfo
+array_cstring =  Array {
+    typoid      = Oid 1263,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_cstring",
+    typelem     = cstring
   }
 
 array_timetz :: TypeInfo
@@ -1105,6 +1655,24 @@ array_regtype =  Array {
     typelem     = regtype
   }
 
+array_record :: TypeInfo
+array_record =  Array {
+    typoid      = Oid 2287,
+    typcategory = 'P',
+    typdelim    = ',',
+    typname     = "_record",
+    typelem     = record
+  }
+
+array_txid_snapshot :: TypeInfo
+array_txid_snapshot =  Array {
+    typoid      = Oid 2949,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_txid_snapshot",
+    typelem     = txid_snapshot
+  }
+
 array_uuid :: TypeInfo
 array_uuid =  Array {
     typoid      = Oid 2951,
@@ -1112,6 +1680,60 @@ array_uuid =  Array {
     typdelim    = ',',
     typname     = "_uuid",
     typelem     = uuid
+  }
+
+array_pg_lsn :: TypeInfo
+array_pg_lsn =  Array {
+    typoid      = Oid 3221,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_pg_lsn",
+    typelem     = pg_lsn
+  }
+
+array_tsvector :: TypeInfo
+array_tsvector =  Array {
+    typoid      = Oid 3643,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tsvector",
+    typelem     = tsvector
+  }
+
+array_gtsvector :: TypeInfo
+array_gtsvector =  Array {
+    typoid      = Oid 3644,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_gtsvector",
+    typelem     = gtsvector
+  }
+
+array_tsquery :: TypeInfo
+array_tsquery =  Array {
+    typoid      = Oid 3645,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_tsquery",
+    typelem     = tsquery
+  }
+
+array_regconfig :: TypeInfo
+array_regconfig =  Array {
+    typoid      = Oid 3735,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regconfig",
+    typelem     = regconfig
+  }
+
+array_regdictionary :: TypeInfo
+array_regdictionary =  Array {
+    typoid      = Oid 3770,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regdictionary",
+    typelem     = regdictionary
   }
 
 array_jsonb :: TypeInfo
@@ -1123,17 +1745,8 @@ array_jsonb =  Array {
     typelem     = jsonb
   }
 
-int4range :: TypeInfo
-int4range =  Range {
-    typoid      = Oid 3904,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "int4range",
-    rngsubtype  = int4
-  }
-
-_int4range :: TypeInfo
-_int4range =  Array {
+array_int4range :: TypeInfo
+array_int4range =  Array {
     typoid      = Oid 3905,
     typcategory = 'A',
     typdelim    = ',',
@@ -1141,17 +1754,8 @@ _int4range =  Array {
     typelem     = int4range
   }
 
-numrange :: TypeInfo
-numrange =  Range {
-    typoid      = Oid 3906,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "numrange",
-    rngsubtype  = numeric
-  }
-
-_numrange :: TypeInfo
-_numrange =  Array {
+array_numrange :: TypeInfo
+array_numrange =  Array {
     typoid      = Oid 3907,
     typcategory = 'A',
     typdelim    = ',',
@@ -1159,17 +1763,8 @@ _numrange =  Array {
     typelem     = numrange
   }
 
-tsrange :: TypeInfo
-tsrange =  Range {
-    typoid      = Oid 3908,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "tsrange",
-    rngsubtype  = timestamp
-  }
-
-_tsrange :: TypeInfo
-_tsrange =  Array {
+array_tsrange :: TypeInfo
+array_tsrange =  Array {
     typoid      = Oid 3909,
     typcategory = 'A',
     typdelim    = ',',
@@ -1177,17 +1772,8 @@ _tsrange =  Array {
     typelem     = tsrange
   }
 
-tstzrange :: TypeInfo
-tstzrange =  Range {
-    typoid      = Oid 3910,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "tstzrange",
-    rngsubtype  = timestamptz
-  }
-
-_tstzrange :: TypeInfo
-_tstzrange =  Array {
+array_tstzrange :: TypeInfo
+array_tstzrange =  Array {
     typoid      = Oid 3911,
     typcategory = 'A',
     typdelim    = ',',
@@ -1195,17 +1781,8 @@ _tstzrange =  Array {
     typelem     = tstzrange
   }
 
-daterange :: TypeInfo
-daterange =  Range {
-    typoid      = Oid 3912,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "daterange",
-    rngsubtype  = date
-  }
-
-_daterange :: TypeInfo
-_daterange =  Array {
+array_daterange :: TypeInfo
+array_daterange =  Array {
     typoid      = Oid 3913,
     typcategory = 'A',
     typdelim    = ',',
@@ -1213,20 +1790,29 @@ _daterange =  Array {
     typelem     = daterange
   }
 
-int8range :: TypeInfo
-int8range =  Range {
-    typoid      = Oid 3926,
-    typcategory = 'R',
-    typdelim    = ',',
-    typname     = "int8range",
-    rngsubtype  = int8
-  }
-
-_int8range :: TypeInfo
-_int8range =  Array {
+array_int8range :: TypeInfo
+array_int8range =  Array {
     typoid      = Oid 3927,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int8range",
     typelem     = int8range
+  }
+
+array_regnamespace :: TypeInfo
+array_regnamespace =  Array {
+    typoid      = Oid 4090,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regnamespace",
+    typelem     = regnamespace
+  }
+
+array_regrole :: TypeInfo
+array_regrole =  Array {
+    typoid      = Oid 4097,
+    typcategory = 'A',
+    typdelim    = ',',
+    typname     = "_regrole",
+    typelem     = regrole
   }
