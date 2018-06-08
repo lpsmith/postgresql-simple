@@ -51,22 +51,8 @@ import Unsafe.Coerce (unsafeCoerce)
 -- 'withTransactionMode' function calls the restore callback only once, so we
 -- don't need that polymorphism.
 mask :: ((IO a -> IO a) -> IO b) -> IO b
-#if MIN_VERSION_base(4,3,0)
 mask io = E.mask $ \restore -> io restore
-#else
-mask io = do
-    b <- E.blocked
-    E.block $ io $ \m -> if b then m else E.unblock m
-#endif
 {-# INLINE mask #-}
-
-#if !MIN_VERSION_base(4,5,0)
-infixr 6 <>
-
-(<>) :: Monoid m => m -> m -> m
-(<>) = mappend
-{-# INLINE (<>) #-}
-#endif
 
 toByteString :: Builder -> ByteString
 #if MIN_VERSION_bytestring(0,10,0)
