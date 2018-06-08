@@ -302,6 +302,10 @@ instance ToField UUID where
 instance ToField JSON.Value where
     toField = toField . JSON.encode
 
+instance ToField LSN where
+    toField (LSN bs) = Plain $ inQuotes $ byteString bs
+    {-# INLINE toField #-}
+
 -- | Convert a Haskell value to a JSON 'JSON.Value' using
 -- 'JSON.toJSON' and convert that to a field using 'toField'.
 --

@@ -475,6 +475,9 @@ instance FromField LocalTimestamp where
 instance FromField Date where
   fromField = ff $(inlineTypoid TI.date) "Date" parseDate
 
+instance FromField LSN where
+  fromField = ff $(inlineTypoid TI.pg_lsn) "LSN" (Right . LSN)
+
 ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
 ff compatOid hsType parse f mstr =
