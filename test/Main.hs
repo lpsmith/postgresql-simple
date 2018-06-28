@@ -44,26 +44,27 @@ tests :: TestEnv -> TestTree
 tests env = testGroup "tests"
     $ map ($ env)
     [ testBytea
-    , testCase "ExecuteMany"        . testExecuteMany
-    , testCase "Fold"               . testFold
-    , testCase "Notify"             . testNotify
-    , testCase "Serializable"       . testSerializable
-    , testCase "Time"               . testTime
-    , testCase "Array"              . testArray
-    , testCase "Array of nullables" . testNullableArray
-    , testCase "HStore"             . testHStore
-    , testCase "citext"             . testCIText
-    , testCase "JSON"               . testJSON
-    , testCase "Savepoint"          . testSavepoint
-    , testCase "Unicode"            . testUnicode
-    , testCase "Values"             . testValues
-    , testCase "Copy"               . testCopy
+    , testCase "ExecuteMany"          . testExecuteMany
+    , testCase "Fold"                 . testFold
+    , testCase "Notify"               . testNotify
+    , testCase "Serializable"         . testSerializable
+    , testCase "Time"                 . testTime
+    , testCase "Array"                . testArray
+    , testCase "Array of nullables"   . testNullableArray
+    , testCase "HStore"               . testHStore
+    , testCase "citext"               . testCIText
+    , testCase "JSON"                 . testJSON
+    , testCase "Question mark escape" . testQM
+    , testCase "Savepoint"            . testSavepoint
+    , testCase "Unicode"              . testUnicode
+    , testCase "Values"               . testValues
+    , testCase "Copy"                 . testCopy
     , testCopyFailures
-    , testCase "Double"             . testDouble
-    , testCase "1-ary generic"      . testGeneric1
-    , testCase "2-ary generic"      . testGeneric2
-    , testCase "3-ary generic"      . testGeneric3
-    , testCase "Timeout"            . testTimeout
+    , testCase "Double"               . testDouble
+    , testCase "1-ary generic"        . testGeneric1
+    , testCase "2-ary generic"        . testGeneric2
+    , testCase "3-ary generic"        . testGeneric3
+    , testCase "Timeout"              . testTimeout
     ]
 
 testBytea :: TestEnv -> TestTree
@@ -233,6 +234,30 @@ testJSON TestEnv{..} = do
       let js = Only (toJSON a)
       js' <- query conn "SELECT ?::json" js
       [js] @?= js'
+
+testQM :: TestEnv -> Assertion
+testQM TestEnv{..} = do
+    -- ? -> Does the string exist as a top-level key within the JSON value?
+    positiveQuery "SELECT ?::jsonb ?? ?" (testObj, "foo")
+    negativeQuery "SELECT ?::jsonb ?? ?" (testObj, "baz")
+    negativeQuery "SELECT ?::jsonb ?? ?" (toJSON [1,2,3,4,5], "1")
+    -- ?| -> Do any of these array strings exist as top-level keys?
+    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","bar","6"])
+    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","6"])
+    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON [1,2,3,4,5], ["1","2","6"])
+    -- ?& -> Do all of these array strings exist as top-level keys?
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar","quux"])
+    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar"])
+    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON [1,2,3,4,5], ["1","2","3","4","5"])
+  where positiveQuery = boolQuery True
+        negativeQuery = boolQuery False
+        boolQuery b t x = do
+            a <- query conn t x
+            [b] @?= a
+        testObj = toJSON (Map.fromList [("foo",toJSON 1)
+                                       ,("bar",toJSON "baz")
+                                       ,("quux",toJSON [1,2,3,4,5])] :: Map Text Value
+                         )
 
 testSavepoint :: TestEnv -> Assertion
 testSavepoint TestEnv{..} = do
