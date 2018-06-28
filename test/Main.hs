@@ -238,25 +238,27 @@ testJSON TestEnv{..} = do
 testQM :: TestEnv -> Assertion
 testQM TestEnv{..} = do
     -- ? -> Does the string exist as a top-level key within the JSON value?
-    positiveQuery "SELECT ?::jsonb ?? ?" (testObj, "foo")
-    negativeQuery "SELECT ?::jsonb ?? ?" (testObj, "baz")
-    negativeQuery "SELECT ?::jsonb ?? ?" (toJSON [1,2,3,4,5], "1")
+    positiveQuery "SELECT ?::jsonb ?? ?" (testObj, "foo" :: Text)
+    negativeQuery "SELECT ?::jsonb ?? ?" (testObj, "baz" :: Text)
+    negativeQuery "SELECT ?::jsonb ?? ?" (toJSON numArray, "1" :: Text)
     -- ?| -> Do any of these array strings exist as top-level keys?
-    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","bar","6"])
-    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","6"])
-    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON [1,2,3,4,5], ["1","2","6"])
+    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","bar","6"] :: [Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","6"] :: [Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON numArray, ["1","2","6"] :: [Text])
     -- ?& -> Do all of these array strings exist as top-level keys?
-    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar","quux"])
-    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar"])
-    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON [1,2,3,4,5], ["1","2","3","4","5"])
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar","quux"] :: [Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar"] :: [Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON numArray, ["1","2","3","4","5"] :: [Text])
   where positiveQuery = boolQuery True
         negativeQuery = boolQuery False
+        numArray :: [Int]
+        numArray = [1,2,3,4,5]
         boolQuery b t x = do
             a <- query conn t x
-            [b] @?= a
-        testObj = toJSON (Map.fromList [("foo",toJSON 1)
-                                       ,("bar",toJSON "baz")
-                                       ,("quux",toJSON [1,2,3,4,5])] :: Map Text Value
+            [Only b] @?= a
+        testObj = toJSON (Map.fromList [("foo",toJSON (1 :: Int))
+                                       ,("bar",String "baz")
+                                       ,("quux",toJSON [1 :: Int,2,3,4,5])] :: Map Text Value
                          )
 
 testSavepoint :: TestEnv -> Assertion
