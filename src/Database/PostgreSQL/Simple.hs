@@ -276,11 +276,12 @@ parseTemplate template =
     skipSpace = B.dropWhile isSpace_ascii
 
 
-
 buildQuery :: Connection -> Query -> ByteString -> [Action] -> IO Builder
 buildQuery conn q template xs =
     zipParams (split template) <$> mapM (buildAction conn q xs) xs
   where split s =
+            -- This part escapes double '??'s to make literal '?'s possible
+            -- in PostgreSQL queries using the JSON operators: @?@, @?|@ and @?&@
             let (h,t) = go (B.empty,s)
                 go (x,bs) = (x `B.append` x',bs')
                   where (h',t1) = B.break (=='?') bs
@@ -293,9 +294,18 @@ buildQuery conn q template xs =
                  else split (B.tail t)
         zipParams (t:ts) (p:ps) = t <> p <> zipParams ts ps
         zipParams [t] []        = t
-        zipParams _ _ = fmtError (show (B.count '?' template) ++
-                                  " '?' characters, but " ++
+        zipParams _ _ = fmtError (show countSingleQs ++
+                                  " single '?' characters, but " ++
                                   show (length xs) ++ " parameters") q xs
+        countSingleQs = go 0 template
+          where go i "" = (i :: Int)
+                go i bs = case qms of
+                            ("?","?") -> go i nextQMBS
+                            ("?",_) -> go (i+1) nextQMBS
+                            _ -> i
+                  where qms = B.splitAt 1 qmBS
+                        (qmBS,nextQMBS) = B.splitAt 2 qmBS'
+                        qmBS' = B.dropWhile (/= '?') bs
 
 -- | Execute an @INSERT@, @UPDATE@, or other SQL query that is not
 -- expected to return results.
