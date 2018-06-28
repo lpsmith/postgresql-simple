@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Common
 import Database.PostgreSQL.Simple.FromField (FromField)
-import Database.PostgreSQL.Simple.Types(Query(..),Values(..))
+import Database.PostgreSQL.Simple.Types(Query(..),Values(..), PGArray(..))
 import Database.PostgreSQL.Simple.HStore
 import Database.PostgreSQL.Simple.Copy
 import qualified Database.PostgreSQL.Simple.Transaction as ST
@@ -242,17 +242,25 @@ testQM TestEnv{..} = do
     negativeQuery "SELECT ?::jsonb ?? ?" (testObj, "baz" :: Text)
     negativeQuery "SELECT ?::jsonb ?? ?" (toJSON numArray, "1" :: Text)
     -- ?| -> Do any of these array strings exist as top-level keys?
-    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","bar","6"] :: [Text])
-    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, ["nope","6"] :: [Text])
-    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON numArray, ["1","2","6"] :: [Text])
+    positiveQuery "SELECT ?::jsonb ??| ?" (testObj, PGArray ["nope","bar","6" :: Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (testObj, PGArray ["nope","6" :: Text])
+    negativeQuery "SELECT ?::jsonb ??| ?" (toJSON numArray, PGArray ["1","2","6" :: Text])
     -- ?& -> Do all of these array strings exist as top-level keys?
-    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar","quux"] :: [Text])
-    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, ["foo","bar"] :: [Text])
-    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON numArray, ["1","2","3","4","5"] :: [Text])
-  where positiveQuery = boolQuery True
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar","quux" :: Text])
+    positiveQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar" :: Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (testObj, PGArray ["foo","bar","baz" :: Text])
+    negativeQuery "SELECT ?::jsonb ??& ?" (toJSON numArray, PGArray ["1","2","3","4","5" :: Text])
+    -- Format error for 2 question marks, not 4
+    True <- expectError (isFormatError 2) $
+        (query conn "SELECT ?::jsonb ?? ?" $ Only testObj :: IO [Only Bool])
+    return ()
+  where positiveQuery :: ToRow a => Query -> a -> Assertion
+        positiveQuery = boolQuery True
+        negativeQuery :: ToRow a => Query -> a -> Assertion
         negativeQuery = boolQuery False
         numArray :: [Int]
         numArray = [1,2,3,4,5]
+        boolQuery :: ToRow a => Bool -> Query -> a -> Assertion
         boolQuery b t x = do
             a <- query conn t x
             [Only b] @?= a
@@ -505,6 +513,14 @@ isUniqueViolation SqlError{..} = sqlState == "23505"
 isSyntaxError :: SqlError -> Bool
 isSyntaxError SqlError{..} = sqlState == "42601"
 
+isFormatError :: Int -> FormatError -> Bool
+isFormatError i FormatError{..}
+    | null fmtMessage = False
+    | otherwise = fmtMessage == concat [ show i
+                                       , " single '?' characters, but "
+                                       , show (length fmtParams)
+                                       , " parameters"
+                                       ]
 ------------------------------------------------------------------------
 
 -- | Action for connecting to the database that will be used for testing.
