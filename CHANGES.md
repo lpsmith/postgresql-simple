@@ -1,7 +1,36 @@
-### Unreleased
-  
-  * Added `ToField` instances for case-insensitive strict and lazy text.
+### Version 0.6 (2018-09-25)
+
+  * *Breaking change*: Use `Only` package's `Only for a common 1-tuple.
+
+  * Add `ToField` instances for case-insensitive strict and lazy text.
     Thanks to Max Tagher for the implementation.
+    https://github.com/lpsmith/postgresql-simple/pull/232
+
+  * Add support to CockroachDB.
+    Thanks to Georte Steel.
+    https://github.com/lpsmith/postgresql-simple/pull/245
+
+  * Add Generic ConnectInfo instance
+    Thanks to Dmitry Dzhus.
+    https://github.com/lpsmith/postgresql-simple/pull/235
+
+  * Add `fromFieldRange :: Typeable a => FieldParser a -> FieldParser (PGRange a)`
+    https://github.com/lpsmith/postgresql-simple/pull/221
+
+  * Add `fromFieldJSONByteString :: FieldParser ByteString`
+    https://github.com/lpsmith/postgresql-simple/pull/222/files
+
+  * Fix off-by-one error in year builder.
+    Thanks to Nathan Ferris Hunter.
+    https://github.com/lpsmith/postgresql-simple/pull/230
+
+  * Extend ToRow and FromRow to tuples of size 18
+    Thanks to Bardur Arantsson.
+    https://github.com/lpsmith/postgresql-simple/pull/229
+
+  * Documentation improvements
+    https://github.com/lpsmith/postgresql-simple/pull/227
+    https://github.com/lpsmith/postgresql-simple/pull/236
 
 ### Version 0.5.4.0 (2018-05-23)
   * Support GHC-8.4 (Semigroup/Monoid)
