@@ -56,6 +56,8 @@ Library
      Database.PostgreSQL.Simple.TypeInfo.Static
      Database.PostgreSQL.Simple.Types
      Database.PostgreSQL.Simple.Errors
+     Database.PostgreSQL.Simple.Vector
+     Database.PostgreSQL.Simple.Vector.Unboxed
 
 -- Other-modules:
      Database.PostgreSQL.Simple.Internal
@@ -160,3 +162,14 @@ test-suite test
   if !impl(ghc >= 7.6)
     build-depends:
       ghc-prim
+
+benchmark select
+  default-language: Haskell2010
+  type:             exitcode-stdio-1.0
+
+  hs-source-dirs:  bench
+  main-is: Select.hs
+
+  build-depends: base
+               , postgresql-simple
+               , vector

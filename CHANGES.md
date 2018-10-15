@@ -28,6 +28,11 @@
     Thanks to Bardur Arantsson.
     https://github.com/lpsmith/postgresql-simple/pull/229
 
+  * Add `Vector` and `Vector.Unboxed` `query` variants.
+    These are more memory efficient
+    (especially, if you anyway will convert to some vector)
+    https://github.com/phadej/1
+
   * Documentation improvements
     https://github.com/lpsmith/postgresql-simple/pull/227
     https://github.com/lpsmith/postgresql-simple/pull/236

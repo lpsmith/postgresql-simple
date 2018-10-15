@@ -14,11 +14,14 @@
 
 module Database.PostgreSQL.Simple.Internal.PQResultUtils
     ( finishQueryWith
+    , finishQueryWithV
+    , finishQueryWithVU
     , getRowWith
     ) where
 
 import           Control.Exception as E
 import           Data.ByteString (ByteString)
+import           Data.Foldable (for_)
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
@@ -26,18 +29,49 @@ import           Database.PostgreSQL.Simple.Internal as Base
 import           Database.PostgreSQL.Simple.TypeInfo
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B
+import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as MV
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Unboxed.Mutable as MVU
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.State.Strict
 
 finishQueryWith :: RowParser r -> Connection -> Query -> PQ.Result -> IO [r]
-finishQueryWith parser conn q result = do
+finishQueryWith parser conn q result = finishQueryWith' q result $ do
+    nrows <- PQ.ntuples result
+    ncols <- PQ.nfields result
+    forM' 0 (nrows-1) $ \row ->
+        getRowWith parser row ncols conn result
+
+finishQueryWithV :: RowParser r -> Connection -> Query -> PQ.Result -> IO (V.Vector r)
+finishQueryWithV parser conn q result = finishQueryWith' q result $ do
+    nrows <- PQ.ntuples result
+    let PQ.Row nrows' = nrows
+    ncols <- PQ.nfields result
+    mv <- MV.unsafeNew (fromIntegral nrows')
+    for_ [ 0 .. nrows-1 ] $ \row -> do
+        let PQ.Row row' = row
+        value <- getRowWith parser row ncols conn result
+        MV.unsafeWrite mv (fromIntegral row') value
+    V.unsafeFreeze mv
+
+finishQueryWithVU :: VU.Unbox r => RowParser r -> Connection -> Query -> PQ.Result -> IO (VU.Vector r)
+finishQueryWithVU parser conn q result = finishQueryWith' q result $ do
+    nrows <- PQ.ntuples result
+    let PQ.Row nrows' = nrows
+    ncols <- PQ.nfields result
+    mv <- MVU.unsafeNew (fromIntegral nrows')
+    for_ [ 0 .. nrows-1 ] $ \row -> do
+        let PQ.Row row' = row
+        value <- getRowWith parser row ncols conn result
+        MVU.unsafeWrite mv (fromIntegral row') value
+    VU.unsafeFreeze mv
+
+finishQueryWith' :: Query -> PQ.Result -> IO a -> IO a
+finishQueryWith' q result k = do
   status <- PQ.resultStatus result
   case status of
-    PQ.TuplesOk -> do
-        nrows <- PQ.ntuples result
-        ncols <- PQ.nfields result
-        forM' 0 (nrows-1) $ \row ->
-            getRowWith parser row ncols conn result
+    PQ.TuplesOk -> k
     PQ.EmptyQuery    -> queryErr "query: Empty query"
     PQ.CommandOk     -> queryErr "query resulted in a command response"
     PQ.CopyOut       -> queryErr "query: COPY TO is not supported"
