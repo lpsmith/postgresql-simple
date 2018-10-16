@@ -1,7 +1,63 @@
-### Unreleased
-  
-  * Added `ToField` instances for case-insensitive strict and lazy text.
+### Version 0.6 (2018-09-25)
+
+  * *Breaking change*: Use `Only` package's `Only for a common 1-tuple.
+
+    Consider a downstream library depending already both on
+    `Only` and `postgresql-simple` package. This library my define
+    a `MyClass` with instances for `Only.Only` and `PostgreSQL.Only`.
+    As now these types are the same, a library would break.
+    Therefore I consider "merging" types a breaking change.
+
+    There are two ways for adopting this change in that scenario:
+
+    - Either CPP-guard `PostgreSQL.Only` instance with
+
+      ```haskell
+      #if !MIN_VERSION_postgresql_simple(0,6,0)
+      instance MyClass (PostgreSQL.Only a) where ...
+      #endif
+      ```
+
+    - or simply remove it and add `postgresql-simple >=0.6` lower bound,
+      making sure that there's only single `Only`.
+
+  * Add `ToField` instances for case-insensitive strict and lazy text.
     Thanks to Max Tagher for the implementation.
+    https://github.com/lpsmith/postgresql-simple/pull/232
+
+  * Add support to CockroachDB.
+    Thanks to Georte Steel.
+    https://github.com/lpsmith/postgresql-simple/pull/245
+
+  * Add Generic ConnectInfo instance
+    Thanks to Dmitry Dzhus.
+    https://github.com/lpsmith/postgresql-simple/pull/235
+
+  * Add `fromFieldRange :: Typeable a => FieldParser a -> FieldParser (PGRange a)`
+    https://github.com/lpsmith/postgresql-simple/pull/221
+
+  * Add `fromFieldJSONByteString :: FieldParser ByteString`
+    https://github.com/lpsmith/postgresql-simple/pull/222/files
+
+  * Fix off-by-one error in year builder.
+    Thanks to Nathan Ferris Hunter.
+    https://github.com/lpsmith/postgresql-simple/pull/230
+
+  * Extend ToRow and FromRow to tuples of size 18
+    Thanks to Bardur Arantsson.
+    https://github.com/lpsmith/postgresql-simple/pull/229
+
+  * Add `Vector` and `Vector.Unboxed` `query` variants.
+    These are more memory efficient
+    (especially, if you anyway will convert to some vector)
+    https://github.com/phadej/1
+
+  * Documentation improvements
+    https://github.com/lpsmith/postgresql-simple/pull/227
+    https://github.com/lpsmith/postgresql-simple/pull/236
+
+### Version 0.5.4.0 (2018-05-23)
+  * Support GHC-8.4 (Semigroup/Monoid)
 
 ### Version 0.5.3.0 (2017-05-15)
   * Refactored some rudimentary cursor handling code out of the

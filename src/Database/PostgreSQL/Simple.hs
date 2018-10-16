@@ -355,6 +355,7 @@ executeMany conn q qs = do
 returning :: (ToRow q, FromRow r) => Connection -> Query -> [q] -> IO [r]
 returning = returningWith fromRow
 
+-- | A version of 'returning' taking parser as argument
 returningWith :: (ToRow q) => RowParser r -> Connection -> Query -> [q] -> IO [r]
 returningWith _ _ _ [] = return []
 returningWith parser conn q qs = do
