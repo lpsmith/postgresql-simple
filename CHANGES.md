@@ -2,6 +2,25 @@
 
   * *Breaking change*: Use `Only` package's `Only for a common 1-tuple.
 
+    Consider a downstream library depending already both on
+    `Only` and `postgresql-simple` package. This library my define
+    a `MyClass` with instances for `Only.Only` and `PostgreSQL.Only`.
+    As now these types are the same, a library would break.
+    Therefore I consider "merging" types a breaking change.
+
+    There are two ways for adopting this change in that scenario:
+
+    - Either CPP-guard `PostgreSQL.Only` instance with
+
+      ```haskell
+      #if !MIN_VERSION_postgresql_simple(0,6,0)
+      instance MyClass (PostgreSQL.Only a) where ...
+      #endif
+      ```
+
+    - or simply remove it and add `postgresql-simple >=0.6` lower bound,
+      making sure that there's only single `Only`.
+
   * Add `ToField` instances for case-insensitive strict and lazy text.
     Thanks to Max Tagher for the implementation.
     https://github.com/lpsmith/postgresql-simple/pull/232
