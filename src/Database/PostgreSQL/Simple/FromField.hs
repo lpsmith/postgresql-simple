@@ -117,6 +117,7 @@ import           Control.Applicative ( (<|>), (<$>), pure, (*>), (<*) )
 import           Control.Concurrent.MVar (MVar, newMVar)
 import           Control.Exception (Exception)
 import qualified Data.Aeson as JSON
+import qualified Data.Aeson.Internal as JSON
 import qualified Data.Aeson.Parser as JSON (value')
 import           Data.Attoparsec.ByteString.Char8 hiding (Result)
 import           Data.ByteString (ByteString)
@@ -567,7 +568,7 @@ fromFieldJSONByteString f mbs =
              Just bs -> pure bs
 
 -- | Parse a field to a JSON 'JSON.Value' and convert that into a
--- Haskell value using 'JSON.fromJSON'.
+-- Haskell value using the 'JSON.FromJSON' instance.
 --
 -- This can be used as the default implementation for the 'fromField'
 -- method for Haskell types that have a JSON representation in
@@ -588,10 +589,10 @@ fromFieldJSONByteString f mbs =
 fromJSONField :: (JSON.FromJSON a, Typeable a) => FieldParser a
 fromJSONField f mbBs = do
     value <- fromField f mbBs
-    case JSON.fromJSON value of
-        JSON.Error err -> returnError ConversionFailed f $
-                            "JSON decoding error: " ++ err
-        JSON.Success x -> pure x
+    case JSON.ifromJSON value of
+        JSON.IError path err -> returnError ConversionFailed f $
+                            "JSON decoding error: " ++ (JSON.formatError path err)
+        JSON.ISuccess x -> pure x
 
 -- | Compatible with the same set of types as @a@.  Note that
 --   modifying the 'IORef' does not have any effects outside
