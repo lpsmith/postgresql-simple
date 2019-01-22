@@ -28,7 +28,7 @@ tested-with:
    || == 8.0.2
    || == 8.2.2
    || == 8.4.4
-   || == 8.6.1
+   || == 8.6.3
 
 Library
   default-language: Haskell2010
@@ -120,6 +120,22 @@ source-repository this
   type:     git
   location: http://github.com/phadej/postgresql-simple
   tag:      v0.6
+
+test-suite inspection
+  if !impl(ghc >= 8.0)
+    buildable: False
+
+  default-language: Haskell2010
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is:        Inspection.hs
+  build-depends:
+      base
+    , inspection-testing  >=0.4.1.1 && <0.5
+    , postgresql-simple
+    , postgresql-libpq
+    , tasty
+    , tasty-hunit
 
 test-suite test
   default-language: Haskell2010
