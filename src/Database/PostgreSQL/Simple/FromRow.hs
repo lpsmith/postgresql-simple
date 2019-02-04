@@ -67,6 +67,20 @@ import           GHC.Generics
 -- in a single row of the query result.  Otherwise,  a 'ConversionFailed'
 -- exception will be thrown.
 --
+-- You can also derive 'FromRow' for your data type using GHC generics, like
+-- this:
+--
+-- @
+-- \{-# LANGUAGE DeriveAnyClass \#-}
+-- \{-# LANGUAGE DeriveGeneric  \#-}
+--
+-- import "GHC.Generics" ('GHC.Generics.Generic')
+-- import "Database.PostgreSQL.Simple" ('FromRow')
+--
+-- data User = User { name :: String, fileQuota :: Int }
+--   deriving ('GHC.Generics.Generic', 'FromRow')
+-- @
+--
 -- Note that 'field' evaluates its result to WHNF, so the caveats listed in
 -- mysql-simple and very early versions of postgresql-simple no longer apply.
 -- Instead, look at the caveats associated with user-defined implementations
