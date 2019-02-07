@@ -30,6 +30,22 @@ import GHC.Generics
 --
 -- Instances should use the 'toField' method of the 'ToField' class
 -- to perform conversion of each element of the collection.
+--
+-- You can derive 'ToRow' for your data type using GHC generics, like this:
+--
+-- @
+-- \{-# LANGUAGE DeriveAnyClass \#-}
+-- \{-# LANGUAGE DeriveGeneric  \#-}
+--
+-- import "GHC.Generics" ('GHC.Generics.Generic')
+-- import "Database.PostgreSQL.Simple" ('ToRow')
+--
+-- data User = User { name :: String, fileQuota :: Int }
+--   deriving ('GHC.Generics.Generic', 'ToRow')
+-- @
+--
+-- Note that this only works for product types (e.g. records) and does not
+-- support sum types or recursive types.
 class ToRow a where
     toRow :: a -> [Action]
     default toRow :: (Generic a, GToRow (Rep a)) => a -> [Action]
