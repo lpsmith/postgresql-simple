@@ -73,7 +73,7 @@ finishQueryWith' q result k = do
   case status of
     PQ.TuplesOk -> k
     PQ.EmptyQuery    -> queryErr "query: Empty query"
-    PQ.CommandOk     -> queryErr "query resulted in a command response"
+    PQ.CommandOk     -> queryErr "query resulted in a command response (did you mean to use `execute` or forget a RETURNING?)"
     PQ.CopyOut       -> queryErr "query: COPY TO is not supported"
     PQ.CopyIn        -> queryErr "query: COPY FROM is not supported"
 #if MIN_VERSION_postgresql_libpq(0,9,3)
