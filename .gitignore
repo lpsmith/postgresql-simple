@@ -13,3 +13,5 @@ dist/
 cabal.sandbox.config
 /dist-newstyle
 .ghc.environment.*
+cabal.project.local
+dump-core
