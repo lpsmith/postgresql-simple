@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, DeriveFunctor  #-}
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {-# LANGUAGE PatternGuards, ScopedTypeVariables      #-}
-{-# LANGUAGE RecordWildCards, TemplateHaskell        #-}
+{-# LANGUAGE RecordWildCards                         #-}
 
 {- |
 Module:      Database.PostgreSQL.Simple.FromField
@@ -136,7 +136,6 @@ import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types
 import           Database.PostgreSQL.Simple.TypeInfo as TI
 import qualified Database.PostgreSQL.Simple.TypeInfo.Static as TI
-import           Database.PostgreSQL.Simple.TypeInfo.Macro as TI
 import           Database.PostgreSQL.Simple.Time
 import           Database.PostgreSQL.Simple.Arrays as Arrays
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -263,7 +262,7 @@ format Field{..} = unsafeDupablePerformIO (PQ.fformat result column)
 -- | void
 instance FromField () where
   fromField f _bs
-     | typeOid f /= $(inlineTypoid TI.void) = returnError Incompatible f ""
+     | typeOid f /= TI.voidOid = returnError Incompatible f ""
      | otherwise = pure ()
 
 -- | For dealing with null values.  Compatible with any postgresql type
@@ -293,7 +292,7 @@ instance FromField Null where
 -- | bool
 instance FromField Bool where
     fromField f bs
-      | typeOid f /= $(inlineTypoid TI.bool) = returnError Incompatible f ""
+      | typeOid f /= TI.boolOid       = returnError Incompatible f ""
       | bs == Nothing                 = returnError UnexpectedNull f ""
       | bs == Just "t"                = pure True
       | bs == Just "f"                = pure False
@@ -302,7 +301,7 @@ instance FromField Bool where
 -- | \"char\", bpchar
 instance FromField Char where
     fromField f bs =
-        if $(mkCompats [TI.char,TI.bpchar]) (typeOid f)
+        if (eq TI.charOid \/ eq TI.bpcharOid) (typeOid f)
         then case bs of
                Nothing -> returnError UnexpectedNull f ""
                Just bs -> if B.length bs /= 1
@@ -340,23 +339,23 @@ instance FromField Integer where
 --   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Float where
     fromField = atto ok (realToFrac <$> pg_double)
-      where ok = $(mkCompats [TI.float4,TI.int2])
+      where ok = eq TI.float4Oid \/ eq TI.int2Oid
 
 -- | int2, int4, float4, float8  (Uses attoparsec's 'double' routine,  for
 --   better accuracy convert to 'Scientific' or 'Rational' first)
 instance FromField Double where
     fromField = atto ok pg_double
-      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4])
+      where ok = eq TI.float4Oid \/ eq TI.float8Oid \/ eq TI.int2Oid \/ eq TI.int4Oid
 
 -- | int2, int4, int8, float4, float8, numeric
 instance FromField (Ratio Integer) where
     fromField = atto ok pg_rational
-      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.int8,TI.numeric])
+      where ok = eq TI.float4Oid \/ eq TI.float8Oid \/ eq TI.int2Oid \/ eq TI.int4Oid \/ eq TI.int8Oid \/  eq TI.numericOid
 
 -- | int2, int4, int8, float4, float8, numeric
 instance FromField Scientific where
      fromField = atto ok rational
-      where ok = $(mkCompats [TI.float4,TI.float8,TI.int2,TI.int4,TI.int8,TI.numeric])
+      where ok = eq TI.float4Oid \/ eq TI.float8Oid \/ eq TI.int2Oid \/ eq TI.int4Oid \/ eq TI.int8Oid \/  eq TI.numericOid
 
 unBinary :: Binary t -> t
 unBinary (Binary x) = x
@@ -377,13 +376,13 @@ pg_rational
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField SB.ByteString where
-    fromField f dat = if typeOid f == $(inlineTypoid TI.bytea)
+    fromField f dat = if typeOid f == TI.byteaOid
                       then unBinary <$> fromField f dat
                       else doFromField f okText' pure dat
 
 -- | oid
 instance FromField PQ.Oid where
-    fromField f dat = PQ.Oid <$> atto (== $(inlineTypoid TI.oid)) decimal f dat
+    fromField f dat = PQ.Oid <$> atto (== TI.oidOid) decimal f dat
 
 -- | bytea, name, text, \"char\", bpchar, varchar, unknown
 instance FromField LB.ByteString where
@@ -442,39 +441,39 @@ instance FromField [Char] where
 
 -- | timestamptz
 instance FromField UTCTime where
-  fromField = ff $(inlineTypoid TI.timestamptz) "UTCTime" parseUTCTime
+  fromField = ff TI.timestamptzOid "UTCTime" parseUTCTime
 
 -- | timestamptz
 instance FromField ZonedTime where
-  fromField = ff $(inlineTypoid TI.timestamptz) "ZonedTime" parseZonedTime
+  fromField = ff TI.timestamptzOid "ZonedTime" parseZonedTime
 
 -- | timestamp
 instance FromField LocalTime where
-  fromField = ff $(inlineTypoid TI.timestamp) "LocalTime" parseLocalTime
+  fromField = ff TI.timestampOid "LocalTime" parseLocalTime
 
 -- | date
 instance FromField Day where
-  fromField = ff $(inlineTypoid TI.date) "Day" parseDay
+  fromField = ff TI.dateOid "Day" parseDay
 
 -- | time
 instance FromField TimeOfDay where
-  fromField = ff $(inlineTypoid TI.time) "TimeOfDay" parseTimeOfDay
+  fromField = ff TI.timeOid "TimeOfDay" parseTimeOfDay
 
 -- | timestamptz
 instance FromField UTCTimestamp where
-  fromField = ff $(inlineTypoid TI.timestamptz) "UTCTimestamp" parseUTCTimestamp
+  fromField = ff TI.timestamptzOid "UTCTimestamp" parseUTCTimestamp
 
 -- | timestamptz
 instance FromField ZonedTimestamp where
-  fromField = ff $(inlineTypoid TI.timestamptz) "ZonedTimestamp" parseZonedTimestamp
+  fromField = ff TI.timestamptzOid "ZonedTimestamp" parseZonedTimestamp
 
 -- | timestamp
 instance FromField LocalTimestamp where
-  fromField = ff $(inlineTypoid TI.timestamp) "LocalTimestamp" parseLocalTimestamp
+  fromField = ff TI.timestampOid "LocalTimestamp" parseLocalTimestamp
 
 -- | date
 instance FromField Date where
-  fromField = ff $(inlineTypoid TI.date) "Date" parseDate
+  fromField = ff TI.dateOid "Date" parseDate
 
 ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
@@ -542,7 +541,7 @@ instance (FromField a, Typeable a) => FromField (IOVector a) where
 -- | uuid
 instance FromField UUID where
     fromField f mbs =
-      if typeOid f /= $(inlineTypoid TI.uuid)
+      if typeOid f /= TI.uuidOid
       then returnError Incompatible f ""
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""
@@ -561,7 +560,7 @@ instance FromField JSON.Value where
 -- | Return the JSON ByteString directly
 fromFieldJSONByteString :: Field -> Maybe ByteString -> Conversion ByteString
 fromFieldJSONByteString f mbs =
-      if typeOid f /= $(inlineTypoid TI.json) && typeOid f /= $(inlineTypoid TI.jsonb)
+      if typeOid f /= TI.jsonOid && typeOid f /= TI.jsonbOid
       then returnError Incompatible f ""
       else case mbs of
              Nothing -> returnError UnexpectedNull f ""
@@ -609,19 +608,32 @@ instance FromField a => FromField (MVar a) where
 type Compat = PQ.Oid -> Bool
 
 okText, okText', okBinary, ok16, ok32, ok64, okInt :: Compat
-okText   = $( mkCompats [ TI.name, TI.text, TI.char,
-                          TI.bpchar, TI.varchar ] )
-okText'  = $( mkCompats [ TI.name, TI.text, TI.char,
-                          TI.bpchar, TI.varchar, TI.unknown ] )
-okBinary = (== $( inlineTypoid TI.bytea ))
-ok16 = (== $( inlineTypoid TI.int2 ))
-ok32 = $( mkCompats [TI.int2,TI.int4] )
-ok64 = $( mkCompats [TI.int2,TI.int4,TI.int8] )
+okText   = eq TI.nameOid \/ eq TI.textOid \/ eq TI.charOid
+        \/ eq TI.bpcharOid \/ eq TI.varcharOid
+okText'  = eq TI.nameOid \/ eq TI.textOid \/ eq TI.charOid
+        \/ eq TI.bpcharOid \/ eq TI.varcharOid \/ eq TI.unknownOid
+okBinary = eq TI.byteaOid
+ok16 = eq TI.int2Oid
+ok32 = eq TI.int2Oid \/ eq TI.int4Oid
+ok64 = eq TI.int2Oid \/ eq TI.int4Oid \/ eq TI.int8Oid
 #if WORD_SIZE_IN_BITS < 64
 okInt = ok32
 #else
 okInt = ok64
 #endif
+
+-- | eq and \/ are used to imlement what Macro stuff did,
+-- i.e. mkCompats and inlineTypoid
+eq :: PQ.Oid -> PQ.Oid -> Bool
+eq = (==)
+{-# INLINE eq #-}
+
+infixr 2 \/
+(\/) :: (PQ.Oid -> Bool)
+     -> (PQ.Oid -> Bool)
+     -> (PQ.Oid -> Bool)
+f \/ g = \x -> f x || g x
+{-# INLINE (\/) #-}
 
 doFromField :: forall a . (Typeable a)
           => Field -> Compat -> (ByteString -> Conversion a)

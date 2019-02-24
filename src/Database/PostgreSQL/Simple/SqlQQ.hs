@@ -1,4 +1,9 @@
+{-# LANGUAGE CPP #-}
+#if __GLASGOW_HASKELL__ >= 800
+{-# LANGUAGE TemplateHaskellQuotes #-}
+#else
 {-# LANGUAGE TemplateHaskell #-}
+#endif
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.SqlQQ
@@ -52,13 +57,10 @@ import Data.String
 
 sql :: QuasiQuoter
 sql = QuasiQuoter
-    { quotePat  = error "Database.PostgreSQL.Simple.SqlQQ.sql:\
-                        \ quasiquoter used in pattern context"
-    , quoteType = error "Database.PostgreSQL.Simple.SqlQQ.sql:\
-                        \ quasiquoter used in type context"
+    { quotePat  = error "Database.PostgreSQL.Simple.SqlQQ.sql: quasiquoter used in pattern context"
+    , quoteType = error "Database.PostgreSQL.Simple.SqlQQ.sql: quasiquoter used in type context"
     , quoteExp  = sqlExp
-    , quoteDec  = error "Database.PostgreSQL.Simple.SqlQQ.sql:\
-                        \ quasiquoter used in declaration context"
+    , quoteDec  = error "Database.PostgreSQL.Simple.SqlQQ.sql: quasiquoter used in declaration context"
     }
 
 sqlExp :: String -> Q Exp
@@ -85,5 +87,4 @@ minimizeSpace = drop 1 . reduceSpace
     instring ('\'':'\'':xs) = '\'':'\'': instring xs
     instring ('\'':xs)      = '\'': insql xs
     instring (x:xs)         = x : instring xs
-    instring []             = error "Database.PostgreSQL.Simple.SqlQQ.sql:\
-                                    \ string literal not terminated"
+    instring []             = error "Database.PostgreSQL.Simple.SqlQQ.sql: string literal not terminated"

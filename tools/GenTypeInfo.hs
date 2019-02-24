@@ -21,6 +21,9 @@
 -- know about.   It then constructs a TypeInfo record and stores it in
 -- a per-connection cache for later use.
 --
+-- @
+-- runghc -itools tools/GenTypeInfo.hs
+-- @
 ------------------------------------------------------------------------------
 
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, ViewPatterns, RecordWildCards #-}
@@ -38,12 +41,10 @@ import           Database.PostgreSQL.Simple.FromRow
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types(Oid(..))
 import           Database.PostgreSQL.Simple.SqlQQ
-import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Char8 as B8
 import           Data.ByteString(ByteString)
 import qualified Data.ByteString.Lazy  as L
-import qualified Blaze.ByteString.Builder            as Blaze
-import qualified Blaze.ByteString.Builder.ByteString as Blaze
-import qualified Blaze.ByteString.Builder.Char8      as Blaze
+import qualified Data.ByteString.Builder            as Blaze
 import           Data.String
 import           Data.List ( sort, intersperse )
 import qualified Data.Map as Map
@@ -69,11 +70,11 @@ data TypeInfo = TypeInfo
 instance FromRow TypeInfo where 
     fromRow = TypeInfo <$> field <*> field <*> field <*> field <*> field <*> field
 
-type NameMap   = Map.Map B.ByteString TypeInfo
+type NameMap   = Map.Map B8.ByteString TypeInfo
 
 type OidMap    = Map.Map Oid TypeInfo
 
-type TypeName = (B.ByteString, B.ByteString)
+type TypeName = (B8.ByteString, B8.ByteString)
 
 type TypeNames = [TypeName]
 
@@ -197,9 +198,6 @@ int8range
 _int8range
 |]
 
-instance IsString Blaze.Builder where
-   fromString = Blaze.fromByteString . fromString
-
 connectionString = "dbname=postgres"
 
 withPostgreSQL = bracket (connectPostgreSQL connectionString) close
@@ -237,7 +235,7 @@ getTypeInfos typnames = withPostgreSQL $ \conn -> do
 
 main = do
   (oidmap, namemap) <- getTypeInfos typeNames
-  L.writeFile "../src/Database/PostgreSQL/Simple/TypeInfo/Static.hs"
+  L.writeFile "src/Database/PostgreSQL/Simple/TypeInfo/Static.hs"
               (Blaze.toLazyByteString (renderFile oidmap namemap typeNames))
 
 
@@ -246,7 +244,7 @@ showOid (Oid n) = show n
 renderOid :: NameMap -> TypeName -> Blaze.Builder
 renderOid byName name
   = case Map.lookup (pg name) byName of
-      Nothing -> error (B.unpack (pg name))
+      Nothing -> error (B8.unpack (pg name))
       Just (showOid . typoid -> n) -> fromString n
                               ++ fromString (replicate (4 - length n) ' ')
 
@@ -264,20 +262,25 @@ renderTypeInfo byOid info name
          typelem_hs_name =
              case lookup (typname typelem_info) typeNames of
                Nothing -> error (   "type not found: "
-                                 ++ B.unpack( typname typelem_info)
-                                 ++ " (typelem of " ++ B.unpack (typname info)
+                                 ++ B8.unpack( typname typelem_info)
+                                 ++ " (typelem of " ++ B8.unpack (typname info)
                                  ++ ")")
                Just x  -> x
       in concat
            [ "\n"
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Array {\n"
-           , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typoid      = ", bs (hs name), "Oid,\n"
+           , "    typcategory = '", bs $ B8.singleton (typcategory info), "',\n"
+           , "    typdelim    = '", bs $ B8.singleton (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\",\n"
            , "    typelem     = ", bs typelem_hs_name, "\n"
            , "  }\n"
+           , "\n"
+           , bs (hs name), "Oid :: Oid\n"
+           , bs (hs name), "Oid = ", fromString (show (typoid info)), "\n"
+           , "{-# INLINE ", bs (hs name), "Oid #-}"
+           , "\n"
            ]
   | typcategory info == 'R' =
       let (Just rngsubtype_oid)  = rngsubtype info
@@ -285,31 +288,41 @@ renderTypeInfo byOid info name
           rngsubtype_hs_name =
               case lookup (typname rngsubtype_info) typeNames of
                 Nothing -> error (   "type not found: "
-                                  ++ B.unpack (typname rngsubtype_info)
+                                  ++ B8.unpack (typname rngsubtype_info)
                                   ++ " (rngsubtype of "
-                                  ++ B.unpack (typname info) ++ ")")
+                                  ++ B8.unpack (typname info) ++ ")")
                 Just x  -> x
        in concat
            [ "\n"
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Range {\n"
-           , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typoid      = ", bs (hs name), "Oid,\n"
+           , "    typcategory = '", bs $ B8.singleton (typcategory info), "',\n"
+           , "    typdelim    = '", bs $ B8.singleton (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\",\n"
            , "    rngsubtype  = ", bs rngsubtype_hs_name, "\n"
            , "  }\n"
+           , "\n"
+           , bs (hs name), "Oid :: Oid\n"
+           , bs (hs name), "Oid = ", fromString (show (typoid info)), "\n"
+           , "{-# INLINE ", bs (hs name), "Oid #-}"
+           , "\n"
            ]
   | otherwise =
          concat
            [ "\n"
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Basic {\n"
-           , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typoid      = ", bs (hs name), "Oid,\n"
+           , "    typcategory = '", bs $ B8.singleton (typcategory info), "',\n"
+           , "    typdelim    = '", bs $ B8.singleton (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\"\n"
            , "  }\n"
+           , "\n"
+           , bs (hs name), "Oid :: Oid\n"
+           , bs (hs name), "Oid = ", fromString (show (typoid info)), "\n"
+           , "{-# INLINE ", bs (hs name), "Oid #-}"
+           , "\n"
            ]
 
 -- FIXME:  add in any names that we need that we didn't specify, (i.e.
@@ -318,7 +331,7 @@ renderTypeInfo byOid info name
 getNames :: NameMap -> TypeNames -> TypeNames
 getNames _ x = x
 
-bs = Blaze.fromByteString
+bs = Blaze.byteString
 
 pg = fst
 
@@ -347,6 +360,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      ( TypeInfo(..)
      , staticTypeInfo
 |] ++ concat [ "     , " ++ bs (hs name) ++ "\n"
+            ++ "     , " ++ bs (hs name) ++ "Oid\n"
              | name <- names ] ++ [longstring|
      ) where
 

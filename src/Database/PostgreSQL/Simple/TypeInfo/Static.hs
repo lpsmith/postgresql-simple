@@ -19,119 +19,233 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
      ( TypeInfo(..)
      , staticTypeInfo
      , bool
+     , boolOid
      , bytea
+     , byteaOid
      , char
+     , charOid
      , name
+     , nameOid
      , int8
+     , int8Oid
      , int2
+     , int2Oid
      , int4
+     , int4Oid
      , regproc
+     , regprocOid
      , text
+     , textOid
      , oid
+     , oidOid
      , tid
+     , tidOid
      , xid
+     , xidOid
      , cid
+     , cidOid
      , xml
+     , xmlOid
      , point
+     , pointOid
      , lseg
+     , lsegOid
      , path
+     , pathOid
      , box
+     , boxOid
      , polygon
+     , polygonOid
      , line
+     , lineOid
      , cidr
+     , cidrOid
      , float4
+     , float4Oid
      , float8
+     , float8Oid
      , unknown
+     , unknownOid
      , circle
+     , circleOid
      , money
+     , moneyOid
      , macaddr
+     , macaddrOid
      , inet
+     , inetOid
      , bpchar
+     , bpcharOid
      , varchar
+     , varcharOid
      , date
+     , dateOid
      , time
+     , timeOid
      , timestamp
+     , timestampOid
      , timestamptz
+     , timestamptzOid
      , interval
+     , intervalOid
      , timetz
+     , timetzOid
      , bit
+     , bitOid
      , varbit
+     , varbitOid
      , numeric
+     , numericOid
      , refcursor
+     , refcursorOid
      , record
+     , recordOid
      , void
+     , voidOid
      , array_record
+     , array_recordOid
      , regprocedure
+     , regprocedureOid
      , regoper
+     , regoperOid
      , regoperator
+     , regoperatorOid
      , regclass
+     , regclassOid
      , regtype
+     , regtypeOid
      , uuid
+     , uuidOid
      , json
+     , jsonOid
      , jsonb
+     , jsonbOid
      , int2vector
+     , int2vectorOid
      , oidvector
+     , oidvectorOid
      , array_xml
+     , array_xmlOid
      , array_json
+     , array_jsonOid
      , array_line
+     , array_lineOid
      , array_cidr
+     , array_cidrOid
      , array_circle
+     , array_circleOid
      , array_money
+     , array_moneyOid
      , array_bool
+     , array_boolOid
      , array_bytea
+     , array_byteaOid
      , array_char
+     , array_charOid
      , array_name
+     , array_nameOid
      , array_int2
+     , array_int2Oid
      , array_int2vector
+     , array_int2vectorOid
      , array_int4
+     , array_int4Oid
      , array_regproc
+     , array_regprocOid
      , array_text
+     , array_textOid
      , array_tid
+     , array_tidOid
      , array_xid
+     , array_xidOid
      , array_cid
+     , array_cidOid
      , array_oidvector
+     , array_oidvectorOid
      , array_bpchar
+     , array_bpcharOid
      , array_varchar
+     , array_varcharOid
      , array_int8
+     , array_int8Oid
      , array_point
+     , array_pointOid
      , array_lseg
+     , array_lsegOid
      , array_path
+     , array_pathOid
      , array_box
+     , array_boxOid
      , array_float4
+     , array_float4Oid
      , array_float8
+     , array_float8Oid
      , array_polygon
+     , array_polygonOid
      , array_oid
+     , array_oidOid
      , array_macaddr
+     , array_macaddrOid
      , array_inet
+     , array_inetOid
      , array_timestamp
+     , array_timestampOid
      , array_date
+     , array_dateOid
      , array_time
+     , array_timeOid
      , array_timestamptz
+     , array_timestamptzOid
      , array_interval
+     , array_intervalOid
      , array_numeric
+     , array_numericOid
      , array_timetz
+     , array_timetzOid
      , array_bit
+     , array_bitOid
      , array_varbit
+     , array_varbitOid
      , array_refcursor
+     , array_refcursorOid
      , array_regprocedure
+     , array_regprocedureOid
      , array_regoper
+     , array_regoperOid
      , array_regoperator
+     , array_regoperatorOid
      , array_regclass
+     , array_regclassOid
      , array_regtype
+     , array_regtypeOid
      , array_uuid
+     , array_uuidOid
      , array_jsonb
+     , array_jsonbOid
      , int4range
+     , int4rangeOid
      , _int4range
+     , _int4rangeOid
      , numrange
+     , numrangeOid
      , _numrange
+     , _numrangeOid
      , tsrange
+     , tsrangeOid
      , _tsrange
+     , _tsrangeOid
      , tstzrange
+     , tstzrangeOid
      , _tstzrange
+     , _tstzrangeOid
      , daterange
+     , daterangeOid
      , _daterange
+     , _daterangeOid
      , int8range
+     , int8rangeOid
      , _int8range
+     , _int8rangeOid
      ) where
 
 import Database.PostgreSQL.LibPQ (Oid(..))
@@ -257,976 +371,1432 @@ staticTypeInfo (Oid x) = case x of
 
 bool :: TypeInfo
 bool =  Basic {
-    typoid      = Oid 16,
+    typoid      = boolOid,
     typcategory = 'B',
     typdelim    = ',',
     typname     = "bool"
   }
 
+boolOid :: Oid
+boolOid = Oid 16
+{-# INLINE boolOid #-}
+
 bytea :: TypeInfo
 bytea =  Basic {
-    typoid      = Oid 17,
+    typoid      = byteaOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "bytea"
   }
 
+byteaOid :: Oid
+byteaOid = Oid 17
+{-# INLINE byteaOid #-}
+
 char :: TypeInfo
 char =  Basic {
-    typoid      = Oid 18,
+    typoid      = charOid,
     typcategory = 'S',
     typdelim    = ',',
     typname     = "char"
   }
 
+charOid :: Oid
+charOid = Oid 18
+{-# INLINE charOid #-}
+
 name :: TypeInfo
 name =  Basic {
-    typoid      = Oid 19,
+    typoid      = nameOid,
     typcategory = 'S',
     typdelim    = ',',
     typname     = "name"
   }
 
+nameOid :: Oid
+nameOid = Oid 19
+{-# INLINE nameOid #-}
+
 int8 :: TypeInfo
 int8 =  Basic {
-    typoid      = Oid 20,
+    typoid      = int8Oid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int8"
   }
 
+int8Oid :: Oid
+int8Oid = Oid 20
+{-# INLINE int8Oid #-}
+
 int2 :: TypeInfo
 int2 =  Basic {
-    typoid      = Oid 21,
+    typoid      = int2Oid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int2"
   }
 
+int2Oid :: Oid
+int2Oid = Oid 21
+{-# INLINE int2Oid #-}
+
 int4 :: TypeInfo
 int4 =  Basic {
-    typoid      = Oid 23,
+    typoid      = int4Oid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "int4"
   }
 
+int4Oid :: Oid
+int4Oid = Oid 23
+{-# INLINE int4Oid #-}
+
 regproc :: TypeInfo
 regproc =  Basic {
-    typoid      = Oid 24,
+    typoid      = regprocOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regproc"
   }
 
+regprocOid :: Oid
+regprocOid = Oid 24
+{-# INLINE regprocOid #-}
+
 text :: TypeInfo
 text =  Basic {
-    typoid      = Oid 25,
+    typoid      = textOid,
     typcategory = 'S',
     typdelim    = ',',
     typname     = "text"
   }
 
+textOid :: Oid
+textOid = Oid 25
+{-# INLINE textOid #-}
+
 oid :: TypeInfo
 oid =  Basic {
-    typoid      = Oid 26,
+    typoid      = oidOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "oid"
   }
 
+oidOid :: Oid
+oidOid = Oid 26
+{-# INLINE oidOid #-}
+
 tid :: TypeInfo
 tid =  Basic {
-    typoid      = Oid 27,
+    typoid      = tidOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "tid"
   }
 
+tidOid :: Oid
+tidOid = Oid 27
+{-# INLINE tidOid #-}
+
 xid :: TypeInfo
 xid =  Basic {
-    typoid      = Oid 28,
+    typoid      = xidOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "xid"
   }
 
+xidOid :: Oid
+xidOid = Oid 28
+{-# INLINE xidOid #-}
+
 cid :: TypeInfo
 cid =  Basic {
-    typoid      = Oid 29,
+    typoid      = cidOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "cid"
   }
 
+cidOid :: Oid
+cidOid = Oid 29
+{-# INLINE cidOid #-}
+
 xml :: TypeInfo
 xml =  Basic {
-    typoid      = Oid 142,
+    typoid      = xmlOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "xml"
   }
 
+xmlOid :: Oid
+xmlOid = Oid 142
+{-# INLINE xmlOid #-}
+
 point :: TypeInfo
 point =  Basic {
-    typoid      = Oid 600,
+    typoid      = pointOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "point"
   }
 
+pointOid :: Oid
+pointOid = Oid 600
+{-# INLINE pointOid #-}
+
 lseg :: TypeInfo
 lseg =  Basic {
-    typoid      = Oid 601,
+    typoid      = lsegOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "lseg"
   }
 
+lsegOid :: Oid
+lsegOid = Oid 601
+{-# INLINE lsegOid #-}
+
 path :: TypeInfo
 path =  Basic {
-    typoid      = Oid 602,
+    typoid      = pathOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "path"
   }
 
+pathOid :: Oid
+pathOid = Oid 602
+{-# INLINE pathOid #-}
+
 box :: TypeInfo
 box =  Basic {
-    typoid      = Oid 603,
+    typoid      = boxOid,
     typcategory = 'G',
     typdelim    = ';',
     typname     = "box"
   }
 
+boxOid :: Oid
+boxOid = Oid 603
+{-# INLINE boxOid #-}
+
 polygon :: TypeInfo
 polygon =  Basic {
-    typoid      = Oid 604,
+    typoid      = polygonOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "polygon"
   }
 
+polygonOid :: Oid
+polygonOid = Oid 604
+{-# INLINE polygonOid #-}
+
 line :: TypeInfo
 line =  Basic {
-    typoid      = Oid 628,
+    typoid      = lineOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "line"
   }
 
+lineOid :: Oid
+lineOid = Oid 628
+{-# INLINE lineOid #-}
+
 cidr :: TypeInfo
 cidr =  Basic {
-    typoid      = Oid 650,
+    typoid      = cidrOid,
     typcategory = 'I',
     typdelim    = ',',
     typname     = "cidr"
   }
 
+cidrOid :: Oid
+cidrOid = Oid 650
+{-# INLINE cidrOid #-}
+
 float4 :: TypeInfo
 float4 =  Basic {
-    typoid      = Oid 700,
+    typoid      = float4Oid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "float4"
   }
 
+float4Oid :: Oid
+float4Oid = Oid 700
+{-# INLINE float4Oid #-}
+
 float8 :: TypeInfo
 float8 =  Basic {
-    typoid      = Oid 701,
+    typoid      = float8Oid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "float8"
   }
 
+float8Oid :: Oid
+float8Oid = Oid 701
+{-# INLINE float8Oid #-}
+
 unknown :: TypeInfo
 unknown =  Basic {
-    typoid      = Oid 705,
+    typoid      = unknownOid,
     typcategory = 'X',
     typdelim    = ',',
     typname     = "unknown"
   }
 
+unknownOid :: Oid
+unknownOid = Oid 705
+{-# INLINE unknownOid #-}
+
 circle :: TypeInfo
 circle =  Basic {
-    typoid      = Oid 718,
+    typoid      = circleOid,
     typcategory = 'G',
     typdelim    = ',',
     typname     = "circle"
   }
 
+circleOid :: Oid
+circleOid = Oid 718
+{-# INLINE circleOid #-}
+
 money :: TypeInfo
 money =  Basic {
-    typoid      = Oid 790,
+    typoid      = moneyOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "money"
   }
 
+moneyOid :: Oid
+moneyOid = Oid 790
+{-# INLINE moneyOid #-}
+
 macaddr :: TypeInfo
 macaddr =  Basic {
-    typoid      = Oid 829,
+    typoid      = macaddrOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "macaddr"
   }
 
+macaddrOid :: Oid
+macaddrOid = Oid 829
+{-# INLINE macaddrOid #-}
+
 inet :: TypeInfo
 inet =  Basic {
-    typoid      = Oid 869,
+    typoid      = inetOid,
     typcategory = 'I',
     typdelim    = ',',
     typname     = "inet"
   }
 
+inetOid :: Oid
+inetOid = Oid 869
+{-# INLINE inetOid #-}
+
 bpchar :: TypeInfo
 bpchar =  Basic {
-    typoid      = Oid 1042,
+    typoid      = bpcharOid,
     typcategory = 'S',
     typdelim    = ',',
     typname     = "bpchar"
   }
 
+bpcharOid :: Oid
+bpcharOid = Oid 1042
+{-# INLINE bpcharOid #-}
+
 varchar :: TypeInfo
 varchar =  Basic {
-    typoid      = Oid 1043,
+    typoid      = varcharOid,
     typcategory = 'S',
     typdelim    = ',',
     typname     = "varchar"
   }
 
+varcharOid :: Oid
+varcharOid = Oid 1043
+{-# INLINE varcharOid #-}
+
 date :: TypeInfo
 date =  Basic {
-    typoid      = Oid 1082,
+    typoid      = dateOid,
     typcategory = 'D',
     typdelim    = ',',
     typname     = "date"
   }
 
+dateOid :: Oid
+dateOid = Oid 1082
+{-# INLINE dateOid #-}
+
 time :: TypeInfo
 time =  Basic {
-    typoid      = Oid 1083,
+    typoid      = timeOid,
     typcategory = 'D',
     typdelim    = ',',
     typname     = "time"
   }
 
+timeOid :: Oid
+timeOid = Oid 1083
+{-# INLINE timeOid #-}
+
 timestamp :: TypeInfo
 timestamp =  Basic {
-    typoid      = Oid 1114,
+    typoid      = timestampOid,
     typcategory = 'D',
     typdelim    = ',',
     typname     = "timestamp"
   }
 
+timestampOid :: Oid
+timestampOid = Oid 1114
+{-# INLINE timestampOid #-}
+
 timestamptz :: TypeInfo
 timestamptz =  Basic {
-    typoid      = Oid 1184,
+    typoid      = timestamptzOid,
     typcategory = 'D',
     typdelim    = ',',
     typname     = "timestamptz"
   }
 
+timestamptzOid :: Oid
+timestamptzOid = Oid 1184
+{-# INLINE timestamptzOid #-}
+
 interval :: TypeInfo
 interval =  Basic {
-    typoid      = Oid 1186,
+    typoid      = intervalOid,
     typcategory = 'T',
     typdelim    = ',',
     typname     = "interval"
   }
 
+intervalOid :: Oid
+intervalOid = Oid 1186
+{-# INLINE intervalOid #-}
+
 timetz :: TypeInfo
 timetz =  Basic {
-    typoid      = Oid 1266,
+    typoid      = timetzOid,
     typcategory = 'D',
     typdelim    = ',',
     typname     = "timetz"
   }
 
+timetzOid :: Oid
+timetzOid = Oid 1266
+{-# INLINE timetzOid #-}
+
 bit :: TypeInfo
 bit =  Basic {
-    typoid      = Oid 1560,
+    typoid      = bitOid,
     typcategory = 'V',
     typdelim    = ',',
     typname     = "bit"
   }
 
+bitOid :: Oid
+bitOid = Oid 1560
+{-# INLINE bitOid #-}
+
 varbit :: TypeInfo
 varbit =  Basic {
-    typoid      = Oid 1562,
+    typoid      = varbitOid,
     typcategory = 'V',
     typdelim    = ',',
     typname     = "varbit"
   }
 
+varbitOid :: Oid
+varbitOid = Oid 1562
+{-# INLINE varbitOid #-}
+
 numeric :: TypeInfo
 numeric =  Basic {
-    typoid      = Oid 1700,
+    typoid      = numericOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "numeric"
   }
 
+numericOid :: Oid
+numericOid = Oid 1700
+{-# INLINE numericOid #-}
+
 refcursor :: TypeInfo
 refcursor =  Basic {
-    typoid      = Oid 1790,
+    typoid      = refcursorOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "refcursor"
   }
 
+refcursorOid :: Oid
+refcursorOid = Oid 1790
+{-# INLINE refcursorOid #-}
+
 record :: TypeInfo
 record =  Basic {
-    typoid      = Oid 2249,
+    typoid      = recordOid,
     typcategory = 'P',
     typdelim    = ',',
     typname     = "record"
   }
 
+recordOid :: Oid
+recordOid = Oid 2249
+{-# INLINE recordOid #-}
+
 void :: TypeInfo
 void =  Basic {
-    typoid      = Oid 2278,
+    typoid      = voidOid,
     typcategory = 'P',
     typdelim    = ',',
     typname     = "void"
   }
 
+voidOid :: Oid
+voidOid = Oid 2278
+{-# INLINE voidOid #-}
+
 array_record :: TypeInfo
 array_record =  Array {
-    typoid      = Oid 2287,
+    typoid      = array_recordOid,
     typcategory = 'P',
     typdelim    = ',',
     typname     = "_record",
     typelem     = record
   }
 
+array_recordOid :: Oid
+array_recordOid = Oid 2287
+{-# INLINE array_recordOid #-}
+
 regprocedure :: TypeInfo
 regprocedure =  Basic {
-    typoid      = Oid 2202,
+    typoid      = regprocedureOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regprocedure"
   }
 
+regprocedureOid :: Oid
+regprocedureOid = Oid 2202
+{-# INLINE regprocedureOid #-}
+
 regoper :: TypeInfo
 regoper =  Basic {
-    typoid      = Oid 2203,
+    typoid      = regoperOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regoper"
   }
 
+regoperOid :: Oid
+regoperOid = Oid 2203
+{-# INLINE regoperOid #-}
+
 regoperator :: TypeInfo
 regoperator =  Basic {
-    typoid      = Oid 2204,
+    typoid      = regoperatorOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regoperator"
   }
 
+regoperatorOid :: Oid
+regoperatorOid = Oid 2204
+{-# INLINE regoperatorOid #-}
+
 regclass :: TypeInfo
 regclass =  Basic {
-    typoid      = Oid 2205,
+    typoid      = regclassOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regclass"
   }
 
+regclassOid :: Oid
+regclassOid = Oid 2205
+{-# INLINE regclassOid #-}
+
 regtype :: TypeInfo
 regtype =  Basic {
-    typoid      = Oid 2206,
+    typoid      = regtypeOid,
     typcategory = 'N',
     typdelim    = ',',
     typname     = "regtype"
   }
 
+regtypeOid :: Oid
+regtypeOid = Oid 2206
+{-# INLINE regtypeOid #-}
+
 uuid :: TypeInfo
 uuid =  Basic {
-    typoid      = Oid 2950,
+    typoid      = uuidOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "uuid"
   }
 
+uuidOid :: Oid
+uuidOid = Oid 2950
+{-# INLINE uuidOid #-}
+
 json :: TypeInfo
 json =  Basic {
-    typoid      = Oid 114,
+    typoid      = jsonOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "json"
   }
 
+jsonOid :: Oid
+jsonOid = Oid 114
+{-# INLINE jsonOid #-}
+
 jsonb :: TypeInfo
 jsonb =  Basic {
-    typoid      = Oid 3802,
+    typoid      = jsonbOid,
     typcategory = 'U',
     typdelim    = ',',
     typname     = "jsonb"
   }
 
+jsonbOid :: Oid
+jsonbOid = Oid 3802
+{-# INLINE jsonbOid #-}
+
 int2vector :: TypeInfo
 int2vector =  Array {
-    typoid      = Oid 22,
+    typoid      = int2vectorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "int2vector",
     typelem     = int2
   }
 
+int2vectorOid :: Oid
+int2vectorOid = Oid 22
+{-# INLINE int2vectorOid #-}
+
 oidvector :: TypeInfo
 oidvector =  Array {
-    typoid      = Oid 30,
+    typoid      = oidvectorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "oidvector",
     typelem     = oid
   }
 
+oidvectorOid :: Oid
+oidvectorOid = Oid 30
+{-# INLINE oidvectorOid #-}
+
 array_xml :: TypeInfo
 array_xml =  Array {
-    typoid      = Oid 143,
+    typoid      = array_xmlOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_xml",
     typelem     = xml
   }
 
+array_xmlOid :: Oid
+array_xmlOid = Oid 143
+{-# INLINE array_xmlOid #-}
+
 array_json :: TypeInfo
 array_json =  Array {
-    typoid      = Oid 199,
+    typoid      = array_jsonOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_json",
     typelem     = json
   }
 
+array_jsonOid :: Oid
+array_jsonOid = Oid 199
+{-# INLINE array_jsonOid #-}
+
 array_line :: TypeInfo
 array_line =  Array {
-    typoid      = Oid 629,
+    typoid      = array_lineOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_line",
     typelem     = line
   }
 
+array_lineOid :: Oid
+array_lineOid = Oid 629
+{-# INLINE array_lineOid #-}
+
 array_cidr :: TypeInfo
 array_cidr =  Array {
-    typoid      = Oid 651,
+    typoid      = array_cidrOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_cidr",
     typelem     = cidr
   }
 
+array_cidrOid :: Oid
+array_cidrOid = Oid 651
+{-# INLINE array_cidrOid #-}
+
 array_circle :: TypeInfo
 array_circle =  Array {
-    typoid      = Oid 719,
+    typoid      = array_circleOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_circle",
     typelem     = circle
   }
 
+array_circleOid :: Oid
+array_circleOid = Oid 719
+{-# INLINE array_circleOid #-}
+
 array_money :: TypeInfo
 array_money =  Array {
-    typoid      = Oid 791,
+    typoid      = array_moneyOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_money",
     typelem     = money
   }
 
+array_moneyOid :: Oid
+array_moneyOid = Oid 791
+{-# INLINE array_moneyOid #-}
+
 array_bool :: TypeInfo
 array_bool =  Array {
-    typoid      = Oid 1000,
+    typoid      = array_boolOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_bool",
     typelem     = bool
   }
 
+array_boolOid :: Oid
+array_boolOid = Oid 1000
+{-# INLINE array_boolOid #-}
+
 array_bytea :: TypeInfo
 array_bytea =  Array {
-    typoid      = Oid 1001,
+    typoid      = array_byteaOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_bytea",
     typelem     = bytea
   }
 
+array_byteaOid :: Oid
+array_byteaOid = Oid 1001
+{-# INLINE array_byteaOid #-}
+
 array_char :: TypeInfo
 array_char =  Array {
-    typoid      = Oid 1002,
+    typoid      = array_charOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_char",
     typelem     = char
   }
 
+array_charOid :: Oid
+array_charOid = Oid 1002
+{-# INLINE array_charOid #-}
+
 array_name :: TypeInfo
 array_name =  Array {
-    typoid      = Oid 1003,
+    typoid      = array_nameOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_name",
     typelem     = name
   }
 
+array_nameOid :: Oid
+array_nameOid = Oid 1003
+{-# INLINE array_nameOid #-}
+
 array_int2 :: TypeInfo
 array_int2 =  Array {
-    typoid      = Oid 1005,
+    typoid      = array_int2Oid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int2",
     typelem     = int2
   }
 
+array_int2Oid :: Oid
+array_int2Oid = Oid 1005
+{-# INLINE array_int2Oid #-}
+
 array_int2vector :: TypeInfo
 array_int2vector =  Array {
-    typoid      = Oid 1006,
+    typoid      = array_int2vectorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int2vector",
     typelem     = int2vector
   }
 
+array_int2vectorOid :: Oid
+array_int2vectorOid = Oid 1006
+{-# INLINE array_int2vectorOid #-}
+
 array_int4 :: TypeInfo
 array_int4 =  Array {
-    typoid      = Oid 1007,
+    typoid      = array_int4Oid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int4",
     typelem     = int4
   }
 
+array_int4Oid :: Oid
+array_int4Oid = Oid 1007
+{-# INLINE array_int4Oid #-}
+
 array_regproc :: TypeInfo
 array_regproc =  Array {
-    typoid      = Oid 1008,
+    typoid      = array_regprocOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regproc",
     typelem     = regproc
   }
 
+array_regprocOid :: Oid
+array_regprocOid = Oid 1008
+{-# INLINE array_regprocOid #-}
+
 array_text :: TypeInfo
 array_text =  Array {
-    typoid      = Oid 1009,
+    typoid      = array_textOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_text",
     typelem     = text
   }
 
+array_textOid :: Oid
+array_textOid = Oid 1009
+{-# INLINE array_textOid #-}
+
 array_tid :: TypeInfo
 array_tid =  Array {
-    typoid      = Oid 1010,
+    typoid      = array_tidOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_tid",
     typelem     = tid
   }
 
+array_tidOid :: Oid
+array_tidOid = Oid 1010
+{-# INLINE array_tidOid #-}
+
 array_xid :: TypeInfo
 array_xid =  Array {
-    typoid      = Oid 1011,
+    typoid      = array_xidOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_xid",
     typelem     = xid
   }
 
+array_xidOid :: Oid
+array_xidOid = Oid 1011
+{-# INLINE array_xidOid #-}
+
 array_cid :: TypeInfo
 array_cid =  Array {
-    typoid      = Oid 1012,
+    typoid      = array_cidOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_cid",
     typelem     = cid
   }
 
+array_cidOid :: Oid
+array_cidOid = Oid 1012
+{-# INLINE array_cidOid #-}
+
 array_oidvector :: TypeInfo
 array_oidvector =  Array {
-    typoid      = Oid 1013,
+    typoid      = array_oidvectorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_oidvector",
     typelem     = oidvector
   }
 
+array_oidvectorOid :: Oid
+array_oidvectorOid = Oid 1013
+{-# INLINE array_oidvectorOid #-}
+
 array_bpchar :: TypeInfo
 array_bpchar =  Array {
-    typoid      = Oid 1014,
+    typoid      = array_bpcharOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_bpchar",
     typelem     = bpchar
   }
 
+array_bpcharOid :: Oid
+array_bpcharOid = Oid 1014
+{-# INLINE array_bpcharOid #-}
+
 array_varchar :: TypeInfo
 array_varchar =  Array {
-    typoid      = Oid 1015,
+    typoid      = array_varcharOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_varchar",
     typelem     = varchar
   }
 
+array_varcharOid :: Oid
+array_varcharOid = Oid 1015
+{-# INLINE array_varcharOid #-}
+
 array_int8 :: TypeInfo
 array_int8 =  Array {
-    typoid      = Oid 1016,
+    typoid      = array_int8Oid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int8",
     typelem     = int8
   }
 
+array_int8Oid :: Oid
+array_int8Oid = Oid 1016
+{-# INLINE array_int8Oid #-}
+
 array_point :: TypeInfo
 array_point =  Array {
-    typoid      = Oid 1017,
+    typoid      = array_pointOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_point",
     typelem     = point
   }
 
+array_pointOid :: Oid
+array_pointOid = Oid 1017
+{-# INLINE array_pointOid #-}
+
 array_lseg :: TypeInfo
 array_lseg =  Array {
-    typoid      = Oid 1018,
+    typoid      = array_lsegOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_lseg",
     typelem     = lseg
   }
 
+array_lsegOid :: Oid
+array_lsegOid = Oid 1018
+{-# INLINE array_lsegOid #-}
+
 array_path :: TypeInfo
 array_path =  Array {
-    typoid      = Oid 1019,
+    typoid      = array_pathOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_path",
     typelem     = path
   }
 
+array_pathOid :: Oid
+array_pathOid = Oid 1019
+{-# INLINE array_pathOid #-}
+
 array_box :: TypeInfo
 array_box =  Array {
-    typoid      = Oid 1020,
+    typoid      = array_boxOid,
     typcategory = 'A',
     typdelim    = ';',
     typname     = "_box",
     typelem     = box
   }
 
+array_boxOid :: Oid
+array_boxOid = Oid 1020
+{-# INLINE array_boxOid #-}
+
 array_float4 :: TypeInfo
 array_float4 =  Array {
-    typoid      = Oid 1021,
+    typoid      = array_float4Oid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_float4",
     typelem     = float4
   }
 
+array_float4Oid :: Oid
+array_float4Oid = Oid 1021
+{-# INLINE array_float4Oid #-}
+
 array_float8 :: TypeInfo
 array_float8 =  Array {
-    typoid      = Oid 1022,
+    typoid      = array_float8Oid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_float8",
     typelem     = float8
   }
 
+array_float8Oid :: Oid
+array_float8Oid = Oid 1022
+{-# INLINE array_float8Oid #-}
+
 array_polygon :: TypeInfo
 array_polygon =  Array {
-    typoid      = Oid 1027,
+    typoid      = array_polygonOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_polygon",
     typelem     = polygon
   }
 
+array_polygonOid :: Oid
+array_polygonOid = Oid 1027
+{-# INLINE array_polygonOid #-}
+
 array_oid :: TypeInfo
 array_oid =  Array {
-    typoid      = Oid 1028,
+    typoid      = array_oidOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_oid",
     typelem     = oid
   }
 
+array_oidOid :: Oid
+array_oidOid = Oid 1028
+{-# INLINE array_oidOid #-}
+
 array_macaddr :: TypeInfo
 array_macaddr =  Array {
-    typoid      = Oid 1040,
+    typoid      = array_macaddrOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_macaddr",
     typelem     = macaddr
   }
 
+array_macaddrOid :: Oid
+array_macaddrOid = Oid 1040
+{-# INLINE array_macaddrOid #-}
+
 array_inet :: TypeInfo
 array_inet =  Array {
-    typoid      = Oid 1041,
+    typoid      = array_inetOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_inet",
     typelem     = inet
   }
 
+array_inetOid :: Oid
+array_inetOid = Oid 1041
+{-# INLINE array_inetOid #-}
+
 array_timestamp :: TypeInfo
 array_timestamp =  Array {
-    typoid      = Oid 1115,
+    typoid      = array_timestampOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_timestamp",
     typelem     = timestamp
   }
 
+array_timestampOid :: Oid
+array_timestampOid = Oid 1115
+{-# INLINE array_timestampOid #-}
+
 array_date :: TypeInfo
 array_date =  Array {
-    typoid      = Oid 1182,
+    typoid      = array_dateOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_date",
     typelem     = date
   }
 
+array_dateOid :: Oid
+array_dateOid = Oid 1182
+{-# INLINE array_dateOid #-}
+
 array_time :: TypeInfo
 array_time =  Array {
-    typoid      = Oid 1183,
+    typoid      = array_timeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_time",
     typelem     = time
   }
 
+array_timeOid :: Oid
+array_timeOid = Oid 1183
+{-# INLINE array_timeOid #-}
+
 array_timestamptz :: TypeInfo
 array_timestamptz =  Array {
-    typoid      = Oid 1185,
+    typoid      = array_timestamptzOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_timestamptz",
     typelem     = timestamptz
   }
 
+array_timestamptzOid :: Oid
+array_timestamptzOid = Oid 1185
+{-# INLINE array_timestamptzOid #-}
+
 array_interval :: TypeInfo
 array_interval =  Array {
-    typoid      = Oid 1187,
+    typoid      = array_intervalOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_interval",
     typelem     = interval
   }
 
+array_intervalOid :: Oid
+array_intervalOid = Oid 1187
+{-# INLINE array_intervalOid #-}
+
 array_numeric :: TypeInfo
 array_numeric =  Array {
-    typoid      = Oid 1231,
+    typoid      = array_numericOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_numeric",
     typelem     = numeric
   }
 
+array_numericOid :: Oid
+array_numericOid = Oid 1231
+{-# INLINE array_numericOid #-}
+
 array_timetz :: TypeInfo
 array_timetz =  Array {
-    typoid      = Oid 1270,
+    typoid      = array_timetzOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_timetz",
     typelem     = timetz
   }
 
+array_timetzOid :: Oid
+array_timetzOid = Oid 1270
+{-# INLINE array_timetzOid #-}
+
 array_bit :: TypeInfo
 array_bit =  Array {
-    typoid      = Oid 1561,
+    typoid      = array_bitOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_bit",
     typelem     = bit
   }
 
+array_bitOid :: Oid
+array_bitOid = Oid 1561
+{-# INLINE array_bitOid #-}
+
 array_varbit :: TypeInfo
 array_varbit =  Array {
-    typoid      = Oid 1563,
+    typoid      = array_varbitOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_varbit",
     typelem     = varbit
   }
 
+array_varbitOid :: Oid
+array_varbitOid = Oid 1563
+{-# INLINE array_varbitOid #-}
+
 array_refcursor :: TypeInfo
 array_refcursor =  Array {
-    typoid      = Oid 2201,
+    typoid      = array_refcursorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_refcursor",
     typelem     = refcursor
   }
 
+array_refcursorOid :: Oid
+array_refcursorOid = Oid 2201
+{-# INLINE array_refcursorOid #-}
+
 array_regprocedure :: TypeInfo
 array_regprocedure =  Array {
-    typoid      = Oid 2207,
+    typoid      = array_regprocedureOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regprocedure",
     typelem     = regprocedure
   }
 
+array_regprocedureOid :: Oid
+array_regprocedureOid = Oid 2207
+{-# INLINE array_regprocedureOid #-}
+
 array_regoper :: TypeInfo
 array_regoper =  Array {
-    typoid      = Oid 2208,
+    typoid      = array_regoperOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regoper",
     typelem     = regoper
   }
 
+array_regoperOid :: Oid
+array_regoperOid = Oid 2208
+{-# INLINE array_regoperOid #-}
+
 array_regoperator :: TypeInfo
 array_regoperator =  Array {
-    typoid      = Oid 2209,
+    typoid      = array_regoperatorOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regoperator",
     typelem     = regoperator
   }
 
+array_regoperatorOid :: Oid
+array_regoperatorOid = Oid 2209
+{-# INLINE array_regoperatorOid #-}
+
 array_regclass :: TypeInfo
 array_regclass =  Array {
-    typoid      = Oid 2210,
+    typoid      = array_regclassOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regclass",
     typelem     = regclass
   }
 
+array_regclassOid :: Oid
+array_regclassOid = Oid 2210
+{-# INLINE array_regclassOid #-}
+
 array_regtype :: TypeInfo
 array_regtype =  Array {
-    typoid      = Oid 2211,
+    typoid      = array_regtypeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_regtype",
     typelem     = regtype
   }
 
+array_regtypeOid :: Oid
+array_regtypeOid = Oid 2211
+{-# INLINE array_regtypeOid #-}
+
 array_uuid :: TypeInfo
 array_uuid =  Array {
-    typoid      = Oid 2951,
+    typoid      = array_uuidOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_uuid",
     typelem     = uuid
   }
 
+array_uuidOid :: Oid
+array_uuidOid = Oid 2951
+{-# INLINE array_uuidOid #-}
+
 array_jsonb :: TypeInfo
 array_jsonb =  Array {
-    typoid      = Oid 3807,
+    typoid      = array_jsonbOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_jsonb",
     typelem     = jsonb
   }
 
+array_jsonbOid :: Oid
+array_jsonbOid = Oid 3807
+{-# INLINE array_jsonbOid #-}
+
 int4range :: TypeInfo
 int4range =  Range {
-    typoid      = Oid 3904,
+    typoid      = int4rangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "int4range",
     rngsubtype  = int4
   }
 
+int4rangeOid :: Oid
+int4rangeOid = Oid 3904
+{-# INLINE int4rangeOid #-}
+
 _int4range :: TypeInfo
 _int4range =  Array {
-    typoid      = Oid 3905,
+    typoid      = _int4rangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int4range",
     typelem     = int4range
   }
 
+_int4rangeOid :: Oid
+_int4rangeOid = Oid 3905
+{-# INLINE _int4rangeOid #-}
+
 numrange :: TypeInfo
 numrange =  Range {
-    typoid      = Oid 3906,
+    typoid      = numrangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "numrange",
     rngsubtype  = numeric
   }
 
+numrangeOid :: Oid
+numrangeOid = Oid 3906
+{-# INLINE numrangeOid #-}
+
 _numrange :: TypeInfo
 _numrange =  Array {
-    typoid      = Oid 3907,
+    typoid      = _numrangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_numrange",
     typelem     = numrange
   }
 
+_numrangeOid :: Oid
+_numrangeOid = Oid 3907
+{-# INLINE _numrangeOid #-}
+
 tsrange :: TypeInfo
 tsrange =  Range {
-    typoid      = Oid 3908,
+    typoid      = tsrangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "tsrange",
     rngsubtype  = timestamp
   }
 
+tsrangeOid :: Oid
+tsrangeOid = Oid 3908
+{-# INLINE tsrangeOid #-}
+
 _tsrange :: TypeInfo
 _tsrange =  Array {
-    typoid      = Oid 3909,
+    typoid      = _tsrangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_tsrange",
     typelem     = tsrange
   }
 
+_tsrangeOid :: Oid
+_tsrangeOid = Oid 3909
+{-# INLINE _tsrangeOid #-}
+
 tstzrange :: TypeInfo
 tstzrange =  Range {
-    typoid      = Oid 3910,
+    typoid      = tstzrangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "tstzrange",
     rngsubtype  = timestamptz
   }
 
+tstzrangeOid :: Oid
+tstzrangeOid = Oid 3910
+{-# INLINE tstzrangeOid #-}
+
 _tstzrange :: TypeInfo
 _tstzrange =  Array {
-    typoid      = Oid 3911,
+    typoid      = _tstzrangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_tstzrange",
     typelem     = tstzrange
   }
 
+_tstzrangeOid :: Oid
+_tstzrangeOid = Oid 3911
+{-# INLINE _tstzrangeOid #-}
+
 daterange :: TypeInfo
 daterange =  Range {
-    typoid      = Oid 3912,
+    typoid      = daterangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "daterange",
     rngsubtype  = date
   }
 
+daterangeOid :: Oid
+daterangeOid = Oid 3912
+{-# INLINE daterangeOid #-}
+
 _daterange :: TypeInfo
 _daterange =  Array {
-    typoid      = Oid 3913,
+    typoid      = _daterangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_daterange",
     typelem     = daterange
   }
 
+_daterangeOid :: Oid
+_daterangeOid = Oid 3913
+{-# INLINE _daterangeOid #-}
+
 int8range :: TypeInfo
 int8range =  Range {
-    typoid      = Oid 3926,
+    typoid      = int8rangeOid,
     typcategory = 'R',
     typdelim    = ',',
     typname     = "int8range",
     rngsubtype  = int8
   }
 
+int8rangeOid :: Oid
+int8rangeOid = Oid 3926
+{-# INLINE int8rangeOid #-}
+
 _int8range :: TypeInfo
 _int8range =  Array {
-    typoid      = Oid 3927,
+    typoid      = _int8rangeOid,
     typcategory = 'A',
     typdelim    = ',',
     typname     = "_int8range",
     typelem     = int8range
   }
+
+_int8rangeOid :: Oid
+_int8rangeOid = Oid 3927
+{-# INLINE _int8rangeOid #-}
