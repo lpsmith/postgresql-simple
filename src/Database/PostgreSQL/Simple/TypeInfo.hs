@@ -50,21 +50,21 @@ import                Database.PostgreSQL.Simple.TypeInfo.Static
 --   in the connections's cache.
 
 getTypeInfo :: Connection -> PQ.Oid -> IO TypeInfo
-getTypeInfo conn@Connection{..} oid =
-  case staticTypeInfo oid of
-    Just name -> return name
-    Nothing -> modifyMVar connectionObjects $ getTypeInfo' conn oid
+getTypeInfo conn@Connection{..} oid' =
+  case staticTypeInfo oid' of
+    Just name' -> return name'
+    Nothing -> modifyMVar connectionObjects $ getTypeInfo' conn oid'
 
 getTypeInfo' :: Connection -> PQ.Oid -> TypeInfoCache
              -> IO (TypeInfoCache, TypeInfo)
-getTypeInfo' conn oid oidmap =
-  case IntMap.lookup (oid2int oid) oidmap of
+getTypeInfo' conn oid' oidmap =
+  case IntMap.lookup (oid2int oid') oidmap of
     Just typeinfo -> return (oidmap, typeinfo)
     Nothing -> do
       names  <- query conn "SELECT oid, typcategory, typdelim, typname,\
                          \ typelem, typrelid\
                          \ FROM pg_type WHERE oid = ?"
-                           (Only oid)
+                           (Only oid')
       (oidmap', typeInfo) <-
           case names of
             []  -> return $ throw (fatalError "invalid type oid")
@@ -78,7 +78,7 @@ getTypeInfo' conn oid oidmap =
                    rngsubtypeOids <- query conn "SELECT rngsubtype\
                                                \ FROM pg_range\
                                                \ WHERE rngtypid = ?"
-                                                (Only oid)
+                                                (Only oid')
                    case rngsubtypeOids of
                      [Only rngsubtype_] -> do
                         (oidmap', rngsubtype) <-
@@ -104,7 +104,7 @@ getTypeInfo' conn oid oidmap =
             _ -> fail "typename query returned more than one result"
                    -- oid is a primary key,  so the query should
                    -- never return more than one result
-      let !oidmap'' = IntMap.insert (oid2int oid) typeInfo oidmap'
+      let !oidmap'' = IntMap.insert (oid2int oid') typeInfo oidmap'
       return $! (oidmap'', typeInfo)
 
 getAttInfos :: Connection -> [(B.ByteString, PQ.Oid)] -> TypeInfoCache

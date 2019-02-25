@@ -42,9 +42,9 @@ array delim = char '{' *> option [] (arrays <|> strings) <* char '}'
 quoted :: Parser ByteString
 quoted  = char '"' *> option "" contents <* char '"'
   where
-    esc = char '\\' *> (char '\\' <|> char '"')
+    esc' = char '\\' *> (char '\\' <|> char '"')
     unQ = takeWhile1 (notInClass "\"\\")
-    contents = mconcat <$> many (unQ <|> B.singleton <$> esc)
+    contents = mconcat <$> many (unQ <|> B.singleton <$> esc')
 
 -- | Recognizes a plain string literal, not containing quotes or brackets and
 --   not containing the delimiter character.

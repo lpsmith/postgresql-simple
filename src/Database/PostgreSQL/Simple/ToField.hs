@@ -319,7 +319,7 @@ inQuotes b = quote `mappend` b `mappend` quote
   where quote = char8 '\''
 
 interleaveFoldr :: (a -> [b] -> [b]) -> b -> [b] -> [a] -> [b]
-interleaveFoldr f b bs as = foldr (\a bs -> b : f a bs) bs as
+interleaveFoldr f b bs' as = foldr (\a bs -> b : f a bs) bs' as
 {-# INLINE interleaveFoldr #-}
 
 instance ToRow a => ToField (Values a) where
@@ -366,8 +366,8 @@ instance ToRow a => ToField (Values a) where
 
         typedRows :: ToRow a => [a] -> [QualifiedIdentifier] -> [Action] -> [Action]
         typedRows [] _ _ = error funcname
-        typedRows (val:vals) types rest =
-            typedRow (toRow val) types (multiRows vals rest)
+        typedRows (val:vals) typs rest =
+            typedRow (toRow val) typs (multiRows vals rest)
 
         untypedRows :: ToRow a => [a] -> [Action] -> [Action]
         untypedRows [] _ = error funcname

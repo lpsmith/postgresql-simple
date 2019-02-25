@@ -290,7 +290,7 @@ postgreSQLConnectionString connectInfo = fromString connstr
 
     str name field
       | null value = id
-      | otherwise  = showString name . quote value . space
+      | otherwise  = showString name . addQuotes value . space
         where value = field connectInfo
 
     num name field
@@ -298,7 +298,7 @@ postgreSQLConnectionString connectInfo = fromString connstr
       | otherwise  = showString name . shows value . space
         where value = field connectInfo
 
-    quote str rest = '\'' : foldr delta ('\'' : rest) str
+    addQuotes s rest = '\'' : foldr delta ('\'' : rest) s
        where
          delta c cs = case c of
                         '\\' -> '\\' : '\\' : cs
@@ -386,7 +386,7 @@ finishExecute _conn q result = do
             nstr <- PQ.cmdTuples result
             return $ case nstr of
                        Nothing  -> 0   -- is this appropriate?
-                       Just str -> toInteger str
+                       Just str -> mkInteger str
       PQ.TuplesOk -> do
           ncols <- PQ.nfields result
           throwIO $ QueryError ("execute resulted in " ++ show ncols ++
@@ -399,7 +399,7 @@ finishExecute _conn q result = do
       PQ.NonfatalError -> throwResultError "execute" result status
       PQ.FatalError    -> throwResultError "execute" result status
     where
-     toInteger str = B8.foldl' delta 0 str
+     mkInteger str = B8.foldl' delta 0 str
                 where
                   delta acc c =
                     if '0' <= c && c <= '9'
@@ -414,8 +414,8 @@ throwResultError _ result status = do
                  PQ.resultErrorField result PQ.DiagMessageDetail
     hint      <- fromMaybe "" <$>
                  PQ.resultErrorField result PQ.DiagMessageHint
-    state     <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
-    throwIO $ SqlError { sqlState = state
+    state'    <- maybe "" id <$> PQ.resultErrorField result PQ.DiagSqlstate
+    throwIO $ SqlError { sqlState = state'
                        , sqlExecStatus = status
                        , sqlErrorMsg = errormsg
                        , sqlErrorDetail = detail
@@ -589,3 +589,19 @@ escapeIdentifier = escapeWrap PQ.escapeIdentifier
 
 escapeByteaConn :: Connection -> ByteString -> IO (Either ByteString ByteString)
 escapeByteaConn = escapeWrap PQ.escapeByteaConn
+
+breakOnSingleQuestionMark :: ByteString -> (ByteString, ByteString)
+breakOnSingleQuestionMark b = go (B8.empty, b)
+  where go (x,bs) = (x `B8.append` x',bs')
+                -- seperate from first QM
+          where tup@(noQ, restWithQ) = B8.break (=='?') bs
+                -- if end of query, just return
+                -- else check for second QM in 'go2'
+                (x', bs') = maybe tup go2 $
+                    -- drop found QM and peek at next char
+                    B8.uncons restWithQ >>= B8.uncons . snd
+                -- another QM after the first means:
+                -- take literal QM and keep going.
+                go2 ('?', t2) = go (noQ `B8.snoc` '?',t2)
+                -- Anything else means
+                go2 _ = tup

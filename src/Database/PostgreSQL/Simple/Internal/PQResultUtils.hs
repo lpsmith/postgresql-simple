@@ -25,7 +25,7 @@ import           Data.Foldable (for_)
 import           Database.PostgreSQL.Simple.FromField (ResultError(..))
 import           Database.PostgreSQL.Simple.Ok
 import           Database.PostgreSQL.Simple.Types (Query(..))
-import           Database.PostgreSQL.Simple.Internal as Base
+import           Database.PostgreSQL.Simple.Internal as Base hiding (result, row)
 import           Database.PostgreSQL.Simple.TypeInfo
 import qualified Database.PostgreSQL.LibPQ as PQ
 import qualified Data.ByteString.Char8 as B

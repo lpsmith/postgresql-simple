@@ -131,8 +131,8 @@ fieldWith fieldP = RP $ do
     else do
       let !result = rowresult
           !typeOid = unsafeDupablePerformIO (PQ.ftype result column)
-          !field = Field{..}
-      lift (lift (fieldP field (getvalue result row column)))
+          !field' = Field{..}
+      lift (lift (fieldP field' (getvalue result row column)))
 
 field :: FromField a => RowParser a
 field = fieldWith fromField

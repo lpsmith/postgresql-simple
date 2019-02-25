@@ -30,7 +30,7 @@ import           Data.Monoid (mconcat)
 import           Database.PostgreSQL.Simple.Compat ((<>), toByteString)
 import           Database.PostgreSQL.Simple.FromRow (FromRow(..))
 import           Database.PostgreSQL.Simple.Types (Query(..))
-import           Database.PostgreSQL.Simple.Internal as Base
+import           Database.PostgreSQL.Simple.Internal as Base hiding (result, row)
 import           Database.PostgreSQL.Simple.Internal.PQResultUtils
 import           Database.PostgreSQL.Simple.Transaction
 import qualified Database.PostgreSQL.LibPQ as PQ
@@ -90,9 +90,9 @@ foldForward cursor = foldForwardWithParser cursor fromRow
 foldM' :: (Ord n, Num n) => (a -> n -> IO a) -> a -> n -> n -> IO a
 foldM' f a lo hi = loop a lo
   where
-    loop a !n
-      | n > hi = return a
+    loop x !n
+      | n > hi = return x
       | otherwise = do
-           a' <- f a n
-           loop a' (n+1)
+           x' <- f x n
+           loop x' (n+1)
 {-# INLINE foldM' #-}
