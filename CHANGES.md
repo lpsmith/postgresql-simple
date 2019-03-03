@@ -1,4 +1,25 @@
-### Version 0.6 (2018-09-25)
+### Version 0.6.1 (2019-03-04)
+
+  * Escape double '??' to a literal '?
+    Thanks to Felix Paulusma for the implementation.
+    https://github.com/phadej/postgresql-simple/pull/5
+
+  * Mention GHC Generics support in the documentation.
+    Thanks to Gabriel Gonzalez for the implementation.
+    https://github.com/phadej/postgresql-simple/pull/6
+
+  * Better error message for "Query resulted in a command response
+    Thanks to Max Amanshauser for the implementation.
+    https://github.com/phadej/postgresql-simple/pull/7
+
+  * fromJSONField: Include JSONPath on JSON parse errors
+    Thanks to Simon Hengel for the implementation.
+    https://github.com/phadej/postgresql-simple/pull/2
+
+  * No TH in implementation
+    https://github.com/phadej/postgresql-simple/pull/4
+
+### Version 0.6 (2018-10-16)
 
   * *Breaking change*: Use `Only` package's `Only` for a common 1-tuple.
 
