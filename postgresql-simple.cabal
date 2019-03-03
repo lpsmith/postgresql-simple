@@ -1,6 +1,6 @@
 Cabal-version:       1.12
 Name:                postgresql-simple
-Version:             0.6
+Version:             0.6.1
 
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
@@ -11,7 +11,7 @@ Author:              Bryan O'Sullivan, Leon P Smith
 Maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
 Copyright:           (c) 2011 MailRank, Inc.
                      (c) 2011-2018 Leon P Smith
-                     (c) 2018 Oleg Grenrus
+                     (c) 2018-2019 Oleg Grenrus
 Category:            Database
 Build-type:          Simple
 
