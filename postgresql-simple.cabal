@@ -28,7 +28,7 @@ tested-with:
    || == 8.0.2
    || == 8.2.2
    || == 8.4.4
-   || == 8.6.3
+   || == 8.6.4
 
 Library
   default-language: Haskell2010
