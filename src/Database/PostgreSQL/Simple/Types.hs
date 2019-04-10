@@ -213,7 +213,7 @@ newtype Savepoint = Savepoint Query
 --
 -- An LSN supports standard comparison operators.
 --
--- Two LSNs can be subtracted; Thre result is thne number of bytes separating
+-- Two LSNs can be subtracted; The result is the number of bytes separating
 -- those write-ahead log locations.
 newtype LSN = LSN ByteString
     deriving (Eq, Ord, Show, Read, Typeable)
