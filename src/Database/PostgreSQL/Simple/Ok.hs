@@ -37,6 +37,8 @@ import Control.Exception
 import Control.Monad(MonadPlus(..))
 import Data.Typeable
 
+import qualified Control.Monad.Fail as Fail
+
 -- FIXME:   [SomeException] should probably be something else,  maybe
 --          a difference list (or a tree?)
 
@@ -77,6 +79,11 @@ instance Monad Ok where
     Errors es >>= _ = Errors es
     Ok a      >>= f = f a
 
+#if !(MIN_VERSION_base(4,13,0))
+    fail = Fail.fail
+#endif
+
+instance Fail.MonadFail Ok where
     fail str = Errors [SomeException (ErrorCall str)]
 
 -- | a way to reify a list of exceptions into a single exception
