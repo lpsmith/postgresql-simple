@@ -1,3 +1,7 @@
+### Version 0.6.2 (2019-04-26)
+  
+  * Define `MonadFail Ok`.
+
 ### Version 0.6.1 (2019-03-04)
 
   * Escape double '??' to a literal '?
