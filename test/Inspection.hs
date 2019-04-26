@@ -53,7 +53,12 @@ inspectionTests = testGroup "inspection"
     
     -- byteaOid isn't inlined?
     , testCase "inlineTypoid" $
-        assertFailure' $(inspectTest $ 'lhs02 ==- 'rhs02)
+#if __GLASGOW_HASKELL__ >= 808
+        assertSuccess
+#else
+        assertFailure'
+#endif
+          $(inspectTest $ 'lhs02 ==- 'rhs02)
     ]
 
 assertSuccess :: Result -> IO ()
