@@ -338,7 +338,7 @@ execute conn template qs = do
 -- @
 -- executeMany c [sql|
 --     UPDATE sometable
---        SET sometable.y = upd.y
+--        SET y = upd.y
 --       FROM (VALUES (?,?)) as upd(x,y)
 --      WHERE sometable.x = upd.x
 --  |] [(1, \"hello\"),(2, \"world\")]
