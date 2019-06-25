@@ -1,6 +1,7 @@
 Cabal-version:       1.12
 Name:                postgresql-simple
 Version:             0.6.2
+x-revision:          1
 
 Synopsis:            Mid-Level PostgreSQL client library
 Description:
@@ -89,7 +90,7 @@ Library
     , attoparsec         >=0.13.2.2    && <0.14
     , bytestring-builder >=0.10.8.1.0  && <0.11
     , case-insensitive   >=1.2.0.11    && <1.3
-    , hashable           >=1.2.7.0     && <1.3
+    , hashable           >=1.2.7.0     && <1.4
     , Only               >=0.1         && <0.1.1
     , postgresql-libpq   >=0.9.4.2     && < 0.10
     , uuid-types         >=1.0.3       && <1.1
@@ -99,7 +100,7 @@ Library
   if !impl(ghc >= 8.0)
     Build-depends:
       fail       >=4.9.0.0 && <4.10,
-      semigroups >=0.18.5  && <0.19
+      semigroups >=0.18.5  && <0.20
 
   if !impl(ghc >= 7.6)
     Build-depends:
