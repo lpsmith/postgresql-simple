@@ -244,9 +244,11 @@ tableOid Field{..} = toMaybeOid (unsafeDupablePerformIO (PQ.ftable result column
          then Nothing
          else Just x
 
--- | If the column has a table associated with it,  this returns the number
---   off the associated table column.   Numbering starts from 0.  Analogous
---   to libpq's @PQftablecol@.
+-- | If the column has a table associated with it, this returns the
+--   number of the associated table column.  Table columns have
+--   nonzero numbers.  Zero is returned if the specified column is not
+--   a simple reference to a table column, or when using pre-3.0
+--   protocol. Analogous to libpq's @PQftablecol@.
 
 tableColumn :: Field -> Int
 tableColumn Field{..} = fromCol (unsafeDupablePerformIO (PQ.ftablecol result column))
