@@ -1,21 +1,22 @@
-Cabal-version:       1.12
-Name:                postgresql-simple
-Version:             0.6.2
-x-revision:          2
+cabal-version:      1.12
+name:               postgresql-simple
+version:            0.6.2
+x-revision:         2
+synopsis:           Mid-Level PostgreSQL client library
+description:
+  Mid-Level PostgreSQL client library, forked from mysql-simple.
 
-Synopsis:            Mid-Level PostgreSQL client library
-Description:
-    Mid-Level PostgreSQL client library, forked from mysql-simple.
-License:             BSD3
-License-file:        LICENSE
-Author:              Bryan O'Sullivan, Leon P Smith
-Maintainer:          Oleg Grenrus <oleg.grenrus@iki.fi>
-Copyright:           (c) 2011 MailRank, Inc.
-                     (c) 2011-2018 Leon P Smith
-                     (c) 2018-2019 Oleg Grenrus
-Category:            Database
-Build-type:          Simple
+license:            BSD3
+license-file:       LICENSE
+author:             Bryan O'Sullivan, Leon P Smith
+maintainer:         Oleg Grenrus <oleg.grenrus@iki.fi>
+copyright:
+  (c) 2011 MailRank, Inc.
+  (c) 2011-2018 Leon P Smith
+  (c) 2018-2019 Oleg Grenrus
 
+category:           Database
+build-type:         Simple
 extra-source-files:
   CONTRIBUTORS
   CHANGES.md
@@ -23,97 +24,95 @@ extra-source-files:
   test/results/unique-constraint-violation.expected
 
 tested-with:
-  GHC == 7.6.3
-   || == 7.8.4
-   || == 7.10.3
-   || == 8.0.2
-   || == 8.2.2
-   || == 8.4.4
-   || == 8.6.5
-   || == 8.8.1
+  GHC ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.1
 
-Library
-  default-language: Haskell2010
-  hs-source-dirs: src
-  Exposed-modules:
-     Database.PostgreSQL.Simple
-     Database.PostgreSQL.Simple.Arrays
-     Database.PostgreSQL.Simple.Copy
-     Database.PostgreSQL.Simple.Cursor
-     Database.PostgreSQL.Simple.FromField
-     Database.PostgreSQL.Simple.FromRow
-     Database.PostgreSQL.Simple.LargeObjects
-     Database.PostgreSQL.Simple.HStore
-     Database.PostgreSQL.Simple.HStore.Internal
-     Database.PostgreSQL.Simple.Notification
-     Database.PostgreSQL.Simple.Ok
-     Database.PostgreSQL.Simple.Range
-     Database.PostgreSQL.Simple.SqlQQ
-     Database.PostgreSQL.Simple.Time
-     Database.PostgreSQL.Simple.Time.Internal
-     Database.PostgreSQL.Simple.ToField
-     Database.PostgreSQL.Simple.ToRow
-     Database.PostgreSQL.Simple.Transaction
-     Database.PostgreSQL.Simple.TypeInfo
-     Database.PostgreSQL.Simple.TypeInfo.Macro
-     Database.PostgreSQL.Simple.TypeInfo.Static
-     Database.PostgreSQL.Simple.Types
-     Database.PostgreSQL.Simple.Errors
-     Database.PostgreSQL.Simple.Vector
-     Database.PostgreSQL.Simple.Vector.Unboxed
+library
+  default-language:   Haskell2010
+  hs-source-dirs:     src
+  exposed-modules:
+    Database.PostgreSQL.Simple
+    Database.PostgreSQL.Simple.Arrays
+    Database.PostgreSQL.Simple.Copy
+    Database.PostgreSQL.Simple.Cursor
+    Database.PostgreSQL.Simple.Errors
+    Database.PostgreSQL.Simple.FromField
+    Database.PostgreSQL.Simple.FromRow
+    Database.PostgreSQL.Simple.HStore
+    Database.PostgreSQL.Simple.HStore.Internal
+    Database.PostgreSQL.Simple.Internal
+    Database.PostgreSQL.Simple.LargeObjects
+    Database.PostgreSQL.Simple.Notification
+    Database.PostgreSQL.Simple.Ok
+    Database.PostgreSQL.Simple.Range
+    Database.PostgreSQL.Simple.SqlQQ
+    Database.PostgreSQL.Simple.Time
+    Database.PostgreSQL.Simple.Time.Internal
+    Database.PostgreSQL.Simple.ToField
+    Database.PostgreSQL.Simple.ToRow
+    Database.PostgreSQL.Simple.Transaction
+    Database.PostgreSQL.Simple.TypeInfo
+    Database.PostgreSQL.Simple.TypeInfo.Macro
+    Database.PostgreSQL.Simple.TypeInfo.Static
+    Database.PostgreSQL.Simple.Types
+    Database.PostgreSQL.Simple.Vector
+    Database.PostgreSQL.Simple.Vector.Unboxed
 
--- Other-modules:
-     Database.PostgreSQL.Simple.Internal
-
-  Other-modules:
-     Database.PostgreSQL.Simple.Compat
-     Database.PostgreSQL.Simple.HStore.Implementation
-     Database.PostgreSQL.Simple.Internal.PQResultUtils
-     Database.PostgreSQL.Simple.Time.Implementation
-     Database.PostgreSQL.Simple.Time.Internal.Parser
-     Database.PostgreSQL.Simple.Time.Internal.Printer
-     Database.PostgreSQL.Simple.TypeInfo.Types
+  -- Other-modules:
+  other-modules:
+    Database.PostgreSQL.Simple.Compat
+    Database.PostgreSQL.Simple.HStore.Implementation
+    Database.PostgreSQL.Simple.Internal.PQResultUtils
+    Database.PostgreSQL.Simple.Time.Implementation
+    Database.PostgreSQL.Simple.Time.Internal.Parser
+    Database.PostgreSQL.Simple.Time.Internal.Printer
+    Database.PostgreSQL.Simple.TypeInfo.Types
 
   -- GHC bundled libs
-  Build-depends:
-      base               >=4.6.0.0  && <4.14
-    , bytestring         >=0.10.0.0 && <0.11
-    , containers         >=0.5.0.0  && <0.7
-    , time               >=1.4.0.1  && <1.10
-    , transformers       >=0.3.0.0  && <0.6
-    , template-haskell   >=2.8.0.0  && <2.16
-    , text               >=1.2.3.0  && <1.3
+  build-depends:
+      base              >=4.6.0.0  && <4.14
+    , bytestring        >=0.10.0.0 && <0.11
+    , containers        >=0.5.0.0  && <0.7
+    , template-haskell  >=2.8.0.0  && <2.16
+    , text              >=1.2.3.0  && <1.3
+    , time              >=1.4.0.1  && <1.10
+    , transformers      >=0.3.0.0  && <0.6
 
   -- Other dependencies
-  Build-depends:
-      aeson              >=1.4.1.0     && <1.5
-    , attoparsec         >=0.13.2.2    && <0.14
-    , bytestring-builder >=0.10.8.1.0  && <0.11
-    , case-insensitive   >=1.2.0.11    && <1.3
-    , hashable           >=1.2.7.0     && <1.4
-    , Only               >=0.1         && <0.1.1
-    , postgresql-libpq   >=0.9.4.2     && < 0.10
-    , uuid-types         >=1.0.3       && <1.1
-    , scientific         >=0.3.6.2     && <0.4
-    , vector             >=0.12.0.1    && <0.13
+  build-depends:
+      aeson               >=1.4.1.0    && <1.5
+    , attoparsec          >=0.13.2.2   && <0.14
+    , bytestring-builder  >=0.10.8.1.0 && <0.11
+    , case-insensitive    >=1.2.0.11   && <1.3
+    , hashable            >=1.2.7.0    && <1.4
+    , Only                >=0.1        && <0.1.1
+    , postgresql-libpq    >=0.9.4.2    && <0.10
+    , scientific          >=0.3.6.2    && <0.4
+    , uuid-types          >=1.0.3      && <1.1
+    , vector              >=0.12.0.1   && <0.13
 
-  if !impl(ghc >= 8.0)
-    Build-depends:
-      fail       >=4.9.0.0 && <4.10,
-      semigroups >=0.18.5  && <0.20
+  if !impl(ghc >=8.0)
+    build-depends:
+        fail        >=4.9.0.0 && <4.10
+      , semigroups  >=0.18.5  && <0.20
 
-  if !impl(ghc >= 7.6)
-    Build-depends:
-      ghc-prim
+  if !impl(ghc >=7.6)
+    build-depends: ghc-prim
 
   default-extensions:
+    BangPatterns
     DoAndIfThenElse
     OverloadedStrings
-    BangPatterns
-    ViewPatterns
     TypeOperators
+    ViewPatterns
 
-  ghc-options: -Wall -fno-warn-name-shadowing
+  ghc-options:        -Wall -fno-warn-name-shadowing
 
 source-repository head
   type:     git
@@ -125,71 +124,68 @@ source-repository this
   tag:      v0.6
 
 test-suite inspection
-  if !impl(ghc >= 8.0)
+  if !impl(ghc >=8.0)
     buildable: False
 
   default-language: Haskell2010
-  type:           exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is:        Inspection.hs
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Inspection.hs
   build-depends:
       base
     , inspection-testing  >=0.4.1.1 && <0.5
-    , postgresql-simple
     , postgresql-libpq
+    , postgresql-simple
     , tasty
     , tasty-hunit
 
 test-suite test
-  default-language: Haskell2010
-  type:           exitcode-stdio-1.0
-
-  hs-source-dirs: test
-  main-is:        Main.hs
+  default-language:   Haskell2010
+  type:               exitcode-stdio-1.0
+  hs-source-dirs:     test
+  main-is:            Main.hs
   other-modules:
     Common
     Notify
     Serializable
     Time
 
-  ghc-options: -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
-
+  ghc-options:        -Wall -fno-warn-name-shadowing -fno-warn-unused-do-bind
   default-extensions:
     NamedFieldPuns
     OverloadedStrings
+    PatternGuards
     Rank2Types
     RecordWildCards
-    PatternGuards
     ScopedTypeVariables
 
-  build-depends: base
-               , aeson
-               , base16-bytestring
-               , bytestring
-               , containers
-               , cryptohash-md5 >= 0.11.100.1 && <0.12
-               , filepath
-               , tasty
-               , tasty-hunit
-               , tasty-golden
-               , HUnit
-               , postgresql-simple
-               , text
-               , time
-               , vector
-               , case-insensitive
+  build-depends:
+      aeson
+    , base
+    , base16-bytestring
+    , bytestring
+    , case-insensitive
+    , containers
+    , cryptohash-md5     >=0.11.100.1 && <0.12
+    , filepath
+    , HUnit
+    , postgresql-simple
+    , tasty
+    , tasty-golden
+    , tasty-hunit
+    , text
+    , time
+    , vector
 
-  if !impl(ghc >= 7.6)
-    build-depends:
-      ghc-prim
+  if !impl(ghc >=7.6)
+    build-depends: ghc-prim
 
 benchmark select
   default-language: Haskell2010
   type:             exitcode-stdio-1.0
-
-  hs-source-dirs:  bench
-  main-is: Select.hs
-
-  build-depends: base
-               , postgresql-simple
-               , vector
+  hs-source-dirs:   bench
+  main-is:          Select.hs
+  build-depends:
+      base
+    , postgresql-simple
+    , vector
