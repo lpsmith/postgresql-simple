@@ -161,15 +161,15 @@ withTransactionModeRetry mode shouldRetry conn act =
             commit conn
             return a
   where
-    retryLoop :: IO (Either E.SomeException a) -> IO a
+    retryLoop :: IO (Either SqlError a) -> IO a
     retryLoop act' = do
         beginMode mode conn
         r <- act'
         case r of
             Left e ->
-                case fmap shouldRetry (E.fromException e) of
-                  Just True -> retryLoop act'
-                  _ -> E.throwIO e
+                case shouldRetry e of
+                  True -> retryLoop act'
+                  False -> E.throwIO e
             Right a ->
                 return a
 
