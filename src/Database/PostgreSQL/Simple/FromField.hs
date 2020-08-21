@@ -109,6 +109,7 @@ module Database.PostgreSQL.Simple.FromField
 
     , optionalField
     , fromJSONField
+    , fromFieldJSONByteString
     ) where
 
 #include "MachDeps.h"
