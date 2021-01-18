@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards, FlexibleInstances, DefaultSignatures #-}
 
@@ -36,6 +37,11 @@ import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Class
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
+#if MIN_VERSION_base(4,9,0)
+import           Data.Functor.Const
+import           Data.Functor.Identity
+import qualified Data.List.NonEmpty as NE
+#endif
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Database.PostgreSQL.Simple.Types (Only(..))
@@ -108,8 +114,8 @@ fieldWith fieldP = RP $ do
                 ""
                 ("at least " ++ show (unCol column + 1)
                   ++ " slots in target type")
-                "mismatch between number of columns to \
-                \convert and number in target type"
+                ("mismatch between number of columns to convert and number"
+                 ++ "in target type")
         conversionError err
     else do
       let !result = rowresult
@@ -140,6 +146,27 @@ instance (FromField a) => FromRow (Only a) where
 instance (FromField a) => FromRow (Maybe (Only a)) where
     fromRow =  (null *> pure Nothing)
            <|> (Just <$> fromRow)
+
+#if MIN_VERSION_base(4,9,0)
+instance (FromField a) => FromRow (Identity a) where
+    fromRow = Identity <$> field
+
+instance (FromField a) => FromRow (Const a b) where
+    fromRow = Const <$> field
+
+instance (FromField a) => FromRow (Maybe (Identity a)) where
+    fromRow =  (null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
+instance (FromField a) => FromRow (Maybe (Const a b)) where
+    fromRow =  (null *> pure Nothing)
+           <|> (Just <$> fromRow)
+
+instance (FromField a) => FromRow (NE.NonEmpty a) where
+    fromRow = do
+      n <- numFieldsRemaining
+      (NE.:|) <$> field <*> replicateM (n - 1) field
+#endif
 
 instance (FromField a, FromField b) => FromRow (a,b) where
     fromRow = (,) <$> field <*> field

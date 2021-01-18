@@ -1,4 +1,4 @@
-{-# LANGUAGE DefaultSignatures, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE CPP, DefaultSignatures, FlexibleInstances, FlexibleContexts #-}
 ------------------------------------------------------------------------------
 -- |
 -- Module:      Database.PostgreSQL.Simple.ToRow
@@ -23,6 +23,14 @@ module Database.PostgreSQL.Simple.ToRow
 
 import Database.PostgreSQL.Simple.ToField (Action(..), ToField(..))
 import Database.PostgreSQL.Simple.Types (Only(..), (:.)(..))
+#if MIN_VERSION_base(4,9,0)
+import Data.Functor.Const
+import Data.Functor.Identity
+import qualified Data.List.NonEmpty as NE
+#endif
+#if MIN_VERSION_base(4,7,0)
+import Data.Proxy
+#endif
 import GHC.Generics
 
 -- | A collection type that can be turned into a list of rendering
@@ -39,8 +47,24 @@ class ToRow a where
 instance ToRow () where
     toRow _ = []
 
+#if MIN_VERSION_base(4,7,0)
+instance ToRow (Proxy a) where
+    toRow _ = []
+#endif
+
 instance (ToField a) => ToRow (Only a) where
     toRow (Only v) = [toField v]
+
+#if MIN_VERSION_base(4,9,0)
+instance (ToField a) => ToRow (Identity a) where
+    toRow (Identity v) = [toField v]
+
+instance (ToField a) => ToRow (Const a b) where
+    toRow (Const v) = [toField v]
+
+instance (ToField a) => ToRow (NE.NonEmpty a) where
+    toRow = toRow . NE.toList
+#endif
 
 instance (ToField a, ToField b) => ToRow (a,b) where
     toRow (a,b) = [toField a, toField b]
