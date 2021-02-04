@@ -27,7 +27,7 @@
 
 module GenBuiltinTypes where
 
-import Prelude hiding ((++), concat)
+import Prelude hiding ((++), concat, any)
 
 import           StringsQQ
 import           Control.Arrow((&&&))
@@ -41,9 +41,7 @@ import           Database.PostgreSQL.Simple.SqlQQ
 import qualified Data.ByteString.Char8 as B
 import           Data.ByteString(ByteString)
 import qualified Data.ByteString.Lazy  as L
-import qualified Blaze.ByteString.Builder            as Blaze
-import qualified Blaze.ByteString.Builder.ByteString as Blaze
-import qualified Blaze.ByteString.Builder.Char8      as Blaze
+import qualified Data.ByteString.Builder as Builder
 import           Data.String
 import           Data.List ( sort, intersperse )
 import qualified Data.Map as Map
@@ -66,7 +64,7 @@ data TypeInfo = TypeInfo
     , rngsubtype  :: Maybe Oid
     }
 
-instance FromRow TypeInfo where 
+instance FromRow TypeInfo where
     fromRow = TypeInfo <$> field <*> field <*> field <*> field <*> field <*> field
 
 type NameMap   = Map.Map B.ByteString TypeInfo
@@ -87,6 +85,7 @@ char
 name
 int8
 int2
+int2vector
 int4
 regproc
 text
@@ -94,7 +93,17 @@ oid
 tid
 xid
 cid
+oidvector
+pg_ddl_command
+pg_type
+pg_attribute
+pg_proc
+pg_class
+json
 xml
+pg_node_tree
+smgr
+index_am_handler
 point
 lseg
 path
@@ -104,11 +113,16 @@ line
 cidr
 float4
 float8
+abstime
+reltime
+tinterval
 unknown
 circle
+macaddr8
 money
 macaddr
 inet
+aclitem
 bpchar
 varchar
 date
@@ -116,29 +130,61 @@ time
 timestamp
 timestamptz
 interval
+pg_database
 timetz
 bit
 varbit
 numeric
 refcursor
-record
-void
-_record                  array_record
 regprocedure
 regoper
 regoperator
 regclass
 regtype
+record
+cstring
+any
+anyarray
+void
+trigger
+language_handler
+internal
+opaque
+anyelement
+anynonarray
+pg_authid
+pg_auth_members
 uuid
-json
+txid_snapshot
+fdw_handler
+pg_lsn
+tsm_handler
+pg_ndistinct
+pg_dependencies
+anyenum
+tsvector
+tsquery
+gtsvector
+regconfig
+regdictionary
 jsonb
-int2vector
-oidvector
+anyrange
+event_trigger
+int4range
+numrange
+tsrange
+tstzrange
+daterange
+int8range
+pg_shseclabel
+regnamespace
+regrole
 _xml                     array_xml
 _json                    array_json
 _line                    array_line
 _cidr                    array_cidr
 _circle                  array_circle
+_macaddr8                array_macaddr8
 _money                   array_money
 _bool                    array_bool
 _bytea                   array_bytea
@@ -162,8 +208,12 @@ _path                    array_path
 _box                     array_box
 _float4                  array_float4
 _float8                  array_float8
+_abstime                 array_abstime
+_reltime                 array_reltime
+_tinterval               array_tinterval
 _polygon                 array_polygon
 _oid                     array_oid
+_aclitem                 array_aclitem
 _macaddr                 array_macaddr
 _inet                    array_inet
 _timestamp               array_timestamp
@@ -172,6 +222,7 @@ _time                    array_time
 _timestamptz             array_timestamptz
 _interval                array_interval
 _numeric                 array_numeric
+_cstring                 array_cstring
 _timetz                  array_timetz
 _bit                     array_bit
 _varbit                  array_varbit
@@ -181,33 +232,34 @@ _regoper                 array_regoper
 _regoperator             array_regoperator
 _regclass                array_regclass
 _regtype                 array_regtype
+_record                  array_record
+_txid_snapshot           array_txid_snapshot
 _uuid                    array_uuid
+_pg_lsn                  array_pg_lsn
+_tsvector                array_tsvector
+_gtsvector               array_gtsvector
+_tsquery                 array_tsquery
+_regconfig               array_regconfig
+_regdictionary           array_regdictionary
 _jsonb                   array_jsonb
-int4range
-_int4range
-numrange
-_numrange
-tsrange
-_tsrange
-tstzrange
-_tstzrange
-daterange
-_daterange
-int8range
-_int8range
+_int4range               array_int4range
+_numrange                array_numrange
+_tsrange                 array_tsrange
+_tstzrange               array_tstzrange
+_daterange               array_daterange
+_int8range               array_int8range
+_regnamespace            array_regnamespace
+_regrole                 array_regrole
 |]
 
-instance IsString Blaze.Builder where
-   fromString = Blaze.fromByteString . fromString
-
-connectionString = "dbname=postgres"
+connectionString = "dbname=postgres user=postgres"
 
 withPostgreSQL = bracket (connectPostgreSQL connectionString) close
 
 getTypeInfos :: TypeNames -> IO (OidMap, NameMap)
 getTypeInfos typnames = withPostgreSQL $ \conn -> do
-    infos <- query conn [sql| 
-         WITH types AS 
+    infos <- query conn [sql|
+         WITH types AS
             (SELECT oid, typcategory, typdelim, typname, typelem
                FROM pg_type WHERE typname IN ?)
             SELECT types.*, rngsubtype FROM types LEFT JOIN pg_range ON oid = rngtypid
@@ -225,10 +277,10 @@ getTypeInfos typnames = withPostgreSQL $ \conn -> do
         []    -> return (oids, names)
         (_:_) -> do
            infos' <- query conn [sql|
-             WITH types AS 
+             WITH types AS
                (SELECT oid, typcategory, typdelim, typname, typelem
                   FROM pg_type WHERE oid IN ?)
-               SELECT types.*, rngsubtype 
+               SELECT types.*, rngsubtype
                  FROM types LEFT JOIN pg_range ON oid = rngtypid
              |] (Only (In (sort unknowns)))
            let oids'  = oids  `Map.union` oidMap  infos'
@@ -238,26 +290,26 @@ getTypeInfos typnames = withPostgreSQL $ \conn -> do
 main = do
   (oidmap, namemap) <- getTypeInfos typeNames
   L.writeFile "../src/Database/PostgreSQL/Simple/TypeInfo/Static.hs"
-              (Blaze.toLazyByteString (renderFile oidmap namemap typeNames))
+              (Builder.toLazyByteString (renderFile oidmap namemap typeNames))
 
 
 showOid (Oid n) = show n
 
-renderOid :: NameMap -> TypeName -> Blaze.Builder
+renderOid :: NameMap -> TypeName -> Builder.Builder
 renderOid byName name
   = case Map.lookup (pg name) byName of
       Nothing -> error (B.unpack (pg name))
       Just (showOid . typoid -> n) -> fromString n
                               ++ fromString (replicate (4 - length n) ' ')
 
-renderElem :: OidMap -> Oid -> Blaze.Builder
+renderElem :: OidMap -> Oid -> Builder.Builder
 renderElem byOid elemOid
   | elemOid == Oid 0 = "Nothing"
   | otherwise = case Map.lookup elemOid byOid of
                   Nothing -> error ("oid not found: " ++ show elemOid)
                   Just x  -> "Just " ++ bs (typname x)
 
-renderTypeInfo :: OidMap -> TypeInfo -> TypeName -> Blaze.Builder
+renderTypeInfo :: OidMap -> TypeInfo -> TypeName -> Builder.Builder
 renderTypeInfo byOid info name
   | typcategory info == 'A' || typname info == "_record" =
      let (Just typelem_info)    = Map.lookup (typelem info) byOid
@@ -273,8 +325,8 @@ renderTypeInfo byOid info name
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Array {\n"
            , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typcategory = '", Builder.charUtf8 (typcategory info), "',\n"
+           , "    typdelim    = '", Builder.charUtf8 (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\",\n"
            , "    typelem     = ", bs typelem_hs_name, "\n"
            , "  }\n"
@@ -294,8 +346,8 @@ renderTypeInfo byOid info name
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Range {\n"
            , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typcategory = '", Builder.charUtf8 (typcategory info), "',\n"
+           , "    typdelim    = '", Builder.charUtf8 (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\",\n"
            , "    rngsubtype  = ", bs rngsubtype_hs_name, "\n"
            , "  }\n"
@@ -306,8 +358,8 @@ renderTypeInfo byOid info name
            , bs (hs name), " :: TypeInfo\n"
            , bs (hs name), " =  Basic {\n"
            , "    typoid      = ", fromString (show (typoid info)), ",\n"
-           , "    typcategory = '", Blaze.fromChar (typcategory info), "',\n"
-           , "    typdelim    = '", Blaze.fromChar (typdelim info), "',\n"
+           , "    typcategory = '", Builder.charUtf8 (typcategory info), "',\n"
+           , "    typdelim    = '", Builder.charUtf8 (typdelim info), "',\n"
            , "    typname     = \"", bs (typname info), "\"\n"
            , "  }\n"
            ]
@@ -318,13 +370,13 @@ renderTypeInfo byOid info name
 getNames :: NameMap -> TypeNames -> TypeNames
 getNames _ x = x
 
-bs = Blaze.fromByteString
+bs = Builder.byteString
 
 pg = fst
 
 hs = snd
 
-renderFile :: OidMap -> NameMap -> TypeNames -> Blaze.Builder
+renderFile :: OidMap -> NameMap -> TypeNames -> Builder.Builder
 renderFile byOid byName names = ([longstring|
 ------------------------------------------------------------------------------
 -- |
@@ -352,6 +404,7 @@ module Database.PostgreSQL.Simple.TypeInfo.Static
 
 import Database.PostgreSQL.LibPQ (Oid(..))
 import Database.PostgreSQL.Simple.TypeInfo.Types
+import Prelude hiding (any)
 
 staticTypeInfo :: Oid -> Maybe TypeInfo
 staticTypeInfo (Oid x) = case x of

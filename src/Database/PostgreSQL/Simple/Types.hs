@@ -27,6 +27,7 @@ module Database.PostgreSQL.Simple.Types
     , (:.)(..)
     , Savepoint(..)
     , PGArray(..)
+    , LSN(..)
     , Values(..)
     ) where
 
@@ -206,6 +207,15 @@ data h :. t = h :. t deriving (Eq,Ord,Show,Read,Typeable)
 infixr 3 :.
 
 newtype Savepoint = Savepoint Query
+    deriving (Eq, Ord, Show, Read, Typeable)
+
+-- | An LSN (Log Sequence Number) is a pointer to location in the WAL.
+--
+-- An LSN supports standard comparison operators.
+--
+-- Two LSNs can be subtracted; The result is the number of bytes separating
+-- those write-ahead log locations.
+newtype LSN = LSN ByteString
     deriving (Eq, Ord, Show, Read, Typeable)
 
 -- | Represents a @VALUES@ table literal,  usable as an alternative to
