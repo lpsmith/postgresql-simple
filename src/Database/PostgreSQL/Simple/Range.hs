@@ -49,6 +49,7 @@ import           Data.Word                            (Word, Word16, Word32,
 
 import           Database.PostgreSQL.Simple.Compat    (scientificBuilder, (<>), toByteString)
 import           Database.PostgreSQL.Simple.FromField
+import           Database.PostgreSQL.Simple.Internal (setTypeOid)
 import           Database.PostgreSQL.Simple.Time
                    hiding (PosInfinity, NegInfinity)
 -- import qualified Database.PostgreSQL.Simple.Time as Time
@@ -197,7 +198,7 @@ fromFieldRange fromField' f mdat = do
     info <- typeInfo f
     case info of
       Range{} ->
-        let f' = f { typeOid = typoid (rngsubtype info) }
+        let f' = setTypeOid f $ typoid (rngsubtype info)
         in case mdat of
           Nothing -> returnError UnexpectedNull f ""
           Just "empty" -> pure $ empty

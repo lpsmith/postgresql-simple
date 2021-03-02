@@ -66,10 +66,26 @@ import           Control.Concurrent(threadWaitRead, threadWaitWrite)
 data Field = Field {
      result   :: !PQ.Result
    , column   :: {-# UNPACK #-} !PQ.Column
-   , typeOid  :: {-# UNPACK #-} !PQ.Oid
+   , fieldTypeOid  :: {-# UNPACK #-} !PQ.Oid
      -- ^ This returns the type oid associated with the column.  Analogous
      --   to libpq's @PQftype@.
    }
+   | UnpackedField
+   { unpackedFieldTypeOid :: PQ.Oid
+   , unpackedFieldColumnName :: Maybe ByteString
+   , unpackedFieldTableOid :: PQ.Oid
+   , unpackedFieldColumnNumber :: Int
+   , unpackedFieldFormat :: PQ.Format
+   }
+
+typeOid :: Field -> PQ.Oid
+typeOid Field{..} = fieldTypeOid
+typeOid UnpackedField{..} = unpackedFieldTypeOid
+
+setTypeOid :: Field -> PQ.Oid -> Field
+setTypeOid f oid = case f of
+  Field {} -> f { fieldTypeOid = oid }
+  UnpackedField {} -> f { unpackedFieldTypeOid = oid }
 
 type TypeInfoCache = IntMap.IntMap TypeInfo
 
@@ -451,6 +467,9 @@ newNullConnection = do
 data Row = Row {
      row        :: {-# UNPACK #-} !PQ.Row
    , rowresult  :: !PQ.Result
+   }
+   | UnpackedRow
+   { unpackedRowValues :: [(Field, Maybe ByteString)]
    }
 
 newtype RowParser a = RP { unRP :: ReaderT Row (StateT PQ.Column Conversion) a }
