@@ -476,6 +476,10 @@ instance FromField LocalTimestamp where
 instance FromField Date where
   fromField = ff $(inlineTypoid TI.date) "Date" parseDate
 
+-- | interval
+instance FromField Interval where
+  fromField = ff $(inlineTypoid TI.interval) "Interval" parseInterval
+
 ff :: PQ.Oid -> String -> (B8.ByteString -> Either String a)
    -> Field -> Maybe B8.ByteString -> Conversion a
 ff compatOid hsType parse f mstr =

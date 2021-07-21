@@ -282,6 +282,10 @@ instance ToField NominalDiffTime where
     toField = Plain . inQuotes . nominalDiffTimeToBuilder
     {-# INLINE toField #-}
 
+instance ToField Interval where
+    toField = Plain . inQuotes . intervalBuilder
+    {-# INLINE toField #-}
+
 instance (ToField a) => ToField (PGArray a) where
     toField pgArray =
       case fromPGArray pgArray of
