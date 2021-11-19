@@ -157,20 +157,19 @@ withTransactionModeRetry :: TransactionMode -> (SqlError -> Bool) -> Connection 
 withTransactionModeRetry mode shouldRetry conn act =
     mask $ \restore ->
         retryLoop $ E.try $ do
-            a <- restore act
+            a <- restore act `E.onException` rollback_ conn
             commit conn
             return a
   where
-    retryLoop :: IO (Either E.SomeException a) -> IO a
+    retryLoop :: IO (Either SqlError a) -> IO a
     retryLoop act' = do
         beginMode mode conn
         r <- act'
         case r of
-            Left e -> do
-                rollback_ conn
-                case fmap shouldRetry (E.fromException e) of
-                  Just True -> retryLoop act'
-                  _ -> E.throwIO e
+            Left e ->
+                case shouldRetry e of
+                  True -> retryLoop act'
+                  False -> E.throwIO e
             Right a ->
                 return a
 
